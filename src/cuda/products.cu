@@ -66,9 +66,6 @@ void Products::radiance_function(TIFF **bands_resampled, uint32_t width_band, ui
 
       if (band_pixel > 0)
       {
-        // if (mtl.number_sensor == 8)
-        //   radiance_pixel = band_pixel * mtl.rad_mult_10 + mtl.rad_add_10;
-        // else
         radiance_pixel = band_pixel * sensor.parameters[i_band][sensor.GRESCALE] + sensor.parameters[i_band][sensor.BRESCALE];
       }
 
@@ -77,6 +74,39 @@ void Products::radiance_function(TIFF **bands_resampled, uint32_t width_band, ui
 
     _TIFFfree(band_line_buff);
   }
+
+  // ==== Formula (contraction)
+  // D = alpha * A * B + beta * C
+
+  // ==== Mapeamento
+  // alpha = 1
+  // beta = 1
+  // radiance_vector = alpha * bands_resampled * sensor.parameters + veta * sensor.parameters[1][sensor.BRESCALE]
+
+  // ==== Exemplo
+  // radiance_vector1
+
+  // cutensorOperationDescriptor_t desc;
+  // const cutensorComputeDescriptor_t descCompute = CUTENSOR_COMPUTE_DESC_32F;
+  // HANDLE_ERROR(cutensorCreateContraction(handle,
+  //                                        &desc,
+  //                                        descA, indicesEixoA.data(), /* unary operator A*/ CUTENSOR_OP_IDENTITY,
+  //                                        descB, indicesEixoB.data(), /* unary operator B*/ CUTENSOR_OP_IDENTITY,
+  //                                        descC, indicesEixoC.data(), /* unary operator C*/ CUTENSOR_OP_IDENTITY,
+  //                                        descC, indicesEixoC.data(),
+  //                                        descCompute));
+  // HANDLE_ERROR(cutensorContract(handle,
+  //                               plan,
+  //                               (void *)&alpha, bands_resampled[1], sensor.parameters[1][sensor.GRESCALE],
+  //                               (void *)&beta, sensor.parameters[1][sensor.BRESCALE],
+  //                               radiance_vector1,
+  //                               work,
+  //                               actualWorkspaceSize,
+  //                               stream));
+
+  // ...
+  // radiance_vector7
+  // HANDLE_ERROR(cutensorContract(handle, plan, (void *)&alpha, bands_resampled[7], sensor.parameters[7], (void *)&beta, sensor.parameters[7][sensor.BRESCALE], radiance_vector7, work, actualWorkspaceSize, stream));
 }
 
 void Products::reflectance_function(TIFF **bands_resampled, uint32_t width_band, uint16_t sample_bands, MTL mtl, Sensor sensor, int line)
@@ -107,9 +137,34 @@ void Products::reflectance_function(TIFF **bands_resampled, uint32_t width_band,
 
       this->reflectance_vector[line][col][i_band] = reflectance_pixel;
     }
-
     _TIFFfree(band_line_buff);
   }
+
+  // ==== Formula (permutation)
+  // B = alpha * OP(A)
+
+  // ==== Mapeamento
+  // alpha = sin(mtl.sun_elevation * PI / 180)
+  // reflectance_vector = alpha * CUTENSOR_OP_RCP(radiance)
+
+  // ==== Exemplo
+  // reflectance_vector1
+
+  // cutensorOperationDescriptor_t desc;
+  // const cutensorComputeDescriptor_t descCompute = CUTENSOR_COMPUTE_DESC_32F;
+  // HANDLE_ERROR(cutensorCreatePermutation(handle,
+  //                                        &desc,
+  //                                        descA, indicesEixoA.data(), /* Reciprocal */ CUTENSOR_OP_RCP,
+  //                                        descB, indicesEixoB.data(),
+  //                                        descCompute))¶;
+  // HANDLE_ERROR(cutensorPermute(handle,
+  //                              plan,
+  //                              (void *)&alpha, radiance_pixel[1],
+  //                              reflectance[1], stream));
+
+  // ...
+  // reflectance_vector7
+  // HANDLE_ERROR(cutensorPermute(handle, plan, (void *)&alpha, radiance_pixel[7], reflectance[7], stream));
 }
 
 void Products::albedo_function(Reader tal_reader, Sensor sensor, uint32_t width_band, int number_sensor, int line)
@@ -129,6 +184,88 @@ void Products::albedo_function(Reader tal_reader, Sensor sensor, uint32_t width_
 
     this->albedo_vector[line][col] = alb;
   }
+
+  // ==== Formula (contraction, binary, trinity)
+  // D = alpha * A * B + beta * C
+  // D = fAB(alpha * OP(A), beta * OP(B))
+  // D = fABC(fAB(alpha * OP(A), beta * OP(B)), gamma * OP(C))
+
+  // ==== Mapeamento
+  // alpha = 1
+  // beta = 1
+  // gamma = 1
+  // albedo_vector1 = alpha * reflectance_vector1 * sensor.parameters[1][sensor.WB] + beta * empty_vector
+  // albedo_vector2 = alpha * reflectance_vector2 * sensor.parameters[2][sensor.WB] + beta * albedo_vector1
+  // albedo_vector3 = alpha * reflectance_vector3 * sensor.parameters[3][sensor.WB] + beta * albedo_vector2
+  // ...
+  // albedo_vector7 = alpha * reflectance_vector7 * sensor.parameters[7][sensor.WB] + beta * albedo_vector6
+  //
+  // tal_qd = CUTENSOR_OP_MUL(alpha * CUTENSOR_OP_RCP(tal_vector), beta * CUTENSOR_OP_RCP(tal_vector))
+  // albedo_final = CUTENSOR_OP_MUL( CUTENSOR_OP_ADD( alpha * albedo_vector7, -0.3 * vector_with_1 ), gamma * tal_qd)
+
+  // ==== Exemplo
+  // albedo_vector1
+  // cutensorOperationDescriptor_t desc;
+  // const cutensorComputeDescriptor_t descCompute = CUTENSOR_COMPUTE_DESC_32F;
+  // HANDLE_ERROR(cutensorCreateContraction(handle,
+  //                                        &desc,
+  //                                        descA, indicesEixoA.data(), /* unary operator A*/ CUTENSOR_OP_IDENTITY,
+  //                                        descB, indicesEixoB.data(), /* unary operator B*/ CUTENSOR_OP_IDENTITY,
+  //                                        descC, indicesEixoC.data(), /* unary operator C*/ CUTENSOR_OP_IDENTITY,
+  //                                        descC, indicesEixoC.data(),
+  //                                        descCompute));
+  // HANDLE_ERROR(cutensorContract(handle,
+  //                               plan,
+  //                               (void *)&alpha, reflectance_vector1, sensor.parameters[1][sensor.WB],
+  //                               (void *)&beta, empty_vector,
+  //                               albedo_vector1,
+  //                               work,
+  //                               actualWorkspaceSize,
+  //                               stream));
+  // HANDLE_ERROR(cutensorContract(handle,
+  //                               plan,
+  //                               (void *)&alpha, reflectance_vector2, sensor.parameters[2][sensor.WB],
+  //                               (void *)&beta, albedo_vector1,
+  //                               albedo_vector2,
+  //                               work,
+  //                               actualWorkspaceSize,
+  //                               stream));
+  // ...
+  // HANDLE_ERROR(cutensorContract(handle,
+  //                               plan,
+  //                               (void *)&alpha, reflectance_vector7, sensor.parameters[7][sensor.WB],
+
+  // tal_qd
+  // HANDLE_ERROR(cutensorCreateElementwiseBinary(handle,
+  //                                              &desc,
+  //                                              descA, indicesEixoA.data(), CUTENSOR_OP_RCP,
+  //                                              descB, indicesEixoB.data(), CUTENSOR_OP_RCP,
+  //                                              descC, indicesEixoC.data(), CUTENSOR_OP_MUL,
+  //                                              descCompute));
+  // HANDLE_ERROR(cutensorElementwiseBinaryExecute(handle,
+  //                                               plan,
+  //                                               (void *)&alpha, tal_vector,
+  //                                               (void *)&beta, tal_vector,
+  //                                               tal_qd,
+  //                                               stream));
+
+  // albedo_final
+  // HANDLE_ERROR(cutensorCreateElementwiseTrinary(handle,
+  //                                               &desc,
+  //                                               descA, indicesEixoA.data(), CUTENSOR_OP_IDENTITY,
+  //                                               descB, indicesEixoB.data(), CUTENSOR_OP_IDENTITY,
+  //                                               descC, indicesEixoC.data(), CUTENSOR_OP_IDENTITY,
+  //                                               descD, indicesEixoD.data(),
+  //                                               CUTENSOR_OP_ADD,
+  //                                               CUTENSOR_OP_MUL,
+  //                                               descCompute));
+  // HANDLE_ERROR(cutensorElementwiseTrinaryExecute(handle,
+  //                                                plan,
+  //                                                1, albedo_vector7,
+  //                                                -0.3, vector_with_1,
+  //                                                1, tal_qd,
+  //                                                albedo_final,
+  //                                                stream));
 }
 
 void Products::ndvi_function(uint32_t width_band, int line)
