@@ -20,6 +20,6 @@
  * @param  ustar_pointer: The ustar vector.
  * @param  aerodynamic_resistance_pointer: The aerodynamic resistance vector.
  */
-void rah_correction_cycle_STEEP(int start_line, int end_line, int width_band, double a, double b, double *surface_temperature_pointer,
-                                double *d0_pointer, double *zom_pointer, double *kb1_pointer, double *sensible_heat_flux_pointer, 
-                                double *ustar_pointer, double *aerodynamic_resistance_pointer);
+void rah_correction_cycle_STEEP(int start_line, int end_line, int width_band, float a, float b, float *surface_temperature_pointer,
+                                float *d0_pointer, float *zom_pointer, float *kb1_pointer, float *sensible_heat_flux_pointer, 
+                                float *ustar_pointer, float *aerodynamic_resistance_pointer);

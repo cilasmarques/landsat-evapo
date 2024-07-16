@@ -1,35 +1,27 @@
 #include "endmembers.h"
 
-void compute_H0(vector<double> net_radiation_line, vector<double> soil_heat_flux, int width_band, vector<double> &ho_line)
+void compute_H0(float *net_radiation, float *soil_heat_flux, int height_band, int width_band, float *ho)
 {
-  for (int col = 0; col < width_band; col++)
-    ho_line[col] = net_radiation_line[col] - soil_heat_flux[col];
+  for (int i = 0; i < height_band * width_band; i++)
+    ho[i] = net_radiation[i] - soil_heat_flux[i];
 };
 
-void filter_valid_values(vector<double> target_line, double *target_values, int width_band, int *pos)
-{
-  for (int col = 0; col < width_band; col++)
-  {
-    if (!isnan(target_line[col]) && !isinf(target_line[col]))
-    {
-      target_values[*pos] = target_line[col];
-      (*pos)++;
-    }
-  }
-}
-
-void get_quartiles(vector<vector<double>> target_vector, double *v_quartile, int height_band, int width_band, double first_interval, double middle_interval, double last_interval)
+void get_quartiles(float *target, float *v_quartile, int height_band, int width_band, float first_interval, float middle_interval, float last_interval)
 {
   const int SIZE = height_band * width_band;
-  double *target_values = (double *)malloc(sizeof(double) * SIZE);
+  float *target_values = (float *)malloc(sizeof(float) * SIZE);
 
   if (target_values == NULL)
     exit(15);
 
   int pos = 0;
-  for (int line = 0; line < height_band; line++)
+  for (int i = 0; i < height_band * width_band; i++)
   {
-    filter_valid_values(target_vector[line], target_values, width_band, &pos);
+    if (!isnan(target[i]) && !isinf(target[i]))
+    {
+      target_values[pos] = target[i];
+      pos++;
+    }
   }
 
   int first_index = static_cast<int>(floor(first_interval * pos));
@@ -48,48 +40,39 @@ void get_quartiles(vector<vector<double>> target_vector, double *v_quartile, int
   free(target_values);
 }
 
-
-pair<Candidate, Candidate> getEndmembersASEBAL(vector<vector<double>> ndvi_vector, vector<vector<double>> surface_temperature_vector, vector<vector<double>> albedo_vector, vector<vector<double>> net_radiation_vector, vector<vector<double>> soil_heat_vector, int height_band, int width_band)
+pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, int height_band, int width_band)
 {
   vector<Candidate> hotCandidates;
   vector<Candidate> coldCandidates;
-  vector<vector<double>> ho_vector(height_band, vector<double>(width_band));
 
-  vector<double> tsQuartile(3);
-  vector<double> ndviQuartile(3);
-  vector<double> albedoQuartile(3);
-  get_quartiles(ndvi_vector, ndviQuartile.data(), height_band, width_band, 0.25, 0.75, 0.75);
-  get_quartiles(albedo_vector, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75);
-  get_quartiles(surface_temperature_vector, tsQuartile.data(), height_band, width_band, 0.25, 0.75, 0.75);
+  vector<float> tsQuartile(3);
+  vector<float> ndviQuartile(3);
+  vector<float> albedoQuartile(3);
+  get_quartiles(ndvi, ndviQuartile.data(), height_band, width_band, 0.15, 0.85, 0.97);
+  get_quartiles(albedo, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75);
+  get_quartiles(surface_temperature, tsQuartile.data(), height_band, width_band, 0.20, 0.85, 0.97);
 
-  for (int line = 0; line < height_band; line++)
+  float *ho = (float *)malloc(sizeof(float) * height_band * width_band);
+  compute_H0(net_radiation, soil_heat, height_band, width_band, ho);
+
+  for (int i = 0; i < height_band * width_band; i++)
   {
-    vector<double> ho_line = ho_vector[line];
-    vector<double> ndvi_line = ndvi_vector[line];
-    vector<double> surface_temperature_line = surface_temperature_vector[line];
-    vector<double> albedo_line = albedo_vector[line];
-    vector<double> net_radiation_line = net_radiation_vector[line];
-    vector<double> soil_heat_line = soil_heat_vector[line];
+    bool hotNDVI = !std::isnan(ndvi[i]) && ndvi[i] > 0.10 && ndvi[i] < ndviQuartile[0];
+    bool hotAlbedo = !std::isnan(albedo[i]) && albedo[i] > albedoQuartile[1] && albedo[i] < albedoQuartile[2];
+    bool hotTS = !std::isnan(surface_temperature[i]) && surface_temperature[i] > tsQuartile[1] && surface_temperature[i] < tsQuartile[2];
 
-    compute_H0(net_radiation_line, soil_heat_line, width_band, ho_line);
+    bool coldNDVI = !std::isnan(ndvi[i]) && ndvi[i] > ndviQuartile[2];
+    bool coldAlbedo = !std::isnan(surface_temperature[i]) && albedo[i] > albedoQuartile[0] && albedo[i] < albedoQuartile[1];
+    bool coldTS = !std::isnan(albedo[i]) && surface_temperature[i] < tsQuartile[0];
 
-    for (int col = 0; col < width_band; col++)
-    {
+    int line = i / width_band;
+    int col = i % width_band;
 
-      bool hotAlbedo = !isnan(albedo_line[col]) && albedo_line[col] > albedoQuartile[1];
-      bool hotNDVI = !isnan(ndvi_line[col]) && ndvi_line[col] > 0.10 && ndvi_line[col] < ndviQuartile[0];
-      bool hotTS = !isnan(surface_temperature_line[col]) && surface_temperature_line[col] > tsQuartile[1];
+    if (hotAlbedo && hotNDVI && hotTS) 
+      hotCandidates.emplace_back(ndvi[i], surface_temperature[i], net_radiation[i], soil_heat[i], ho[i], line, col);
 
-      bool coldAlbedo = !isnan(albedo_line[col]) && albedo_line[col] < albedoQuartile[1];
-      bool coldNDVI = !isnan(ndvi_line[col]) && ndvi_line[col] >= ndviQuartile[1];
-      bool coldTS = !isnan(surface_temperature_line[col]) && surface_temperature_line[col] < tsQuartile[0];
-
-      if (hotAlbedo && hotNDVI && hotTS)
-        hotCandidates.emplace_back(ndvi_line[col], surface_temperature_line[col], net_radiation_line[col], soil_heat_line[col], ho_line[col], line, col);
-
-      if (coldAlbedo && coldNDVI && coldTS)
-        coldCandidates.emplace_back(ndvi_line[col], surface_temperature_line[col], net_radiation_line[col], soil_heat_line[col], ho_line[col], line, col);
-    }
+    if (coldNDVI && coldAlbedo && coldTS)
+      coldCandidates.emplace_back(ndvi[i], surface_temperature[i], net_radiation[i], soil_heat[i], ho[i], line, col);
   }
 
   if (hotCandidates.empty() || coldCandidates.empty())
@@ -98,57 +81,48 @@ pair<Candidate, Candidate> getEndmembersASEBAL(vector<vector<double>> ndvi_vecto
     exit(15);
   }
 
-  // Creating second pixel group, all values lower than the 3rd quartile are excluded
   std::sort(hotCandidates.begin(), hotCandidates.end(), compare_candidate_temperature);
   std::sort(coldCandidates.begin(), coldCandidates.end(), compare_candidate_temperature);
-  
+
   unsigned int hotPos = static_cast<unsigned int>(std::floor(hotCandidates.size() * 0.5));
   unsigned int coldPos = static_cast<unsigned int>(std::floor(coldCandidates.size() * 0.5));
 
   return {hotCandidates[hotPos], coldCandidates[coldPos]};
 }
 
-pair<Candidate, Candidate> getEndmembersSTEPP(vector<vector<double>> ndvi_vector, vector<vector<double>> surface_temperature_vector, vector<vector<double>> albedo_vector, vector<vector<double>> net_radiation_vector, vector<vector<double>> soil_heat_vector, int height_band, int width_band)
+pair<Candidate, Candidate> getEndmembersASEBAL(float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, int height_band, int width_band)
 {
   vector<Candidate> hotCandidates;
   vector<Candidate> coldCandidates;
 
-  vector<vector<double>> ho_vector(height_band, vector<double>(width_band));
+  vector<float> tsQuartile(3);
+  vector<float> ndviQuartile(3);
+  vector<float> albedoQuartile(3);
+  get_quartiles(ndvi, ndviQuartile.data(), height_band, width_band, 0.25, 0.75, 0.75);
+  get_quartiles(albedo, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75);
+  get_quartiles(surface_temperature, tsQuartile.data(), height_band, width_band, 0.25, 0.75, 0.75);
 
-  vector<double> tsQuartile(3);
-  vector<double> ndviQuartile(3);
-  vector<double> albedoQuartile(3);
-  get_quartiles(ndvi_vector, ndviQuartile.data(), height_band, width_band, 0.15, 0.85, 0.97);
-  get_quartiles(albedo_vector, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75);
-  get_quartiles(surface_temperature_vector, tsQuartile.data(), height_band, width_band, 0.20, 0.85, 0.97);
+  float *ho = (float *)malloc(sizeof(float) * height_band * width_band);
+  compute_H0(net_radiation, soil_heat, height_band, width_band, ho);
 
-  for (int line = 0; line < height_band; line++)
+  for (int i = 0; i < height_band * width_band; i++)
   {
-    vector<double> ho_line = ho_vector[line];
-    vector<double> ndvi_line = ndvi_vector[line];
-    vector<double> surface_temperature_line = surface_temperature_vector[line];
-    vector<double> albedo_line = albedo_vector[line];
-    vector<double> net_radiation_line = net_radiation_vector[line];
-    vector<double> soil_heat_line = soil_heat_vector[line];
+    bool hotAlbedo = !std::isnan(albedo[i]) && albedo[i] > albedoQuartile[1];
+    bool hotNDVI = !std::isnan(ndvi[i]) && ndvi[i] > 0.10 && ndvi[i] < ndviQuartile[0];
+    bool hotTS = !std::isnan(surface_temperature[i]) && surface_temperature[i] > tsQuartile[1];
 
-    compute_H0(net_radiation_line, soil_heat_line, width_band, ho_line);
+    bool coldAlbedo = !std::isnan(albedo[i]) && albedo[i] < albedoQuartile[1];
+    bool coldNDVI = !std::isnan(ndvi[i]) && ndvi[i] >= ndviQuartile[1];
+    bool coldTS = !std::isnan(surface_temperature[i]) && surface_temperature[i] < tsQuartile[0];
 
-    for (int col = 0; col < width_band; col++)
-    {
-      bool hotNDVI = !std::isnan(ndvi_line[col]) && ndvi_line[col] > 0.10 && ndvi_line[col] < ndviQuartile[0];
-      bool hotAlbedo = !std::isnan(albedo_line[col]) && albedo_line[col] > albedoQuartile[1] && albedo_line[col] < albedoQuartile[2];
-      bool hotTS = !std::isnan(surface_temperature_line[col]) && surface_temperature_line[col] > tsQuartile[1] && surface_temperature_line[col] < tsQuartile[2];
+    int line = i / width_band;
+    int col = i % width_band;
 
-      bool coldNDVI = !std::isnan(ndvi_line[col]) && ndvi_line[col] > ndviQuartile[2];
-      bool coldAlbedo = !std::isnan(surface_temperature_line[col]) && albedo_line[col] > albedoQuartile[0] && albedo_line[col] < albedoQuartile[1];
-      bool coldTS = !std::isnan(albedo_line[col]) && surface_temperature_line[col] < tsQuartile[0];
+    if (hotAlbedo && hotNDVI && hotTS) 
+      hotCandidates.emplace_back(ndvi[i], surface_temperature[i], net_radiation[i], soil_heat[i], ho[i], line, col);
 
-      if (hotAlbedo && hotNDVI && hotTS)
-        hotCandidates.emplace_back(ndvi_line[col], surface_temperature_line[col], net_radiation_line[col], soil_heat_line[col], ho_line[col], line, col);
-
-      if (coldNDVI && coldAlbedo && coldTS)
-        coldCandidates.emplace_back(ndvi_line[col], surface_temperature_line[col], net_radiation_line[col], soil_heat_line[col], ho_line[col], line, col);
-    }
+    if (coldNDVI && coldAlbedo && coldTS)
+      coldCandidates.emplace_back(ndvi[i], surface_temperature[i], net_radiation[i], soil_heat[i], ho[i], line, col);
   }
 
   if (hotCandidates.empty() || coldCandidates.empty())

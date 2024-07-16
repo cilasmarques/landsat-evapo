@@ -2,7 +2,6 @@
 #include <iostream>
 
 #include "utils.h"
-#include "reader.h"
 #include "landsat.h"
 #include "constants.h"
 #include "parameters.h"
@@ -25,8 +24,6 @@
  *              - INPUT_STATION_DATA_INDEX = 10;
  *              - INPUT_LAND_COVER_INDEX   = 11;
  *              - OUTPUT_FOLDER            = 12;
- *              - METHOD_INDEX             = 13;
- *              - THREADS_INDEX            = 14;
  * @return int
 */
 int main(int argc, char *argv[])
@@ -39,9 +36,6 @@ int main(int argc, char *argv[])
   int METHOD_INDEX             = 13;
   int THREADS_INDEX            = 14;
 
-  cudaDeviceProp deviceProp;
-  cudaGetDeviceProperties(&deviceProp, 0);
-
   string path_meta_file = argv[INPUT_MTL_DATA_INDEX];
   string station_data_path = argv[INPUT_STATION_DATA_INDEX];
   string land_cover_path = argv[INPUT_LAND_COVER_INDEX];
@@ -49,7 +43,7 @@ int main(int argc, char *argv[])
   // load bands path
   string bands_paths[INPUT_BAND_TAL_INDEX + 1];
   for (int i = 1; i <= INPUT_BAND_TAL_INDEX; i++) {
-    bands_paths[i] = argv[i];
+    bands_paths[i-1] = argv[i];
   }
 
   // load selected method 
@@ -61,7 +55,7 @@ int main(int argc, char *argv[])
   }
 
   // load threads number
-  int threads_num = 1024;
+  int threads_num = 1;
   if(argc >= 15){
     string threads_flag = argv[THREADS_INDEX];
     if(threads_flag.substr(0,9) == "-threads=")
@@ -101,23 +95,8 @@ int main(int argc, char *argv[])
   time_output << "TOTAL," << general_time << "," << initial_time << "," << final_time << std::endl;
   time_output.close();
 
-  // landsat.save_products(output_products);
+  landsat.save_products(output_products);
   landsat.close();
-
-  // =====  END + METADATA OUTPUT =====
-  ofstream metadata_output;
-  metadata_output.open(output_metadata);
-  metadata_output << "Image height: " << landsat.height_band << std::endl;
-  metadata_output << "Image width: " << landsat.width_band << std::endl;
-  metadata_output << "informed threads: " << threads_num << std::endl;
-  metadata_output << "The GPU is a " << deviceProp.name << std::endl;
-  metadata_output << "The GPU has " << deviceProp.multiProcessorCount << " SMs" << std::endl;
-  metadata_output << "The GPU has " << deviceProp.persistingL2CacheMaxSize  << " bytes of L2 cache" << std::endl;
-  metadata_output << "The GPU has " << deviceProp.concurrentKernels << " concurrent kernels" << std::endl;
-  metadata_output << "The GPU has " << deviceProp.maxBlocksPerMultiProcessor << " max blocks per SM" << std::endl;
-  metadata_output << "The GPU has " << deviceProp.maxThreadsPerMultiProcessor << " max threads per SM" << std::endl;
-  metadata_output << "Total of blocks to process:" << (landsat.width_band * landsat.height_band) / 1024 << std::endl;
-  metadata_output.close();
 
   return 0;
 }

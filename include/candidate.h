@@ -10,8 +10,8 @@ struct Candidate
   int line, col;
   int negative_neighbour;
   double coefficient_variation;
-  double ndvi, temperature, ustar;
-  double net_radiation, soil_heat_flux, ho, zom;
+  float ndvi, temperature, ustar;
+  float net_radiation, soil_heat_flux, ho, zom;
   vector<double> aerodynamic_resistance;
 
   /**
@@ -35,7 +35,7 @@ struct Candidate
    * @param  line: Pixel's line on TIFF.
    * @param  col: Pixel's column on TIFF.
    */
-  Candidate(double ndvi, double temperature, double net_radiation, double soil_heat_flux, double ho, int line, int col);
+  Candidate(float ndvi, float temperature, float net_radiation, float soil_heat_flux, float ho, int line, int col);
 
   /**
    * @brief  Calculates a initial value for Pixel's aerodynamic resistance. Adding this value to attribute aerodynamic resistance.

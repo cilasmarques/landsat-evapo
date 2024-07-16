@@ -1,7 +1,6 @@
 #pragma once
 
 #include "utils.h"
-#include "reader.h"
 #include "products.h"
 #include "constants.h"
 #include "candidate.h"
@@ -21,7 +20,7 @@ struct Landsat
 
   Candidate hot_pixel;
   Candidate cold_pixel;
-  
+
   MTL mtl;
   Products products;
 
@@ -30,7 +29,7 @@ struct Landsat
    * @param  bands_paths: Paths to the bands.
    * @param  tal_path: Path to the TAL file.
    * @param  land_cover_path: Path to the land cover file.
-  */
+   */
   Landsat(string bands_paths[], string land_cover_path, MTL mtl);
 
   string select_endmembers(int method);

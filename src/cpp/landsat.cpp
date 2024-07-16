@@ -2,27 +2,92 @@
 
 Landsat::Landsat(string bands_paths[], string land_cover_path, MTL mtl)
 {
-  Reader TIFFs_reader = Reader();
-
-  for (int i = 1; i <= 8; i++)
+  // Open bands
+  for (int i = 0; i < 8; i++)
   {
-    string path_tiff_base = bands_paths[i];
-    this->bands_resampled[i] = TIFFOpen(path_tiff_base.c_str(), "rm");
-    TIFFs_reader.check_open_tiff(this->bands_resampled[i]);
+    std::string path_tiff_base = bands_paths[i];
+    bands_resampled[i] = TIFFOpen(path_tiff_base.c_str(), "rm");
   }
 
+  // Get bands metadata
   uint16_t sample_format;
   uint32_t height, width;
   TIFFGetField(bands_resampled[1], TIFFTAG_IMAGELENGTH, &height);
   TIFFGetField(bands_resampled[1], TIFFTAG_IMAGEWIDTH, &width);
   TIFFGetField(bands_resampled[1], TIFFTAG_SAMPLEFORMAT, &sample_format);
 
+  this->mtl = mtl;
   this->width_band = width;
   this->height_band = height;
   this->sample_bands = sample_format;
-
-  this->mtl = mtl;
   this->products = Products(this->width_band, this->height_band);
+
+  // Get bands data
+  for (int i = 0; i < 7; i++)
+  {
+    for (int line = 0; line < height; line++)
+    {
+      TIFF *curr_band = bands_resampled[i];
+      tdata_t band_line_buff = _TIFFmalloc(TIFFScanlineSize(curr_band));
+      unsigned short curr_band_line_size = TIFFScanlineSize(curr_band) / width;
+      TIFFReadScanline(curr_band, band_line_buff, line);
+
+      for (int col = 0; col < width; col++)
+      {
+        float value = 0;
+        memcpy(&value, static_cast<unsigned char *>(band_line_buff) + col * curr_band_line_size, curr_band_line_size);
+
+        switch (i)
+        {
+        case 0:
+          this->products.band1[line * width + col] = value;
+          break;
+        case 1:
+          this->products.band2[line * width + col] = value;
+          break;
+        case 2:
+          this->products.band3[line * width + col] = value;
+          break;
+        case 3:
+          this->products.band4[line * width + col] = value;
+          break;
+        case 4:
+          this->products.band5[line * width + col] = value;
+          break;
+        case 5:
+          this->products.band6[line * width + col] = value;
+          break;
+        case 6:
+          this->products.band7[line * width + col] = value;
+          break;
+        case 7:
+          this->products.band8[line * width + col] = value;
+          break;
+        default:
+          break;
+        }
+      }
+      _TIFFfree(band_line_buff);
+    }
+  }
+
+  // Get tal data
+  TIFF *tal_band = this->bands_resampled[7];
+  for (int line = 0; line < height; line++)
+  {
+    tdata_t band_line_buff = _TIFFmalloc(TIFFScanlineSize(tal_band));
+    unsigned short curr_band_line_size = TIFFScanlineSize(tal_band) / width;
+    TIFFReadScanline(tal_band, band_line_buff, line);
+
+    for (int col = 0; col < width; col++)
+    {
+      float value = 0;
+      memcpy(&value, static_cast<unsigned char *>(band_line_buff) + col * curr_band_line_size, curr_band_line_size);
+
+      this->products.tal[line * width + col] = value;
+    }
+    _TIFFfree(band_line_buff);
+  }
 };
 
 string Landsat::select_endmembers(int method)
@@ -35,13 +100,15 @@ string Landsat::select_endmembers(int method)
 
   if (method == 0)
   { // STEEP
-	  pair<Candidate, Candidate> pixels = getEndmembersSTEPP(products.ndvi_vector, products.surface_temperature_vector, products.albedo_vector, products.net_radiation_vector, products.soil_heat_vector, height_band, width_band);
-		hot_pixel = pixels.first; cold_pixel = pixels.second;
+    pair<Candidate, Candidate> pixels = getEndmembersSTEPP(products.ndvi, products.surface_temperature, products.albedo, products.net_radiation, products.soil_heat, height_band, width_band);
+    hot_pixel = pixels.first;
+    cold_pixel = pixels.second;
   }
   else if (method == 1)
   { // ASEBAL
-	  pair<Candidate, Candidate> pixels = getEndmembersASEBAL(products.ndvi_vector, products.surface_temperature_vector, products.albedo_vector, products.net_radiation_vector, products.soil_heat_vector, height_band, width_band);
-		hot_pixel = pixels.first; cold_pixel = pixels.second;
+    pair<Candidate, Candidate> pixels = getEndmembersASEBAL(products.ndvi, products.surface_temperature, products.albedo, products.net_radiation, products.soil_heat, height_band, width_band);
+    hot_pixel = pixels.first;
+    cold_pixel = pixels.second;
   }
 
   end = system_clock::now();
@@ -65,30 +132,23 @@ string Landsat::converge_rah_cycle(Station station, int method, int threads_num)
   double ndvi_min = 1.0;
   double ndvi_max = -1.0;
 
-  for (int line = 0; line < this->height_band; line++)
+  for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    vector<double> ndvi_line = products.ndvi_vector[line];
-    for (int col = 0; col < this->width_band; col++)
-    {
-      if (ndvi_line[col] < ndvi_min)
-        ndvi_min = ndvi_line[col];
-      if (ndvi_line[col] > ndvi_max)
-        ndvi_max = ndvi_line[col];
-    }
+    if (products.ndvi[i] < ndvi_min)
+      ndvi_min = products.ndvi[i];
+    if (products.ndvi[i] > ndvi_max)
+      ndvi_max = products.ndvi[i];
   }
 
-  for (int line = 0; line < height_band; line++)
-  {
-    products.d0_fuction(line);
-    products.zom_fuction(station.A_ZOM, station.B_ZOM, line);
-    products.ustar_fuction(u10, line);
-    products.kb_function(ndvi_max, ndvi_min, line);
-    products.aerodynamic_resistance_fuction(line);
-  }
+  products.d0_fuction();
+  products.zom_fuction(station.A_ZOM, station.B_ZOM);
+  products.ustar_fuction(u10);
+  products.kb_function(ndvi_max, ndvi_min);
+  products.aerodynamic_resistance_fuction();
 
   if (threads_num <= 1)
     result += products.rah_correction_function_serial(ndvi_min, ndvi_max, hot_pixel, cold_pixel);
-  else 
+  else
     result += products.rah_correction_function_threads(threads_num, ndvi_min, ndvi_max, hot_pixel, cold_pixel);
 
   end = system_clock::now();
@@ -99,7 +159,6 @@ string Landsat::converge_rah_cycle(Station station, int method, int threads_num)
   return result;
 };
 
-
 string Landsat::compute_Rn_G(Sensor sensor, Station station)
 {
   system_clock::time_point begin, end;
@@ -108,41 +167,31 @@ string Landsat::compute_Rn_G(Sensor sensor, Station station)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  TIFF *tal = this->bands_resampled[8];
-  for (int line = 0; line < height_band; line++)
-  {
-    tdata_t tal_line_buff = _TIFFmalloc(TIFFScanlineSize(tal));
-    unsigned short curr_tal_line_size = TIFFScanlineSize(tal) / width_band;
-    Reader tal_reader = Reader(sample_bands, curr_tal_line_size, tal_line_buff);
-    TIFFReadScanline(tal, tal_line_buff, line);
+  products.radiance_function(mtl, sensor);
+  products.reflectance_function(mtl, sensor);
+  products.albedo_function(mtl, sensor);
 
-    products.radiance_function(bands_resampled, width_band, sample_bands, mtl, sensor, line);
-    products.reflectance_function(bands_resampled, width_band, sample_bands, mtl, sensor, line);
-    products.albedo_function(tal_reader, sensor, width_band, mtl.number_sensor, line);
+  // Vegetation indices
+  products.ndvi_function();
+  products.pai_function();
+  products.lai_function();
+  products.evi_function();
 
-    // Vegetation indices
-    products.ndvi_function(width_band, line);
-    products.pai_function(width_band, line);
-    products.lai_function(width_band, line);
-    products.evi_function(width_band, line);
+  // Emissivity indices
+  products.enb_emissivity_function();
+  products.eo_emissivity_function();
+  products.ea_emissivity_function();
+  products.surface_temperature_function(mtl);
 
-    // Emissivity indices
-    products.enb_emissivity_function(width_band, line);
-    products.eo_emissivity_function(width_band, line);
-    products.ea_emissivity_function(tal_reader, width_band, line);
-    products.surface_temperature_function(mtl.number_sensor, width_band, line);
+  // Radiation waves
+  products.short_wave_radiation_function(mtl);
+  products.large_wave_radiation_surface_function();
+  products.large_wave_radiation_atmosphere_function(station.temperature_image);
 
-    // Radiation waves
-    products.short_wave_radiation_function(tal_reader, mtl, width_band, line);
-    products.large_wave_radiation_surface_function(width_band, line);
-    products.large_wave_radiation_atmosphere_function(width_band, station.temperature_image, line);
+  // Main products
+  products.net_radiation_function();
+  products.soil_heat_flux_function();
 
-    // Main products
-    products.net_radiation_function(width_band, line);
-    products.soil_heat_flux_function(width_band, line);
-
-    _TIFFfree(tal_line_buff);
-  }
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
@@ -172,14 +221,14 @@ string Landsat::compute_H_ET(Station station)
 
   for (int line = 0; line < height_band; line++)
   {
-    products.sensible_heat_flux_function(a, b, line);
-    products.latent_heat_flux_function(width_band, line);
-    products.net_radiation_24h_function(Ra24h, Rs24h, width_band, line);
-    products.evapotranspiration_fraction_fuction(width_band, line);
-    products.sensible_heat_flux_24h_fuction(width_band, line);
-    products.latent_heat_flux_24h_function(width_band, line);
-    products.evapotranspiration_24h_function(station, width_band, line);
-    products.evapotranspiration_function(width_band, line);
+    products.sensible_heat_flux_function(a, b);
+    products.latent_heat_flux_function();
+    products.net_radiation_24h_function(Ra24h, Rs24h);
+    products.evapotranspiration_fraction_fuction();
+    products.sensible_heat_flux_24h_fuction();
+    products.latent_heat_flux_24h_function();
+    products.evapotranspiration_24h_function(station);
+    products.evapotranspiration_function();
   }
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
@@ -199,41 +248,41 @@ void Landsat::save_products(string output_path)
   std::streambuf *coutProds = std::cout.rdbuf();
   std::cout.rdbuf(outputProds.rdbuf());
 
-  std::cout << " ==== albedo" << std::endl;
-  printVector2x2(products.albedo_vector);
+  std::cout << "==== albedo" << std::endl;
+  printLinearPointer(products.albedo, height_band, width_band);
 
-  std::cout << " ==== ndvi" << std::endl;
-  printVector2x2(products.ndvi_vector);
+  std::cout << "==== ndvi" << std::endl;
+  printLinearPointer(products.ndvi, height_band, width_band);
 
-  std::cout << " ==== net_radiation" << std::endl;
-  printVector2x2(products.net_radiation_vector);
+  std::cout << "==== net_radiation" << std::endl;
+  printLinearPointer(products.net_radiation, height_band, width_band);
 
-  std::cout << " ==== soil_heat" << std::endl;
-  printVector2x2(products.soil_heat_vector);
+  std::cout << "==== soil_heat" << std::endl;
+  printLinearPointer(products.soil_heat, height_band, width_band);
 
-  std::cout << " ==== sensible_heat_flux" << std::endl;
-  printVector2x2(products.sensible_heat_flux_vector);
+  std::cout << "==== sensible_heat_flux" << std::endl;
+  printLinearPointer(products.sensible_heat_flux, height_band, width_band);
 
-  std::cout << " ==== latent_heat_flux" << std::endl;
-  printVector2x2(products.latent_heat_flux_vector);
+  std::cout << "==== latent_heat_flux" << std::endl;
+  printLinearPointer(products.latent_heat_flux, height_band, width_band);
 
-  std::cout << " ==== net_radiation_24h" << std::endl;
-  printVector2x2(products.net_radiation_24h_vector);
+  std::cout << "==== net_radiation_24h" << std::endl;
+  printLinearPointer(products.net_radiation_24h, height_band, width_band);
 
-  std::cout << " ==== evapotranspiration_fraction" << std::endl;
-  printVector2x2(products.evapotranspiration_fraction_vector);
+  std::cout << "==== evapotranspiration_fraction" << std::endl;
+  printLinearPointer(products.evapotranspiration_fraction, height_band, width_band);
 
-  std::cout << " ==== sensible_heat_flux_24h" << std::endl;
-  printVector2x2(products.sensible_heat_flux_24h_vector);
+  std::cout << "==== sensible_heat_flux_24h" << std::endl;
+  printLinearPointer(products.sensible_heat_flux_24h, height_band, width_band);
 
-  std::cout << " ==== latent_heat_flux_24h" << std::endl;
-  printVector2x2(products.latent_heat_flux_24h_vector);
+  std::cout << "==== latent_heat_flux_24h" << std::endl;
+  printLinearPointer(products.latent_heat_flux_24h, height_band, width_band);
 
-  std::cout << " ==== evapotranspiration_24h" << std::endl;
-  printVector2x2(products.evapotranspiration_24h_vector);
+  std::cout << "==== evapotranspiration_24h" << std::endl;
+  printLinearPointer(products.evapotranspiration_24h, height_band, width_band);
 
-  std::cout << " ==== evapotranspiration" << std::endl;
-  printVector2x2(products.evapotranspiration_vector);
+  std::cout << "==== evapotranspiration" << std::endl;
+  printLinearPointer(products.evapotranspiration, height_band, width_band);
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();

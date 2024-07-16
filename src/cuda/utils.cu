@@ -20,14 +20,14 @@ bool definitelyLessThan(double a, double b)
   return (b - a) > ((fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * EPS);
 }
 
-void printVector2x2(const vector<vector<double>> &matrix)
+void printLinearPointer(float *pointer, int height, int width)
 {
-  for (const auto &linha : matrix)
+  for (int i = 0; i < height; i++)
   {
-    for (const auto &elemento : linha)
+    for (int j = 0; j < width; j++)
     {
-      std::cout << elemento << " ";
+      cout << pointer[i * width + j] << " ";
     }
-    std::cout << std::endl;
+    cout << endl;
   }
 }

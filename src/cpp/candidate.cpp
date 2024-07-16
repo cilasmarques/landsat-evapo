@@ -30,7 +30,7 @@ Candidate::Candidate(const Candidate &c)
   this->ustar = c.ustar;
 };
 
-Candidate::Candidate(double ndvi, double temperature, double net_radiation, double soil_heat_flux, double ho, int line, int col)
+Candidate::Candidate(float ndvi, float temperature, float net_radiation, float soil_heat_flux, float ho, int line, int col)
 {
   this->ndvi = ndvi;
   this->temperature = temperature;

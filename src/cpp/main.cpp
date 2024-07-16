@@ -2,7 +2,6 @@
 #include <iostream>
 
 #include "utils.h"
-#include "reader.h"
 #include "landsat.h"
 #include "constants.h"
 #include "parameters.h"
@@ -36,7 +35,6 @@ int main(int argc, char *argv[])
   int OUTPUT_FOLDER            = 12;
   int METHOD_INDEX             = 13;
   int THREADS_INDEX            = 14;
-  int BLOCKS_INDEX             = 15;
 
   string path_meta_file = argv[INPUT_MTL_DATA_INDEX];
   string station_data_path = argv[INPUT_STATION_DATA_INDEX];
@@ -45,7 +43,7 @@ int main(int argc, char *argv[])
   // load bands path
   string bands_paths[INPUT_BAND_TAL_INDEX + 1];
   for (int i = 1; i <= INPUT_BAND_TAL_INDEX; i++) {
-    bands_paths[i] = argv[i];
+    bands_paths[i-1] = argv[i];
   }
 
   // load selected method 

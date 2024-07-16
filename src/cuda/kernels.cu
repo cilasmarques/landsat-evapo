@@ -1,7 +1,7 @@
 #include "kernels.cuh"
 
-__global__ void rah_correction_cycle_STEEP(double *surface_temperature_pointer, double *d0_pointer, double *kb1_pointer, double *zom_pointer, double *ustarR_pointer,
-                                           double *ustarW_pointer, double *rahR_pointer, double *rahW_pointer, double *H_pointer, double a, double b, int height,
+__global__ void rah_correction_cycle_STEEP(float *surface_temperature_pointer, float *d0_pointer, float *kb1_pointer, float *zom_pointer, float *ustarR_pointer,
+                                           float *ustarW_pointer, float *rahR_pointer, float *rahW_pointer, float *H_pointer, double a, double b, int height,
                                            int width)
 {
   // Identify 1D position

@@ -35,8 +35,10 @@ bool definitelyGreaterThan(double a, double b);
 bool definitelyLessThan(double a, double b);
 
 /**
- * @brief  Prints a 2x2 matrix.
+ * @brief  Prints a pointer.
  * 
- * @param  matrix: Matrix to be printed.
+ * @param pointer: Pointer to be printed.
+ * @param height: Height of the pointer.
+ * @param width: Width of the pointer.
  */
-void printVector2x2(const vector<vector<double>> &matrix);
+void printLinearPointer(float *pointer, int height, int width);
