@@ -3,8 +3,9 @@
 
 Products::Products() {}
 
-Products::Products(uint32_t width_band, uint32_t height_band)
+Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
 {
+  this->threads_num = threads_num;
   this->width_band = width_band;
   this->height_band = height_band;
   this->nBytes_band = height_band * width_band * sizeof(float);
@@ -67,6 +68,33 @@ Products::Products(uint32_t width_band, uint32_t height_band)
   this->latent_heat_flux_24h = (float *)malloc(nBytes_band);
   this->evapotranspiration_24h = (float *)malloc(nBytes_band);
   this->evapotranspiration = (float *)malloc(nBytes_band);
+
+  HANDLE_ERROR(cudaMalloc((void **)&this->band1_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->band2_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->band3_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->band4_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->band5_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->band6_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->band7_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->band8_d, nBytes_band));
+
+  HANDLE_ERROR(cudaMalloc((void **)&this->radiance1_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->radiance2_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->radiance3_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->radiance4_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->radiance5_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->radiance6_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->radiance7_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->radiance8_d, nBytes_band));
+
+  HANDLE_ERROR(cudaMalloc((void **)&this->reflectance1_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->reflectance2_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->reflectance3_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->reflectance4_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->reflectance5_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->reflectance6_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->reflectance7_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->reflectance8_d, nBytes_band));
 
   HANDLE_ERROR(cudaMalloc((void **)&this->devZom, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->devD0, nBytes_band));
@@ -153,51 +181,69 @@ void Products::close()
 
 void Products::radiance_function(MTL mtl, Sensor sensor)
 {
-  for (int i = 0; i < this->height_band * this->width_band; i++)
-  {
-    this->radiance1[i] = this->band1[i] * sensor.parameters[1][sensor.GRESCALE] + sensor.parameters[1][sensor.BRESCALE];
-    this->radiance2[i] = this->band2[i] * sensor.parameters[2][sensor.GRESCALE] + sensor.parameters[2][sensor.BRESCALE];
-    this->radiance3[i] = this->band3[i] * sensor.parameters[3][sensor.GRESCALE] + sensor.parameters[3][sensor.BRESCALE];
-    this->radiance4[i] = this->band4[i] * sensor.parameters[4][sensor.GRESCALE] + sensor.parameters[4][sensor.BRESCALE];
-    this->radiance5[i] = this->band5[i] * sensor.parameters[5][sensor.GRESCALE] + sensor.parameters[5][sensor.BRESCALE];
-    this->radiance6[i] = this->band6[i] * sensor.parameters[6][sensor.GRESCALE] + sensor.parameters[6][sensor.BRESCALE];
-    this->radiance7[i] = this->band7[i] * sensor.parameters[7][sensor.GRESCALE] + sensor.parameters[7][sensor.BRESCALE];
-    this->radiance8[i] = this->band8[i] * sensor.parameters[8][sensor.GRESCALE] + sensor.parameters[8][sensor.BRESCALE];
-  }
+  int blocks_num = ceil(width_band * height_band / this->threads_num);
+
+  rad_kernel<<<blocks_num, this->threads_num>>>(band1_d, band2_d, band3_d, band4_d, band5_d, band6_d, band7_d, band8_d,
+                                          radiance1_d, radiance2_d, radiance3_d, radiance4_d,
+                                          radiance5_d, radiance6_d, radiance7_d, radiance8_d,
+                                          sensor.parameters[1][sensor.GRESCALE], sensor.parameters[1][sensor.BRESCALE],
+                                          sensor.parameters[2][sensor.GRESCALE], sensor.parameters[2][sensor.BRESCALE],
+                                          sensor.parameters[3][sensor.GRESCALE], sensor.parameters[3][sensor.BRESCALE],
+                                          sensor.parameters[4][sensor.GRESCALE], sensor.parameters[4][sensor.BRESCALE],
+                                          sensor.parameters[5][sensor.GRESCALE], sensor.parameters[5][sensor.BRESCALE],
+                                          sensor.parameters[6][sensor.GRESCALE], sensor.parameters[6][sensor.BRESCALE],
+                                          sensor.parameters[7][sensor.GRESCALE], sensor.parameters[7][sensor.BRESCALE],
+                                          sensor.parameters[8][sensor.GRESCALE], sensor.parameters[8][sensor.BRESCALE],
+                                          width_band, height_band);
+
+  HANDLE_ERROR(cudaMemcpy(radiance1, radiance1_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(radiance2, radiance2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(radiance3, radiance3_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(radiance4, radiance4_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(radiance5, radiance5_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(radiance6, radiance6_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(radiance7, radiance7_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(radiance8, radiance8_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 }
 
 void Products::reflectance_function(MTL mtl, Sensor sensor)
 {
+  int blocks_num = ceil(width_band * height_band / this->threads_num);
+
   const float sin_sun = sin(mtl.sun_elevation * PI / 180);
 
   if (mtl.number_sensor == 8)
   {
-    for (int i = 0; i < this->height_band * this->width_band; i++)
-    {
-      this->reflectance1[i] = this->radiance1[i] / sin_sun;
-      this->reflectance2[i] = this->radiance2[i] / sin_sun;
-      this->reflectance3[i] = this->radiance3[i] / sin_sun;
-      this->reflectance4[i] = this->radiance4[i] / sin_sun;
-      this->reflectance5[i] = this->radiance5[i] / sin_sun;
-      this->reflectance6[i] = this->radiance6[i] / sin_sun;
-      this->reflectance7[i] = this->radiance7[i] / sin_sun;
-      this->reflectance8[i] = this->radiance8[i] / sin_sun;
-    }
+    ref_kernel<<<blocks_num, this->threads_num>>>(sin_sun,
+                                            radiance1_d, radiance2_d, radiance3_d, radiance4_d,
+                                            radiance5_d, radiance6_d, radiance7_d, radiance8_d,
+                                            reflectance1_d, reflectance2_d, reflectance3_d, reflectance4_d,
+                                            reflectance5_d, reflectance6_d, reflectance7_d, reflectance8_d,
+                                            width_band, height_band);
   }
   else
   {
-    for (int i = 0; i < this->height_band * this->width_band; i++)
-    {
-      this->reflectance1[i] = (PI * this->radiance1[i] * mtl.distance_earth_sun * mtl.distance_earth_sun) / (sensor.parameters[1][sensor.ESUN] * sin_sun);
-      this->reflectance2[i] = (PI * this->radiance2[i] * mtl.distance_earth_sun * mtl.distance_earth_sun) / (sensor.parameters[2][sensor.ESUN] * sin_sun);
-      this->reflectance3[i] = (PI * this->radiance3[i] * mtl.distance_earth_sun * mtl.distance_earth_sun) / (sensor.parameters[3][sensor.ESUN] * sin_sun);
-      this->reflectance4[i] = (PI * this->radiance4[i] * mtl.distance_earth_sun * mtl.distance_earth_sun) / (sensor.parameters[4][sensor.ESUN] * sin_sun);
-      this->reflectance5[i] = (PI * this->radiance5[i] * mtl.distance_earth_sun * mtl.distance_earth_sun) / (sensor.parameters[5][sensor.ESUN] * sin_sun);
-      this->reflectance6[i] = (PI * this->radiance6[i] * mtl.distance_earth_sun * mtl.distance_earth_sun) / (sensor.parameters[6][sensor.ESUN] * sin_sun);
-      this->reflectance7[i] = (PI * this->radiance7[i] * mtl.distance_earth_sun * mtl.distance_earth_sun) / (sensor.parameters[7][sensor.ESUN] * sin_sun);
-      this->reflectance8[i] = (PI * this->radiance8[i] * mtl.distance_earth_sun * mtl.distance_earth_sun) / (sensor.parameters[8][sensor.ESUN] * sin_sun);
-    }
+    ref_kernel<<<blocks_num, this->threads_num>>>(PI, sin_sun, mtl.distance_earth_sun,
+                                            sensor.parameters[1][sensor.ESUN], sensor.parameters[2][sensor.ESUN],
+                                            sensor.parameters[3][sensor.ESUN], sensor.parameters[4][sensor.ESUN],
+                                            sensor.parameters[5][sensor.ESUN], sensor.parameters[6][sensor.ESUN],
+                                            sensor.parameters[7][sensor.ESUN], sensor.parameters[8][sensor.ESUN],
+                                            radiance1_d, radiance2_d, radiance3_d, radiance4_d,
+                                            radiance5_d, radiance6_d, radiance7_d, radiance8_d,
+                                            reflectance1_d, reflectance2_d, reflectance3_d, reflectance4_d,
+                                            reflectance5_d, reflectance6_d, reflectance7_d, reflectance8_d,
+                                            width_band, height_band);
   }
+
+  // Copy data back to host
+  HANDLE_ERROR(cudaMemcpy(reflectance1, reflectance1_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(reflectance2, reflectance2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(reflectance3, reflectance3_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(reflectance4, reflectance4_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(reflectance5, reflectance5_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(reflectance6, reflectance6_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(reflectance7, reflectance7_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(reflectance8, reflectance8_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 }
 
 void Products::albedo_function(MTL mtl, Sensor sensor)
@@ -568,7 +614,7 @@ void Products::evapotranspiration_function()
     this->evapotranspiration[i] = this->net_radiation_24h[i] * this->evapotranspiration_fraction[i] * 0.035;
 };
 
-string Products::rah_correction_function_blocks(double ndvi_min, double ndvi_max, Candidate hot_pixel, Candidate cold_pixel, int threads_per_block)
+string Products::rah_correction_function_blocks(double ndvi_min, double ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
 {
   system_clock::time_point begin_core, end_core;
   int64_t general_time_core, initial_time_core, final_time_core;
@@ -579,8 +625,8 @@ string Products::rah_correction_function_blocks(double ndvi_min, double ndvi_max
   HANDLE_ERROR(cudaGetDeviceProperties(&deviceProp, dev));
   HANDLE_ERROR(cudaSetDevice(dev));
 
-  int num_threads = threads_per_block;
-  int num_blocks = ceil(width_band * height_band / num_threads);
+  int threads_per_block = threads_num;
+  int num_blocks = ceil(width_band * height_band / threads_per_block);
 
   double hot_pixel_aerodynamic = aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
   hot_pixel.aerodynamic_resistance.push_back(hot_pixel_aerodynamic);
@@ -620,7 +666,7 @@ string Products::rah_correction_function_blocks(double ndvi_min, double ndvi_max
     begin_core = system_clock::now();
     initial_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    rah_correction_cycle_STEEP<<<num_blocks, num_threads>>>(devTS, devD0, devKB1, devZom, devUstarR, devUstarW, devRahR, devRahW, devH, a, b, height_band, width_band);
+    rah_correction_cycle_STEEP<<<num_blocks, threads_per_block>>>(devTS, devD0, devKB1, devZom, devUstarR, devUstarW, devRahR, devRahW, devH, a, b, height_band, width_band);
     HANDLE_ERROR(cudaDeviceSynchronize());
     HANDLE_ERROR(cudaGetLastError());
 

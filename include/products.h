@@ -10,6 +10,7 @@
  */
 struct Products
 {
+  int threads_num = 1;
   uint32_t width_band;
   uint32_t height_band;
   int nBytes_band;
@@ -77,8 +78,12 @@ struct Products
   float *latent_heat_flux_24h;
   float *evapotranspiration_24h;
   float *evapotranspiration;
-  
+
   float *devZom, *devTS, *devUstarR, *devUstarW, *devRahR, *devRahW, *devD0, *devKB1, *devH;
+
+  float *band1_d, *band2_d, *band3_d, *band4_d, *band5_d, *band6_d, *band7_d, *band8_d;
+  float *radiance1_d, *radiance2_d, *radiance3_d, *radiance4_d, *radiance5_d, *radiance6_d, *radiance7_d, *radiance8_d;
+  float *reflectance1_d, *reflectance2_d, *reflectance3_d, *reflectance4_d, *reflectance5_d, *reflectance6_d, *reflectance7_d, *reflectance8_d;
 
   /**
    * @brief  Constructor.
@@ -90,7 +95,7 @@ struct Products
    * @param  width_band: Band width.
    * @param  height_band: Band height.
    */
-  Products(uint32_t width_band, uint32_t height_band);
+  Products(uint32_t width_band, uint32_t height_band, int threads_num);
 
   /**
    * @brief  Destructor.
@@ -270,14 +275,13 @@ struct Products
 
   /**
    * @brief  The  aerodynamic resistance convergence is computed.
-   * @param  threads_num: Number of threads.
    * @param  ndvi_min: Minimum NDVI.
    * @param  ndvi_max: Maximum NDVI.
    * @param  hot_pixel: Hot pixel.
    * @param  cold_pixel: Cold pixel.
    * @return  string: Time message.
    */
-  string rah_correction_function_threads(int threads_num, double ndvi_min, double ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
+  string rah_correction_function_threads(double ndvi_min, double ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
 
   /**
    * @brief  The  aerodynamic resistance convergence is computed.
@@ -285,8 +289,7 @@ struct Products
    * @param  ndvi_max: Maximum NDVI.
    * @param  hot_pixel: Hot pixel.
    * @param  cold_pixel: Cold pixel.
-   * @param  threads_per_block: Threads per block.
    * @return  string: Time message.
    */
-  string rah_correction_function_blocks(double ndvi_min, double ndvi_max, Candidate hot_pixel, Candidate cold_pixel, int threads_per_block);
+  string rah_correction_function_blocks(double ndvi_min, double ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
 };

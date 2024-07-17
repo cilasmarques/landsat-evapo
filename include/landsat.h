@@ -17,6 +17,7 @@ struct Landsat
   uint16_t sample_bands;
   uint32_t height_band;
   uint32_t width_band;
+  int threads_num;
 
   Candidate hot_pixel;
   Candidate cold_pixel;
@@ -30,11 +31,11 @@ struct Landsat
    * @param  tal_path: Path to the TAL file.
    * @param  land_cover_path: Path to the land cover file.
    */
-  Landsat(string bands_paths[], string land_cover_path, MTL mtl);
+  Landsat(string bands_paths[], string land_cover_path, MTL mtl, int threads_num);
 
   string select_endmembers(int method);
 
-  string converge_rah_cycle(Station station, int method, int threads_num);
+  string converge_rah_cycle(Station station, int method);
 
   string compute_Rn_G(Sensor sensor, Station station);
 

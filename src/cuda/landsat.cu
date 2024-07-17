@@ -1,6 +1,7 @@
 #include "landsat.h"
+#include "cuda_utils.h"
 
-Landsat::Landsat(string bands_paths[], string land_cover_path, MTL mtl)
+Landsat::Landsat(string bands_paths[], string land_cover_path, MTL mtl, int threads_num)
 {
   // Open bands
   for (int i = 0; i < 8; i++)
@@ -20,7 +21,8 @@ Landsat::Landsat(string bands_paths[], string land_cover_path, MTL mtl)
   this->width_band = width;
   this->height_band = height;
   this->sample_bands = sample_format;
-  this->products = Products(this->width_band, this->height_band);
+  this->threads_num = threads_num;
+  this->products = Products(this->width_band, this->height_band, this->threads_num);
 
   // Get bands data
   for (int i = 0; i < 7; i++)
@@ -88,72 +90,15 @@ Landsat::Landsat(string bands_paths[], string land_cover_path, MTL mtl)
     }
     _TIFFfree(band_line_buff);
   }
-};
 
-string Landsat::select_endmembers(int method)
-{
-  system_clock::time_point begin, end;
-  int64_t general_time, initial_time, final_time;
-
-  begin = system_clock::now();
-  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-  if (method == 0)
-  { // STEEP
-    pair<Candidate, Candidate> pixels = getEndmembersSTEPP(products.ndvi, products.surface_temperature, products.albedo, products.net_radiation, products.soil_heat, height_band, width_band);
-    hot_pixel = pixels.first;
-    cold_pixel = pixels.second;
-  }
-  else if (method == 1)
-  { // ASEBAL
-    pair<Candidate, Candidate> pixels = getEndmembersASEBAL(products.ndvi, products.surface_temperature, products.albedo, products.net_radiation, products.soil_heat, height_band, width_band);
-    hot_pixel = pixels.first;
-    cold_pixel = pixels.second;
-  }
-
-  end = system_clock::now();
-  general_time = duration_cast<nanoseconds>(end - begin).count();
-  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-  return "P2 - PIXEL SELECTION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
-}
-
-string Landsat::converge_rah_cycle(Station station, int method, int threads_num)
-{
-  string result = "";
-  system_clock::time_point begin, end;
-  int64_t general_time, initial_time, final_time;
-
-  begin = system_clock::now();
-  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-  double ustar_station = (VON_KARMAN * station.v6) / (log(station.WIND_SPEED / station.SURFACE_ROUGHNESS));
-  double u10 = (ustar_station / VON_KARMAN) * log(10 / station.SURFACE_ROUGHNESS);
-  double ndvi_min = 1.0;
-  double ndvi_max = -1.0;
-
-  for (int i = 0; i < this->height_band * this->width_band; i++)
-  {
-    if (products.ndvi[i] < ndvi_min)
-      ndvi_min = products.ndvi[i];
-    if (products.ndvi[i] > ndvi_max)
-      ndvi_max = products.ndvi[i];
-  }
-
-  products.d0_fuction();
-  products.zom_fuction(station.A_ZOM, station.B_ZOM);
-  products.ustar_fuction(u10);
-  products.kb_function(ndvi_max, ndvi_min);
-  products.aerodynamic_resistance_fuction();
-
-  result += products.rah_correction_function_blocks(ndvi_min, ndvi_max, hot_pixel, cold_pixel, threads_num);
-
-  end = system_clock::now();
-  general_time = duration_cast<nanoseconds>(end - begin).count();
-  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-  result += "P2 - RAH CYCLE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
-  return result;
+  HANDLE_ERROR(cudaMemcpy(this->products.band1_d, this->products.band1, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->products.band2_d, this->products.band2, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->products.band3_d, this->products.band3, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->products.band4_d, this->products.band4, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->products.band5_d, this->products.band5, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->products.band6_d, this->products.band6, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->products.band7_d, this->products.band7, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->products.band8_d, this->products.band8, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
 };
 
 string Landsat::compute_Rn_G(Sensor sensor, Station station)
@@ -194,6 +139,72 @@ string Landsat::compute_Rn_G(Sensor sensor, Station station)
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
   return "P1 - Rn_G," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
+
+string Landsat::select_endmembers(int method)
+{
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+  if (method == 0)
+  { // STEEP
+    pair<Candidate, Candidate> pixels = getEndmembersSTEPP(products.ndvi, products.surface_temperature, products.albedo, products.net_radiation, products.soil_heat, height_band, width_band);
+    hot_pixel = pixels.first;
+    cold_pixel = pixels.second;
+  }
+  else if (method == 1)
+  { // ASEBAL
+    pair<Candidate, Candidate> pixels = getEndmembersASEBAL(products.ndvi, products.surface_temperature, products.albedo, products.net_radiation, products.soil_heat, height_band, width_band);
+    hot_pixel = pixels.first;
+    cold_pixel = pixels.second;
+  }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+  return "P2 - PIXEL SELECTION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+}
+
+string Landsat::converge_rah_cycle(Station station, int method)
+{
+  string result = "";
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+  double ustar_station = (VON_KARMAN * station.v6) / (log(station.WIND_SPEED / station.SURFACE_ROUGHNESS));
+  double u10 = (ustar_station / VON_KARMAN) * log(10 / station.SURFACE_ROUGHNESS);
+  double ndvi_min = 1.0;
+  double ndvi_max = -1.0;
+
+  for (int i = 0; i < this->height_band * this->width_band; i++)
+  {
+    if (products.ndvi[i] < ndvi_min)
+      ndvi_min = products.ndvi[i];
+    if (products.ndvi[i] > ndvi_max)
+      ndvi_max = products.ndvi[i];
+  }
+
+  products.d0_fuction();
+  products.zom_fuction(station.A_ZOM, station.B_ZOM);
+  products.ustar_fuction(u10);
+  products.kb_function(ndvi_max, ndvi_min);
+  products.aerodynamic_resistance_fuction();
+
+  result += products.rah_correction_function_blocks(ndvi_min, ndvi_max, hot_pixel, cold_pixel);
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+  result += "P2 - RAH CYCLE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return result;
+};
 
 string Landsat::compute_H_ET(Station station)
 {

@@ -3,8 +3,9 @@
 
 Products::Products() {}
 
-Products::Products(uint32_t width_band, uint32_t height_band)
+Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
 {
+  this->threads_num = threads_num;
   this->width_band = width_band;
   this->height_band = height_band;
   this->nBytes_band = height_band * width_band * sizeof(float);
@@ -602,7 +603,7 @@ string Products::rah_correction_function_serial(double ndvi_min, double ndvi_max
   return "P2 - RAH - PARALLEL - CORE, " + to_string(general_time_core) + ", " + to_string(initial_time_core) + ", " + to_string(final_time_core) + "\n";
 }
 
-string Products::rah_correction_function_threads(int threads_num, double ndvi_min, double ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
+string Products::rah_correction_function_threads(double ndvi_min, double ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
 {
   system_clock::time_point begin_core, end_core;
   int64_t general_time_core, initial_time_core, final_time_core;
