@@ -1,5 +1,8 @@
 #include "products.h"
 #include "kernels.cuh"
+#include "tensor.h"
+
+static Tensor tensor_normal_contraction;
 
 Products::Products() {}
 
@@ -17,7 +20,6 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   this->band5 = (float *)malloc(nBytes_band);
   this->band6 = (float *)malloc(nBytes_band);
   this->band7 = (float *)malloc(nBytes_band);
-  this->band8 = (float *)malloc(nBytes_band);
   this->only1 = (float *)malloc(nBytes_band);
   this->tal = (float *)malloc(nBytes_band);
 
@@ -28,7 +30,6 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   this->radiance5 = (float *)malloc(nBytes_band);
   this->radiance6 = (float *)malloc(nBytes_band);
   this->radiance7 = (float *)malloc(nBytes_band);
-  this->radiance8 = (float *)malloc(nBytes_band);
 
   this->reflectance1 = (float *)malloc(nBytes_band);
   this->reflectance2 = (float *)malloc(nBytes_band);
@@ -37,7 +38,6 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   this->reflectance5 = (float *)malloc(nBytes_band);
   this->reflectance6 = (float *)malloc(nBytes_band);
   this->reflectance7 = (float *)malloc(nBytes_band);
-  this->reflectance8 = (float *)malloc(nBytes_band);
 
   this->albedo = (float *)malloc(nBytes_band);
   this->ndvi = (float *)malloc(nBytes_band);
@@ -77,7 +77,6 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   HANDLE_ERROR(cudaMalloc((void **)&this->band5_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->band6_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->band7_d, nBytes_band));
-  HANDLE_ERROR(cudaMalloc((void **)&this->band8_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->only1_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->tal_d, nBytes_band));
 
@@ -88,7 +87,6 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   HANDLE_ERROR(cudaMalloc((void **)&this->radiance5_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->radiance6_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->radiance7_d, nBytes_band));
-  HANDLE_ERROR(cudaMalloc((void **)&this->radiance8_d, nBytes_band));
 
   HANDLE_ERROR(cudaMalloc((void **)&this->reflectance1_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->reflectance2_d, nBytes_band));
@@ -97,7 +95,6 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   HANDLE_ERROR(cudaMalloc((void **)&this->reflectance5_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->reflectance6_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->reflectance7_d, nBytes_band));
-  HANDLE_ERROR(cudaMalloc((void **)&this->reflectance8_d, nBytes_band));
 
   HANDLE_ERROR(cudaMalloc((void **)&this->devZom, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->devD0, nBytes_band));
@@ -109,45 +106,33 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   HANDLE_ERROR(cudaMalloc((void **)&this->devRahW, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->devH, nBytes_band));
 
-  this->tensor_normal_contraction = Tensor();
-  this->tensor_normal_contraction.createNormalContraction(height_band, width_band);
+  tensor_normal_contraction = Tensor();
+  tensor_normal_contraction.createNormalContraction(height_band, width_band);
 };
 
 void Products::radiance_function(MTL mtl, Sensor sensor)
 {
-  float alpha, beta;
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
 
-  alpha = sensor.parameters[1][sensor.GRESCALE];
-  beta = sensor.parameters[1][sensor.BRESCALE];
-  HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, band1_d, only1_d, (void *)&beta, only1_d, radiance1_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
+  float alpha = sensor.parameters[1][sensor.GRESCALE];
+  float beta = sensor.parameters[1][sensor.BRESCALE];
 
-  alpha = sensor.parameters[2][sensor.GRESCALE];
-  beta = sensor.parameters[2][sensor.BRESCALE];
-  HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, band2_d, only1_d, (void *)&beta, only1_d, radiance2_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  alpha = sensor.parameters[3][sensor.GRESCALE];
-  beta = sensor.parameters[3][sensor.BRESCALE];
-  HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, band3_d, only1_d, (void *)&beta, only1_d, radiance3_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, band1_d, only1_d, (void *)&beta, only1_d, radiance1_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, band2_d, only1_d, (void *)&beta, only1_d, radiance2_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, band3_d, only1_d, (void *)&beta, only1_d, radiance3_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, band4_d, only1_d, (void *)&beta, only1_d, radiance4_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, band5_d, only1_d, (void *)&beta, only1_d, radiance5_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, band6_d, only1_d, (void *)&beta, only1_d, radiance6_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, band7_d, only1_d, (void *)&beta, only1_d, radiance7_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
 
-  alpha = sensor.parameters[4][sensor.GRESCALE];
-  beta = sensor.parameters[4][sensor.BRESCALE];
-  HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, band4_d, only1_d, (void *)&beta, only1_d, radiance4_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
-
-  alpha = sensor.parameters[5][sensor.GRESCALE];
-  beta = sensor.parameters[5][sensor.BRESCALE];
-  HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, band5_d, only1_d, (void *)&beta, only1_d, radiance5_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
-
-  alpha = sensor.parameters[6][sensor.GRESCALE];
-  beta = sensor.parameters[6][sensor.BRESCALE];
-  HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, band6_d, only1_d, (void *)&beta, only1_d, radiance6_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
-
-  alpha = sensor.parameters[7][sensor.GRESCALE];
-  beta = sensor.parameters[7][sensor.BRESCALE];
-  HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, band7_d, only1_d, (void *)&beta, only1_d, radiance7_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
-
-  alpha = sensor.parameters[8][sensor.GRESCALE];
-  beta = sensor.parameters[8][sensor.BRESCALE];
-  HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, band8_d, only1_d, (void *)&beta, only1_d, radiance8_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  std::cout << "CUTENSOR,RADIANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
   HANDLE_ERROR(cudaMemcpy(radiance1, radiance1_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(radiance2, radiance2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
@@ -156,55 +141,61 @@ void Products::radiance_function(MTL mtl, Sensor sensor)
   HANDLE_ERROR(cudaMemcpy(radiance5, radiance5_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(radiance6, radiance6_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(radiance7, radiance7_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
-  HANDLE_ERROR(cudaMemcpy(radiance8, radiance8_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 }
 
 void Products::reflectance_function(MTL mtl, Sensor sensor)
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
   float alpha, beta;
   const float sin_sun = sin(mtl.sun_elevation * PI / 180);
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   if (mtl.number_sensor == 8)
   {
     beta = 0;
     alpha = 1 / sin_sun;
 
-    HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, radiance1_d, only1_d, (void *)&beta, only1_d, reflectance1_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
-    HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, radiance2_d, only1_d, (void *)&beta, only1_d, reflectance2_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
-    HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, radiance3_d, only1_d, (void *)&beta, only1_d, reflectance3_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
-    HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, radiance4_d, only1_d, (void *)&beta, only1_d, reflectance4_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
-    HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, radiance5_d, only1_d, (void *)&beta, only1_d, reflectance5_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
-    HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, radiance6_d, only1_d, (void *)&beta, only1_d, reflectance6_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
-    HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, radiance7_d, only1_d, (void *)&beta, only1_d, reflectance7_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
-    HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, radiance8_d, only1_d, (void *)&beta, only1_d, reflectance8_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, radiance1_d, only1_d, (void *)&beta, only1_d, reflectance1_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, radiance2_d, only1_d, (void *)&beta, only1_d, reflectance2_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, radiance3_d, only1_d, (void *)&beta, only1_d, reflectance3_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, radiance4_d, only1_d, (void *)&beta, only1_d, reflectance4_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, radiance5_d, only1_d, (void *)&beta, only1_d, reflectance5_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, radiance6_d, only1_d, (void *)&beta, only1_d, reflectance6_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, radiance7_d, only1_d, (void *)&beta, only1_d, reflectance7_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
   }
   else
   {
     beta = 0;
     alpha = (PI * mtl.distance_earth_sun * mtl.distance_earth_sun) / sensor.parameters[1][sensor.ESUN] * sin_sun;
-    HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, radiance1_d, only1_d, (void *)&beta, only1_d, reflectance1_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, radiance1_d, only1_d, (void *)&beta, only1_d, reflectance1_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
 
     alpha = (PI * mtl.distance_earth_sun * mtl.distance_earth_sun) / sensor.parameters[2][sensor.ESUN] * sin_sun;
-    HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, radiance2_d, only1_d, (void *)&beta, only1_d, reflectance2_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, radiance2_d, only1_d, (void *)&beta, only1_d, reflectance2_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
 
     alpha = (PI * mtl.distance_earth_sun * mtl.distance_earth_sun) / sensor.parameters[3][sensor.ESUN] * sin_sun;
-    HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, radiance3_d, only1_d, (void *)&beta, only1_d, reflectance3_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, radiance3_d, only1_d, (void *)&beta, only1_d, reflectance3_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
 
     alpha = (PI * mtl.distance_earth_sun * mtl.distance_earth_sun) / sensor.parameters[4][sensor.ESUN] * sin_sun;
-    HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, radiance4_d, only1_d, (void *)&beta, only1_d, reflectance4_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, radiance4_d, only1_d, (void *)&beta, only1_d, reflectance4_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
 
     alpha = (PI * mtl.distance_earth_sun * mtl.distance_earth_sun) / sensor.parameters[5][sensor.ESUN] * sin_sun;
-    HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, radiance5_d, only1_d, (void *)&beta, only1_d, reflectance5_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, radiance5_d, only1_d, (void *)&beta, only1_d, reflectance5_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
 
     alpha = (PI * mtl.distance_earth_sun * mtl.distance_earth_sun) / sensor.parameters[6][sensor.ESUN] * sin_sun;
-    HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, radiance6_d, only1_d, (void *)&beta, only1_d, reflectance6_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, radiance6_d, only1_d, (void *)&beta, only1_d, reflectance6_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
 
     alpha = (PI * mtl.distance_earth_sun * mtl.distance_earth_sun) / sensor.parameters[7][sensor.ESUN] * sin_sun;
-    HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, radiance7_d, only1_d, (void *)&beta, only1_d, reflectance7_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
-
-    alpha = (PI * mtl.distance_earth_sun * mtl.distance_earth_sun) / sensor.parameters[8][sensor.ESUN] * sin_sun;
-    HANDLE_CUTENSOR_ERROR(cutensorContract(this->tensor_normal_contraction.handle, this->tensor_normal_contraction.plan, (void *)&alpha, radiance8_d, only1_d, (void *)&beta, only1_d, reflectance8_d, this->tensor_normal_contraction.work, this->tensor_normal_contraction.actualWorkspaceSize, this->tensor_normal_contraction.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&alpha, radiance7_d, only1_d, (void *)&beta, only1_d, reflectance7_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  std::cout << "CUTENSOR,REFLECTANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
   HANDLE_ERROR(cudaMemcpy(reflectance1, reflectance1_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(reflectance2, reflectance2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
@@ -213,7 +204,6 @@ void Products::reflectance_function(MTL mtl, Sensor sensor)
   HANDLE_ERROR(cudaMemcpy(reflectance5, reflectance5_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(reflectance6, reflectance6_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(reflectance7, reflectance7_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
-  HANDLE_ERROR(cudaMemcpy(reflectance8, reflectance8_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 }
 
 void Products::albedo_function(MTL mtl, Sensor sensor)

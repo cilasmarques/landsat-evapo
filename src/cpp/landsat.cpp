@@ -61,9 +61,6 @@ Landsat::Landsat(string bands_paths[], string land_cover_path, MTL mtl, int thre
         case 6:
           this->products.band7[line * width + col] = value;
           break;
-        case 7:
-          this->products.band8[line * width + col] = value;
-          break;
         default:
           break;
         }

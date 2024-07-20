@@ -4,8 +4,6 @@
 #include "candidate.h"
 #include "constants.h"
 #include "parameters.h"
-#include "cuda_utils.h"
-#include "tensor.h"
 
 /**
  * @brief  Struct to manage the products calculation.
@@ -16,8 +14,6 @@ struct Products
   int nBytes_band;
   uint32_t width_band;
   uint32_t height_band;
-
-  Tensor tensor_normal_contraction;
 
   float H_pf_terra;
   float H_pq_terra;
@@ -31,7 +27,6 @@ struct Products
   float *band5;
   float *band6;
   float *band7;
-  float *band8;
   float *tal;
   float *only1;
 
@@ -42,7 +37,6 @@ struct Products
   float *radiance5;
   float *radiance6;
   float *radiance7;
-  float *radiance8;
 
   float *reflectance1;
   float *reflectance2;
@@ -51,7 +45,6 @@ struct Products
   float *reflectance5;
   float *reflectance6;
   float *reflectance7;
-  float *reflectance8;
 
   float *albedo;
   float *ndvi;
@@ -87,9 +80,9 @@ struct Products
   float *devZom, *devTS, *devUstarR, *devUstarW, *devRahR, *devRahW, *devD0, *devKB1, *devH;
 
   float *tal_d, *only1_d;
-  float *band1_d, *band2_d, *band3_d, *band4_d, *band5_d, *band6_d, *band7_d, *band8_d;
-  float *radiance1_d, *radiance2_d, *radiance3_d, *radiance4_d, *radiance5_d, *radiance6_d, *radiance7_d, *radiance8_d;
-  float *reflectance1_d, *reflectance2_d, *reflectance3_d, *reflectance4_d, *reflectance5_d, *reflectance6_d, *reflectance7_d, *reflectance8_d;
+  float *band1_d, *band2_d, *band3_d, *band4_d, *band5_d, *band6_d, *band7_d;
+  float *radiance1_d, *radiance2_d, *radiance3_d, *radiance4_d, *radiance5_d, *radiance6_d, *radiance7_d;
+  float *reflectance1_d, *reflectance2_d, *reflectance3_d, *reflectance4_d, *reflectance5_d, *reflectance6_d, *reflectance7_d;
 
   /**
    * @brief  Constructor.

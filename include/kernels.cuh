@@ -4,9 +4,9 @@
 #include "cuda_utils.h"
 
 __global__ void rad_kernel(float *band1_d, float *band2_d, float *band3_d, float *band4_d,
-                           float *band5_d, float *band6_d, float *band7_d, float *band8_d,
+                           float *band5_d, float *band6_d, float *band7_d,
                            float *radiance1_d, float *radiance2_d, float *radiance3_d, float *radiance4_d,
-                           float *radiance5_d, float *radiance6_d, float *radiance7_d, float *radiance8_d,
+                           float *radiance5_d, float *radiance6_d, float *radiance7_d,
                            float grenscale1_d, float brescale1_d,
                            float grenscale2_d, float brescale2_d,
                            float grenscale3_d, float brescale3_d,
@@ -14,23 +14,23 @@ __global__ void rad_kernel(float *band1_d, float *band2_d, float *band3_d, float
                            float grenscale5_d, float brescale5_d,
                            float grenscale6_d, float brescale6_d,
                            float grenscale7_d, float brescale7_d,
-                           float grenscale8_d, float brescale8_d,
+                           float grenscale8_d,
                            int width, int height);
 
 __global__ void ref_kernel(float sin_sun, 
                            float *radiance1_d, float *radiance2_d, float *radiance3_d, float *radiance4_d, 
-                           float *radiance5_d, float *radiance6_d, float *radiance7_d, float *radiance8_d,
+                           float *radiance5_d, float *radiance6_d, float *radiance7_d,
                            float *reflectance1_d, float *reflectance2_d, float *reflectance3_d, float *reflectance4_d, 
-                           float *reflectance5_d, float *reflectance6_d, float *reflectance7_d, float *reflectance8_d,
+                           float *reflectance5_d, float *reflectance6_d, float *reflectance7_d,
                            int width, int height);
 
 __global__ void ref_kernel(double PI, float sin_sun, float distance_earth_sun,
                            float esun1, float esun2, float esun3, float esun4,
-                           float esun5, float esun6, float esun7, float esun8,
+                           float esun5, float esun6, float esun7,
                            float *radiance1_d, float *radiance2_d, float *radiance3_d, float *radiance4_d,
-                           float *radiance5_d, float *radiance6_d, float *radiance7_d, float *radiance8_d,
+                           float *radiance5_d, float *radiance6_d, float *radiance7_d,
                            float *reflectance1_d, float *reflectance2_d, float *reflectance3_d, float *reflectance4_d,
-                           float *reflectance5_d, float *reflectance6_d, float *reflectance7_d, float *reflectance8_d,
+                           float *reflectance5_d, float *reflectance6_d, float *reflectance7_d,
                            int width, int height);
 
 /**

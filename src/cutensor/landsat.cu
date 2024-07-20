@@ -62,9 +62,6 @@ Landsat::Landsat(string bands_paths[], string land_cover_path, MTL mtl, int thre
         case 6:
           this->products.band7[line * width + col] = value;
           break;
-        case 7:
-          this->products.band8[line * width + col] = value;
-          break;
         default:
           break;
         }
@@ -99,7 +96,6 @@ Landsat::Landsat(string bands_paths[], string land_cover_path, MTL mtl, int thre
   HANDLE_ERROR(cudaMemcpy(this->products.band5_d, this->products.band5, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
   HANDLE_ERROR(cudaMemcpy(this->products.band6_d, this->products.band6, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
   HANDLE_ERROR(cudaMemcpy(this->products.band7_d, this->products.band7, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
-  HANDLE_ERROR(cudaMemcpy(this->products.band8_d, this->products.band8, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
   HANDLE_ERROR(cudaMemcpy(this->products.only1_d, this->products.only1, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
   HANDLE_ERROR(cudaMemcpy(this->products.tal_d, this->products.tal, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
 };

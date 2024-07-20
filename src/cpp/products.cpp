@@ -17,7 +17,6 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   this->band5 = (float *)malloc(nBytes_band);
   this->band6 = (float *)malloc(nBytes_band);
   this->band7 = (float *)malloc(nBytes_band);
-  this->band8 = (float *)malloc(nBytes_band);
   this->tal = (float *)malloc(nBytes_band);
 
   this->radiance1 = (float *)malloc(nBytes_band);
@@ -27,7 +26,6 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   this->radiance5 = (float *)malloc(nBytes_band);
   this->radiance6 = (float *)malloc(nBytes_band);
   this->radiance7 = (float *)malloc(nBytes_band);
-  this->radiance8 = (float *)malloc(nBytes_band);
 
   this->reflectance1 = (float *)malloc(nBytes_band);
   this->reflectance2 = (float *)malloc(nBytes_band);
@@ -36,7 +34,6 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   this->reflectance5 = (float *)malloc(nBytes_band);
   this->reflectance6 = (float *)malloc(nBytes_band);
   this->reflectance7 = (float *)malloc(nBytes_band);
-  this->reflectance8 = (float *)malloc(nBytes_band);
 
   this->albedo = (float *)malloc(nBytes_band);
   this->ndvi = (float *)malloc(nBytes_band);
@@ -79,7 +76,6 @@ void Products::close()
   free(this->band5);
   free(this->band6);
   free(this->band7);
-  free(this->band8);
   free(this->tal);
 
   free(this->radiance1);
@@ -89,7 +85,6 @@ void Products::close()
   free(this->radiance5);
   free(this->radiance6);
   free(this->radiance7);
-  free(this->radiance8);
 
   free(this->reflectance1);
   free(this->reflectance2);
@@ -98,7 +93,6 @@ void Products::close()
   free(this->reflectance5);
   free(this->reflectance6);
   free(this->reflectance7);
-  free(this->reflectance8);
 
   free(this->albedo);
   free(this->ndvi);
@@ -134,6 +128,12 @@ void Products::close()
 
 void Products::radiance_function(MTL mtl, Sensor sensor)
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
     this->radiance1[i] = this->band1[i] * sensor.parameters[1][sensor.GRESCALE] + sensor.parameters[1][sensor.BRESCALE];
@@ -143,13 +143,23 @@ void Products::radiance_function(MTL mtl, Sensor sensor)
     this->radiance5[i] = this->band5[i] * sensor.parameters[5][sensor.GRESCALE] + sensor.parameters[5][sensor.BRESCALE];
     this->radiance6[i] = this->band6[i] * sensor.parameters[6][sensor.GRESCALE] + sensor.parameters[6][sensor.BRESCALE];
     this->radiance7[i] = this->band7[i] * sensor.parameters[7][sensor.GRESCALE] + sensor.parameters[7][sensor.BRESCALE];
-    this->radiance8[i] = this->band8[i] * sensor.parameters[8][sensor.GRESCALE] + sensor.parameters[8][sensor.BRESCALE];
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  std::cout << "SERIAL,RADIANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
 void Products::reflectance_function(MTL mtl, Sensor sensor)
 {
   const float sin_sun = sin(mtl.sun_elevation * PI / 180);
+
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   if (mtl.number_sensor == 8)
   {
@@ -162,7 +172,6 @@ void Products::reflectance_function(MTL mtl, Sensor sensor)
       this->reflectance5[i] = this->radiance5[i] / sin_sun;
       this->reflectance6[i] = this->radiance6[i] / sin_sun;
       this->reflectance7[i] = this->radiance7[i] / sin_sun;
-      this->reflectance8[i] = this->radiance8[i] / sin_sun;
     }
   }
   else
@@ -176,9 +185,13 @@ void Products::reflectance_function(MTL mtl, Sensor sensor)
       this->reflectance5[i] = (PI * this->radiance5[i] * mtl.distance_earth_sun * mtl.distance_earth_sun) / (sensor.parameters[5][sensor.ESUN] * sin_sun);
       this->reflectance6[i] = (PI * this->radiance6[i] * mtl.distance_earth_sun * mtl.distance_earth_sun) / (sensor.parameters[6][sensor.ESUN] * sin_sun);
       this->reflectance7[i] = (PI * this->radiance7[i] * mtl.distance_earth_sun * mtl.distance_earth_sun) / (sensor.parameters[7][sensor.ESUN] * sin_sun);
-      this->reflectance8[i] = (PI * this->radiance8[i] * mtl.distance_earth_sun * mtl.distance_earth_sun) / (sensor.parameters[8][sensor.ESUN] * sin_sun);
     }
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  std::cout << "SERIAL,REFLECTANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
 void Products::albedo_function(MTL mtl, Sensor sensor)

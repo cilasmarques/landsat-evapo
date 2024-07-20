@@ -2,8 +2,8 @@
 
 Tensor::Tensor()
 {
-    HANDLE_CUTENSOR_ERROR(cutensorCreate(&this->handle));
-    HANDLE_ERROR(cudaStreamCreate(&this->stream));   
+  HANDLE_CUTENSOR_ERROR(cutensorCreate(&this->handle));
+  HANDLE_ERROR(cudaStreamCreate(&this->stream));
 }
 
 void Tensor::createPlanWork(cutensorOperationDescriptor_t desc)
@@ -40,28 +40,28 @@ void Tensor::createPlanWork(cutensorOperationDescriptor_t desc)
 
 void Tensor::createNormalContraction(int height_band, int width_band)
 {
-    int dim_num = 2;
-    std::vector<int> axis{'m', 'n'};
-    std::vector<int64_t> axis_dim = {height_band, width_band};
+  int dim_num = 2;
+  std::vector<int> axis{'m', 'n'};
+  std::vector<int64_t> axis_dim = {height_band, width_band};
 
-    const uint32_t kAlignment = 128;
+  const uint32_t kAlignment = 128;
 
-    // Define descriptors
-    cutensorTensorDescriptor_t descA;
-    cutensorTensorDescriptor_t descB;
-    cutensorTensorDescriptor_t descC;
-    HANDLE_CUTENSOR_ERROR(cutensorCreateTensorDescriptor(this->handle, &descA, dim_num, axis_dim.data(), NULL, CUTENSOR_R_32F, kAlignment));
-    HANDLE_CUTENSOR_ERROR(cutensorCreateTensorDescriptor(this->handle, &descB, dim_num, axis_dim.data(), NULL, CUTENSOR_R_32F, kAlignment));
-    HANDLE_CUTENSOR_ERROR(cutensorCreateTensorDescriptor(this->handle, &descC, dim_num, axis_dim.data(), NULL, CUTENSOR_R_32F, kAlignment));
+  // Define descriptors
+  cutensorTensorDescriptor_t descA;
+  cutensorTensorDescriptor_t descB;
+  cutensorTensorDescriptor_t descC;
+  HANDLE_CUTENSOR_ERROR(cutensorCreateTensorDescriptor(this->handle, &descA, dim_num, axis_dim.data(), NULL, CUTENSOR_R_32F, kAlignment));
+  HANDLE_CUTENSOR_ERROR(cutensorCreateTensorDescriptor(this->handle, &descB, dim_num, axis_dim.data(), NULL, CUTENSOR_R_32F, kAlignment));
+  HANDLE_CUTENSOR_ERROR(cutensorCreateTensorDescriptor(this->handle, &descC, dim_num, axis_dim.data(), NULL, CUTENSOR_R_32F, kAlignment));
 
-    cutensorOperationDescriptor_t descContraction;
-    const cutensorComputeDescriptor_t descCompute = CUTENSOR_COMPUTE_DESC_32F;
-    HANDLE_CUTENSOR_ERROR(cutensorCreateContraction(this->handle,
-                                                    &descContraction,
-                                                    descA, axis.data(), /* unary operator A*/ CUTENSOR_OP_IDENTITY,
-                                                    descB, axis.data(), /* unary operator B*/ CUTENSOR_OP_IDENTITY,
-                                                    descC, axis.data(), /* unary operator C*/ CUTENSOR_OP_IDENTITY,
-                                                    descC, axis.data(),
-                                                    descCompute));
-    createPlanWork(descContraction);
+  cutensorOperationDescriptor_t descContraction;
+  const cutensorComputeDescriptor_t descCompute = CUTENSOR_COMPUTE_DESC_32F;
+  HANDLE_CUTENSOR_ERROR(cutensorCreateContraction(this->handle,
+                                                  &descContraction,
+                                                  descA, axis.data(), /* unary operator A*/ CUTENSOR_OP_IDENTITY,
+                                                  descB, axis.data(), /* unary operator B*/ CUTENSOR_OP_IDENTITY,
+                                                  descC, axis.data(), /* unary operator C*/ CUTENSOR_OP_IDENTITY,
+                                                  descC, axis.data(),
+                                                  descCompute));
+  createPlanWork(descContraction);
 }
