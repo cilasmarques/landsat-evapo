@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <cuda_runtime_api.h>
 #include "cuda_profiler_api.h"
+#include <cuda_runtime.h>
+#include <cutensor.h>
 
 /**
  * This function checks the return value of the CUDA runtime call and exits
@@ -32,6 +34,30 @@ static void HandleError(cudaError_t err, const char *file, int line)
  * @param line: Line number where the error occurred.
  */
 #define HANDLE_ERROR(err) (HandleError(err, __FILE__, __LINE__))
+
+#include <cutensor.h> // Inclua o cabeçalho do cuTENSOR
+
+/**
+ * This function checks the return value of the cuTENSOR call and exits
+ * the application if the call failed.
+ *
+ * @param err: cuTENSOR error code.
+ * @param file: File name where the error occurred.
+ * @param line: Line number where the error occurred.
+ */
+static void HandleCuTensorError(cutensorStatus_t err, const char *file, int line)
+{
+  if (err != CUTENSOR_STATUS_SUCCESS)
+  {
+    printf("cuTENSOR error: %s in %s at line %d\n", cutensorGetErrorString(err), file, line);
+    exit(EXIT_FAILURE);
+  }
+}
+
+/**
+ * Macro to handle cuTENSOR errors.
+ */
+#define HANDLE_CUTENSOR_ERROR(err) (HandleCuTensorError(err, __FILE__, __LINE__))
 
 /**
  * This macro checks return value of the CUDA runtime call and exits

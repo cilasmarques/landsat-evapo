@@ -16,6 +16,7 @@
 #include <queue>
 #include <set>
 #include <thread>
+#include <assert.h>
 
 using namespace std;
 using namespace std::chrono;

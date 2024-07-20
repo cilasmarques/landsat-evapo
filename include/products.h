@@ -4,6 +4,8 @@
 #include "candidate.h"
 #include "constants.h"
 #include "parameters.h"
+#include "cuda_utils.h"
+#include "tensor.h"
 
 /**
  * @brief  Struct to manage the products calculation.
@@ -11,9 +13,11 @@
 struct Products
 {
   int threads_num = 1;
+  int nBytes_band;
   uint32_t width_band;
   uint32_t height_band;
-  int nBytes_band;
+
+  Tensor tensor_normal_contraction;
 
   float H_pf_terra;
   float H_pq_terra;
@@ -29,6 +33,7 @@ struct Products
   float *band7;
   float *band8;
   float *tal;
+  float *only1;
 
   float *radiance1;
   float *radiance2;
@@ -81,6 +86,7 @@ struct Products
 
   float *devZom, *devTS, *devUstarR, *devUstarW, *devRahR, *devRahW, *devD0, *devKB1, *devH;
 
+  float *tal_d, *only1_d;
   float *band1_d, *band2_d, *band3_d, *band4_d, *band5_d, *band6_d, *band7_d, *band8_d;
   float *radiance1_d, *radiance2_d, *radiance3_d, *radiance4_d, *radiance5_d, *radiance6_d, *radiance7_d, *radiance8_d;
   float *reflectance1_d, *reflectance2_d, *reflectance3_d, *reflectance4_d, *reflectance5_d, *reflectance6_d, *reflectance7_d, *reflectance8_d;
