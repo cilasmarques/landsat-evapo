@@ -1,6 +1,6 @@
 #include "landsat.h"
 
-Landsat::Landsat(string bands_paths[], string land_cover_path, MTL mtl, int threads_num)
+Landsat::Landsat(string bands_paths[], MTL mtl, int threads_num)
 {
   // Open bands
   for (int i = 0; i < 8; i++)
@@ -41,25 +41,25 @@ Landsat::Landsat(string bands_paths[], string land_cover_path, MTL mtl, int thre
         switch (i)
         {
         case 0:
-          this->products.band1[line * width + col] = value;
+          this->products.band_blue[line * width + col] = value;
           break;
         case 1:
-          this->products.band2[line * width + col] = value;
+          this->products.band_green[line * width + col] = value;
           break;
         case 2:
-          this->products.band3[line * width + col] = value;
+          this->products.band_red[line * width + col] = value;
           break;
         case 3:
-          this->products.band4[line * width + col] = value;
+          this->products.band_nir[line * width + col] = value;
           break;
         case 4:
-          this->products.band5[line * width + col] = value;
+          this->products.band_swir1[line * width + col] = value;
           break;
         case 5:
-          this->products.band6[line * width + col] = value;
+          this->products.band_termal[line * width + col] = value;
           break;
         case 6:
-          this->products.band7[line * width + col] = value;
+          this->products.band_swir2[line * width + col] = value;
           break;
         default:
           break;
@@ -70,12 +70,12 @@ Landsat::Landsat(string bands_paths[], string land_cover_path, MTL mtl, int thre
   }
 
   // Get tal data
-  TIFF *tal_band = this->bands_resampled[7];
+  TIFF *elevation_band = this->bands_resampled[7];
   for (int line = 0; line < height; line++)
   {
-    tdata_t band_line_buff = _TIFFmalloc(TIFFScanlineSize(tal_band));
-    unsigned short curr_band_line_size = TIFFScanlineSize(tal_band) / width;
-    TIFFReadScanline(tal_band, band_line_buff, line);
+    tdata_t band_line_buff = _TIFFmalloc(TIFFScanlineSize(elevation_band));
+    unsigned short curr_band_line_size = TIFFScanlineSize(elevation_band) / width;
+    TIFFReadScanline(elevation_band, band_line_buff, line);
 
     for (int col = 0; col < width; col++)
     {

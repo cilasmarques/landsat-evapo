@@ -10,13 +10,13 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   this->height_band = height_band;
   this->nBytes_band = height_band * width_band * sizeof(float);
 
-  this->band1 = (float *)malloc(nBytes_band);
-  this->band2 = (float *)malloc(nBytes_band);
-  this->band3 = (float *)malloc(nBytes_band);
-  this->band4 = (float *)malloc(nBytes_band);
-  this->band5 = (float *)malloc(nBytes_band);
-  this->band6 = (float *)malloc(nBytes_band);
-  this->band7 = (float *)malloc(nBytes_band);
+  this->band_blue = (float *)malloc(nBytes_band);
+  this->band_green = (float *)malloc(nBytes_band);
+  this->band_red = (float *)malloc(nBytes_band);
+  this->band_nir = (float *)malloc(nBytes_band);
+  this->band_swir1 = (float *)malloc(nBytes_band);
+  this->band_termal = (float *)malloc(nBytes_band);
+  this->band_swir2 = (float *)malloc(nBytes_band);
   this->tal = (float *)malloc(nBytes_band);
 
   this->radiance1 = (float *)malloc(nBytes_band);
@@ -70,13 +70,13 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
 
 void Products::close()
 {
-  free(this->band1);
-  free(this->band2);
-  free(this->band3);
-  free(this->band4);
-  free(this->band5);
-  free(this->band6);
-  free(this->band7);
+  free(this->band_blue);
+  free(this->band_green);
+  free(this->band_red);
+  free(this->band_nir);
+  free(this->band_swir1);
+  free(this->band_termal);
+  free(this->band_swir2);
   free(this->tal);
 
   free(this->radiance1);
@@ -137,13 +137,13 @@ void Products::radiance_function(MTL mtl, Sensor sensor)
 
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    this->radiance1[i] = this->band1[i] * sensor.parameters[1][sensor.GRESCALE] + sensor.parameters[1][sensor.BRESCALE];
-    this->radiance2[i] = this->band2[i] * sensor.parameters[2][sensor.GRESCALE] + sensor.parameters[2][sensor.BRESCALE];
-    this->radiance3[i] = this->band3[i] * sensor.parameters[3][sensor.GRESCALE] + sensor.parameters[3][sensor.BRESCALE];
-    this->radiance4[i] = this->band4[i] * sensor.parameters[4][sensor.GRESCALE] + sensor.parameters[4][sensor.BRESCALE];
-    this->radiance5[i] = this->band5[i] * sensor.parameters[5][sensor.GRESCALE] + sensor.parameters[5][sensor.BRESCALE];
-    this->radiance6[i] = this->band6[i] * sensor.parameters[6][sensor.GRESCALE] + sensor.parameters[6][sensor.BRESCALE];
-    this->radiance7[i] = this->band7[i] * sensor.parameters[7][sensor.GRESCALE] + sensor.parameters[7][sensor.BRESCALE];
+    this->radiance1[i] = this->band_blue[i] * sensor.parameters[1][sensor.GRESCALE] + sensor.parameters[1][sensor.BRESCALE];
+    this->radiance2[i] = this->band_green[i] * sensor.parameters[2][sensor.GRESCALE] + sensor.parameters[2][sensor.BRESCALE];
+    this->radiance3[i] = this->band_red[i] * sensor.parameters[3][sensor.GRESCALE] + sensor.parameters[3][sensor.BRESCALE];
+    this->radiance4[i] = this->band_nir[i] * sensor.parameters[4][sensor.GRESCALE] + sensor.parameters[4][sensor.BRESCALE];
+    this->radiance5[i] = this->band_swir1[i] * sensor.parameters[5][sensor.GRESCALE] + sensor.parameters[5][sensor.BRESCALE];
+    this->radiance6[i] = this->band_termal[i] * sensor.parameters[6][sensor.GRESCALE] + sensor.parameters[6][sensor.BRESCALE];
+    this->radiance7[i] = this->band_swir2[i] * sensor.parameters[7][sensor.GRESCALE] + sensor.parameters[7][sensor.BRESCALE];
 
     if (radiance1[i] <= 0)
       this->radiance1[i] = NAN;

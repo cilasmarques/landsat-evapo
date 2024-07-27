@@ -3,8 +3,8 @@
 #include "constants.h"
 #include "cuda_utils.h"
 
-__global__ void rad_kernel(float *band1_d, float *band2_d, float *band3_d, float *band4_d,
-                           float *band5_d, float *band6_d, float *band7_d,
+__global__ void rad_kernel(float *band_blue_d, float *band_green_d, float *band_red_d, float *band_nir_d,
+                           float *band_swir1_d, float *band_termal_d, float *band_swir2_d,
                            float *radiance1_d, float *radiance2_d, float *radiance3_d, float *radiance4_d,
                            float *radiance5_d, float *radiance6_d, float *radiance7_d,
                            float grenscale1_d, float brescale1_d,

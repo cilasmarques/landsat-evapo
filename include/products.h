@@ -20,13 +20,13 @@ struct Products
   float rah_ini_pq_terra;
   float rah_ini_pf_terra;
 
-  float *band1;
-  float *band2;
-  float *band3;
-  float *band4;
-  float *band5;
-  float *band6;
-  float *band7;
+  float *band_blue;
+  float *band_green;
+  float *band_red;
+  float *band_nir;
+  float *band_swir1;
+  float *band_termal;
+  float *band_swir2;
   float *tal;
   float *only1;
 
@@ -81,7 +81,7 @@ struct Products
   float *devZom, *devTS, *devUstarR, *devUstarW, *devRahR, *devRahW, *devD0, *devKB1, *devH;
 
   float *tal_d, *only1_d;
-  float *band1_d, *band2_d, *band3_d, *band4_d, *band5_d, *band6_d, *band7_d;
+  float *band_blue_d, *band_green_d, *band_red_d, *band_nir_d, *band_swir1_d, *band_termal_d, *band_swir2_d;
   float *radiance1_d, *radiance2_d, *radiance3_d, *radiance4_d, *radiance5_d, *radiance6_d, *radiance7_d;
   float *reflectance1_d, *reflectance2_d, *reflectance3_d, *reflectance4_d, *reflectance5_d, *reflectance6_d, *reflectance7_d;
 
