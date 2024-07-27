@@ -52,6 +52,7 @@ struct Products
   float *surface_temperature;
   float *net_radiation;
 
+  float *savi;
   float *lai;
   float *evi;
   float *pai;

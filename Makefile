@@ -13,7 +13,7 @@ IMAGES_DIR=./input
 # Samples:
 # | landsat_8  | landsat_5  | landsat_7
 # | 215065     | 215065     | 215065
-# | 2017-05-11 | 1990-03-14 | 2000-30-12
+# | 2017-05-11 | 1990-03-14 | 2000-12-30
 IMAGE_LANDSAT="landsat_8"
 IMAGE_PATHROW="215065"
 IMAGE_DATE="2017-05-11"

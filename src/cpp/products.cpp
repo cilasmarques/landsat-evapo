@@ -41,6 +41,7 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   this->surface_temperature = (float *)malloc(nBytes_band);
   this->net_radiation = (float *)malloc(nBytes_band);
   this->lai = (float *)malloc(nBytes_band);
+  this->savi = (float *)malloc(nBytes_band);
   this->evi = (float *)malloc(nBytes_band);
   this->pai = (float *)malloc(nBytes_band);
   this->enb_emissivity = (float *)malloc(nBytes_band);
@@ -143,12 +144,27 @@ void Products::radiance_function(MTL mtl, Sensor sensor)
     this->radiance5[i] = this->band5[i] * sensor.parameters[5][sensor.GRESCALE] + sensor.parameters[5][sensor.BRESCALE];
     this->radiance6[i] = this->band6[i] * sensor.parameters[6][sensor.GRESCALE] + sensor.parameters[6][sensor.BRESCALE];
     this->radiance7[i] = this->band7[i] * sensor.parameters[7][sensor.GRESCALE] + sensor.parameters[7][sensor.BRESCALE];
+
+    if (radiance1[i] <= 0)
+      this->radiance1[i] = NAN;
+    if (radiance2[i] <= 0)
+      this->radiance2[i] = NAN;
+    if (radiance3[i] <= 0)
+      this->radiance3[i] = NAN;
+    if (radiance4[i] <= 0)
+      this->radiance4[i] = NAN;
+    if (radiance5[i] <= 0)
+      this->radiance5[i] = NAN;
+    if (radiance6[i] <= 0)
+      this->radiance6[i] = NAN;
+    if (radiance7[i] <= 0)
+      this->radiance7[i] = NAN;
   }
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "SERIAL,RADIANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  // std::cout << "SERIAL,RADIANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
 void Products::reflectance_function(MTL mtl, Sensor sensor)
@@ -191,29 +207,28 @@ void Products::reflectance_function(MTL mtl, Sensor sensor)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "SERIAL,REFLECTANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  // std::cout << "SERIAL,REFLECTANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
 void Products::albedo_function(MTL mtl, Sensor sensor)
 {
-  int sensor_final_index = 7;
-  float *reflectance_final_index = this->reflectance7;
-  if (mtl.number_sensor == 8)
-  {
-    sensor_final_index = 6;
-    reflectance_final_index = this->reflectance6;
+  float *last_band = this->reflectance7;
+  float last_param = sensor.parameters[7][sensor.WB];
+
+  if (mtl.number_sensor == 8) {
+    last_band = this->reflectance6;
+    last_param = sensor.parameters[6][sensor.WB];
   }
 
+  // According to the recommendations of Trezza et al. (2013)
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    double alb = this->reflectance1[i] * sensor.parameters[1][sensor.WB] +
-                 this->reflectance2[i] * sensor.parameters[2][sensor.WB] +
-                 this->reflectance3[i] * sensor.parameters[3][sensor.WB] +
-                 this->reflectance4[i] * sensor.parameters[4][sensor.WB] +
-                 this->reflectance5[i] * sensor.parameters[5][sensor.WB] +
-                 reflectance_final_index[i] * sensor.parameters[sensor_final_index][sensor.WB];
-
-    this->albedo[i] = (alb - 0.03) / (this->tal[i] * this->tal[i]);
+    this->albedo[i] = this->reflectance1[i] * sensor.parameters[1][sensor.WB] +
+                      this->reflectance2[i] * sensor.parameters[2][sensor.WB] +
+                      this->reflectance3[i] * sensor.parameters[3][sensor.WB] +
+                      this->reflectance4[i] * sensor.parameters[4][sensor.WB] +
+                      this->reflectance5[i] * sensor.parameters[5][sensor.WB] +
+                      last_band[i] * last_param;
   }
 }
 
@@ -240,14 +255,15 @@ void Products::lai_function()
 {
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    double savi = ((1 + 0.05) * (this->reflectance4[i] - this->reflectance3[i])) / (0.05 + (this->reflectance4[i] + this->reflectance3[i]));
+    float savi= ((1 + 0.05) * (this->reflectance4[i] - this->reflectance3[i])) / (0.05 + (this->reflectance4[i] + this->reflectance3[i]));
+    this->savi[i]  = savi;
 
-    if (!isnan(savi) && definitelyGreaterThan(savi, 0.687))
+    if (!isnan(savi) && savi > 0.687)
       this->lai[i] = 6;
-    else if (!isnan(savi) && definitelyLessThan(savi, 0.1))
-      this->lai[i] = 0;
-    else
+    if (!isnan(savi) && savi <= 0.687)
       this->lai[i] = -log((0.69 - savi) / 0.59) / 0.91;
+    if (!isnan(savi) && savi < 0.1)
+      this->lai[i] = 0;
   }
 };
 
@@ -255,7 +271,7 @@ void Products::evi_function()
 {
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    double evi_value = 2.5 * ((this->reflectance4[i] - this->reflectance3[i]) / (this->reflectance4[i] + 6 * this->reflectance3[i] - 7.5 * this->reflectance1[i] + 1));
+    double evi_value = 2.5 * ((this->reflectance4[i] - this->reflectance3[i]) / (this->reflectance4[i] + (6 * this->reflectance3[i]) - (7.5 * this->reflectance1[i]) + 1));
 
     if (evi_value < 0)
       evi_value = 0;
@@ -268,10 +284,13 @@ void Products::enb_emissivity_function()
 {
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    if (definitelyLessThan(this->ndvi[i], 0) || definitelyGreaterThan(this->lai[i], 2.99))
-      this->enb_emissivity[i] = 0.98;
+    if (this->lai[i] == 0) 
+      this->enb_emissivity[i] = NAN;
     else
       this->enb_emissivity[i] = 0.97 + 0.0033 * this->lai[i];
+  
+    if ((ndvi[i] < 0) || (lai[i] > 2.99))
+      this->enb_emissivity[i] = 0.98;
   }
 };
 
@@ -279,10 +298,10 @@ void Products::eo_emissivity_function()
 {
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
+    this->eo_emissivity[i] = 0.95 + 0.01 * this->lai[i];
+
     if (definitelyLessThan(this->ndvi[i], 0) || definitelyGreaterThan(this->lai[i], 2.99))
       this->eo_emissivity[i] = 0.98;
-    else
-      this->eo_emissivity[i] = 0.95 + 0.01 * this->lai[i];
   }
 };
 
@@ -299,19 +318,19 @@ void Products::surface_temperature_function(MTL mtl)
   {
   case 5:
     k1 = 607.76;
-    k2 = 1282.71;
-
+    k2 = 1260.56;
     break;
+
   case 7:
     k1 = 666.09;
-    k2 = 1260.56;
-
+    k2 = 1282.71;
     break;
+
   case 8:
     k1 = 774.8853;
     k2 = 1321.0789;
-
     break;
+
   default:
     cerr << "Sensor problem!";
     exit(6);
@@ -320,10 +339,7 @@ void Products::surface_temperature_function(MTL mtl)
   float surface_temperature_value;
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    if (mtl.number_sensor == 5)
-      surface_temperature_value = k2 / (log((this->enb_emissivity[i] * k1 / this->radiance6[i]) + 1));
-    else
-      surface_temperature_value = k2 / (log((this->enb_emissivity[i] * k1 / this->radiance7[i]) + 1));
+    surface_temperature_value = k2 / (log((this->enb_emissivity[i] * k1 / this->radiance6[i]) + 1));
 
     if (definitelyLessThan(surface_temperature_value, 0))
       surface_temperature_value = 0;

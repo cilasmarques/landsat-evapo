@@ -82,7 +82,7 @@ Landsat::Landsat(string bands_paths[], string land_cover_path, MTL mtl, int thre
       float value = 0;
       memcpy(&value, static_cast<unsigned char *>(band_line_buff) + col * curr_band_line_size, curr_band_line_size);
 
-      this->products.tal[line * width + col] = value;
+      this->products.tal[line * width + col] = 0.75 + 2 * pow(10, -5) * value;
     }
     _TIFFfree(band_line_buff);
   }
@@ -246,11 +246,65 @@ void Landsat::save_products(string output_path)
   std::streambuf *coutProds = std::cout.rdbuf();
   std::cout.rdbuf(outputProds.rdbuf());
 
+  std::cout << "==== reflectance 1" << std::endl;
+  printLinearPointer(products.reflectance1, height_band, width_band);
+
+  std::cout << "==== reflectance 2" << std::endl;
+  printLinearPointer(products.reflectance2, height_band, width_band);
+
+  std::cout << "==== reflectance 3" << std::endl;
+  printLinearPointer(products.reflectance3, height_band, width_band);
+
+  std::cout << "==== reflectance 4" << std::endl;
+  printLinearPointer(products.reflectance4, height_band, width_band);
+
+  std::cout << "==== reflectance 5" << std::endl;
+  printLinearPointer(products.reflectance5, height_band, width_band);
+
+  std::cout << "==== reflectance 6" << std::endl;
+  printLinearPointer(products.reflectance6, height_band, width_band);
+
+  std::cout << "==== reflectance 7" << std::endl;
+  printLinearPointer(products.reflectance7, height_band, width_band);
+
   std::cout << "==== albedo" << std::endl;
   printLinearPointer(products.albedo, height_band, width_band);
 
   std::cout << "==== ndvi" << std::endl;
   printLinearPointer(products.ndvi, height_band, width_band);
+
+  std::cout << "==== enb" << std::endl;
+  printLinearPointer(products.enb_emissivity, height_band, width_band);
+
+  std::cout << "==== pai" << std::endl;
+  printLinearPointer(products.pai, height_band, width_band);
+
+  std::cout << "==== lai" << std::endl;
+  printLinearPointer(products.lai, height_band, width_band);
+
+  std::cout << "==== savi" << std::endl;
+  printLinearPointer(products.savi, height_band, width_band);
+
+  std::cout << "==== evi" << std::endl;
+  printLinearPointer(products.evi, height_band, width_band);
+
+  std::cout << "==== surface_temperature" << std::endl;
+  printLinearPointer(products.surface_temperature, height_band, width_band);
+
+  std::cout << "==== short_wave_radiation" << std::endl;
+  printLinearPointer(products.short_wave_radiation, height_band, width_band);
+
+  std::cout << "==== large_wave_radiation_surface" << std::endl;
+  printLinearPointer(products.large_wave_radiation_surface, height_band, width_band);
+
+  std::cout << "==== large_wave_radiation_atmosphere" << std::endl;
+  printLinearPointer(products.large_wave_radiation_atmosphere, height_band, width_band);
+
+  std::cout << "==== ea" << std::endl;
+  printLinearPointer(products.ea_emissivity, height_band, width_band);
+
+  std::cout << "==== eo" << std::endl;
+  printLinearPointer(products.eo_emissivity, height_band, width_band);
 
   std::cout << "==== net_radiation" << std::endl;
   printLinearPointer(products.net_radiation, height_band, width_band);
