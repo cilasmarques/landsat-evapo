@@ -92,15 +92,15 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_termal_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_swir2_d, nBytes_band));
 
-  HANDLE_ERROR(cudaMalloc((void **)&this->devZom, nBytes_band));
-  HANDLE_ERROR(cudaMalloc((void **)&this->devD0, nBytes_band));
-  HANDLE_ERROR(cudaMalloc((void **)&this->devKB1, nBytes_band));
-  HANDLE_ERROR(cudaMalloc((void **)&this->devTS, nBytes_band));
-  HANDLE_ERROR(cudaMalloc((void **)&this->devUstarR, nBytes_band));
-  HANDLE_ERROR(cudaMalloc((void **)&this->devUstarW, nBytes_band));
-  HANDLE_ERROR(cudaMalloc((void **)&this->devRahR, nBytes_band));
-  HANDLE_ERROR(cudaMalloc((void **)&this->devRahW, nBytes_band));
-  HANDLE_ERROR(cudaMalloc((void **)&this->devH, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->zom_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->d0_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->kb1_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->ts_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->ustarR_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->ustarW_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->rahR_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->rahW_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->sensible_heat_flux_d, nBytes_band));
 };
 
 void Products::close()
@@ -669,19 +669,19 @@ string Products::rah_correction_function_blocks(double ndvi_min, double ndvi_max
     double b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
     double a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
 
-    HANDLE_ERROR(cudaMemcpy(devTS, surface_temperature, nBytes_band, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(devZom, zom, nBytes_band, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(devD0, d0, nBytes_band, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(devKB1, kb1, nBytes_band, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(devUstarR, ustar, nBytes_band, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(devRahR, aerodynamic_resistance, nBytes_band, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(devH, sensible_heat_flux, nBytes_band, cudaMemcpyHostToDevice)); // An empty array to receive the results
+    HANDLE_ERROR(cudaMemcpy(ts_d, surface_temperature, nBytes_band, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(zom_d, zom, nBytes_band, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(d0_d, d0, nBytes_band, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(kb1_d, kb1, nBytes_band, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(ustarR_d, ustar, nBytes_band, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(rahR_d, aerodynamic_resistance, nBytes_band, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(sensible_heat_flux_d, sensible_heat_flux, nBytes_band, cudaMemcpyHostToDevice)); // An empty array to receive the results
 
     // ==== Paralelization core
     begin_core = system_clock::now();
     initial_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    rah_correction_cycle_STEEP<<<num_blocks, threads_per_block>>>(devTS, devD0, devKB1, devZom, devUstarR, devUstarW, devRahR, devRahW, devH, a, b, height_band, width_band);
+    rah_correction_cycle_STEEP<<<num_blocks, threads_per_block>>>(ts_d, d0_d, kb1_d, zom_d, ustarR_d, ustarW_d, rahR_d, rahW_d, sensible_heat_flux_d, a, b, height_band, width_band);
     HANDLE_ERROR(cudaDeviceSynchronize());
     HANDLE_ERROR(cudaGetLastError());
 
@@ -690,9 +690,9 @@ string Products::rah_correction_function_blocks(double ndvi_min, double ndvi_max
     final_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     // ====
 
-    HANDLE_ERROR(cudaMemcpy(ustar, devUstarW, nBytes_band, cudaMemcpyDeviceToHost));
-    HANDLE_ERROR(cudaMemcpy(aerodynamic_resistance, devRahW, nBytes_band, cudaMemcpyDeviceToHost));
-    HANDLE_ERROR(cudaMemcpy(sensible_heat_flux, devH, nBytes_band, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(ustar, ustarW_d, nBytes_band, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(aerodynamic_resistance, rahW_d, nBytes_band, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(sensible_heat_flux, sensible_heat_flux_d, nBytes_band, cudaMemcpyDeviceToHost));
 
     double rah_hot = this->aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
     hot_pixel.aerodynamic_resistance.push_back(rah_hot);

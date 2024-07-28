@@ -1,4 +1,5 @@
 #include "landsat.h"
+#include "cuda_utils.h"
 
 Landsat::Landsat(string bands_paths[], MTL mtl, int threads_num)
 {
