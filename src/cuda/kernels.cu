@@ -53,13 +53,13 @@ __global__ void ref_kernel(float *band_blue_d, float *band_green_d, float *band_
   {
     unsigned int pos = row * width + col;
 
-    reflectance_blue_d[pos] = band_blue_d[pos] * ref_mult_d[PARAM_BAND_BLUE_INDEX] + ref_add_d[PARAM_BAND_BLUE_INDEX] / sin_sun;
-    reflectance_green_d[pos] = band_green_d[pos] * ref_mult_d[PARAM_BAND_GREEN_INDEX] + ref_add_d[PARAM_BAND_GREEN_INDEX] / sin_sun;
-    reflectance_red_d[pos] = band_red_d[pos] * ref_mult_d[PARAM_BAND_RED_INDEX] + ref_add_d[PARAM_BAND_RED_INDEX] / sin_sun;
-    reflectance_nir_d[pos] = band_nir_d[pos] * ref_mult_d[PARAM_BAND_NIR_INDEX] + ref_add_d[PARAM_BAND_NIR_INDEX] / sin_sun;
-    reflectance_swir1_d[pos] = band_swir1_d[pos] * ref_mult_d[PARAM_BAND_SWIR1_INDEX] + ref_add_d[PARAM_BAND_SWIR1_INDEX] / sin_sun;
-    reflectance_termal_d[pos] = band_termal_d[pos] * ref_mult_d[PARAM_BAND_TERMAL_INDEX] + ref_add_d[PARAM_BAND_TERMAL_INDEX] / sin_sun;
-    reflectance_swir2_d[pos] = band_swir2_d[pos] * ref_mult_d[PARAM_BAND_SWIR2_INDEX] + ref_add_d[PARAM_BAND_SWIR2_INDEX] / sin_sun;
+    reflectance_blue_d[pos] = (band_blue_d[pos] * ref_mult_d[PARAM_BAND_BLUE_INDEX] + ref_add_d[PARAM_BAND_BLUE_INDEX]) / sin_sun;
+    reflectance_green_d[pos] = (band_green_d[pos] * ref_mult_d[PARAM_BAND_GREEN_INDEX] + ref_add_d[PARAM_BAND_GREEN_INDEX]) / sin_sun;
+    reflectance_red_d[pos] = (band_red_d[pos] * ref_mult_d[PARAM_BAND_RED_INDEX] + ref_add_d[PARAM_BAND_RED_INDEX]) / sin_sun;
+    reflectance_nir_d[pos] = (band_nir_d[pos] * ref_mult_d[PARAM_BAND_NIR_INDEX] + ref_add_d[PARAM_BAND_NIR_INDEX]) / sin_sun;
+    reflectance_swir1_d[pos] = (band_swir1_d[pos] * ref_mult_d[PARAM_BAND_SWIR1_INDEX] + ref_add_d[PARAM_BAND_SWIR1_INDEX]) / sin_sun;
+    reflectance_termal_d[pos] = (band_termal_d[pos] * ref_mult_d[PARAM_BAND_TERMAL_INDEX] + ref_add_d[PARAM_BAND_TERMAL_INDEX]) / sin_sun;
+    reflectance_swir2_d[pos] = (band_swir2_d[pos] * ref_mult_d[PARAM_BAND_SWIR2_INDEX] + ref_add_d[PARAM_BAND_SWIR2_INDEX]) / sin_sun;
 
     if (reflectance_blue_d[pos] <= 0)
       reflectance_blue_d[pos] = NAN;
