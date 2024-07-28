@@ -357,6 +357,271 @@ __global__ void soil_heat_kernel(float *ndvi_d, float *albedo_d, float *surface_
   }
 }
 
+__global__ void d0_kernel(float *pai_d, float *d0_d, float CD1, float HGHT, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+    float cd1_pai_root = sqrt(CD1 * pai_d[pos]);
+
+    float DISP = HGHT * ((1 - (1 / cd1_pai_root)) + (pow(exp(1.0), -cd1_pai_root) / cd1_pai_root));
+    if (pai_d[pos] < 0)
+    {
+      DISP = 0;
+    }
+
+    d0_d[pos] = DISP;
+  }
+}
+
+__global__ void ustar_kernel(float *zom_d, float *d0_d, float *ustarR_d, float u10, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  float zu = 10;
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+    ustarR_d[pos] = (u10 * VON_KARMAN) / log((zu - d0_d[pos]) / zom_d[pos]);
+  }
+}
+
+__global__ void zom_kernel(float *d0_d, float *pai_d, float *zom_d, float A_ZOM, float B_ZOM, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  float HGHT = 4;
+  float CD = 0.01;
+  float CR = 0.35;
+  float PSICORR = 0.2;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+
+    float gama = pow((CD + CR * (pai_d[pos] / 2)), -0.5);
+
+    if (gama < 3.3)
+      gama = 3.3;
+
+    zom_d[pos] = (HGHT - d0_d[pos]) * pow(exp(1.0), (-VON_KARMAN * gama) + PSICORR);
+  }
+}
+
+__global__ void kb_kernel(float *zom_d, float *ustarR_d, float *pai_d, float *kb1_d, float *ndvi_d, int width_band, int height_band, float ndvi_max, float ndvi_min)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  float HGHT = 4;
+
+  float VON_KARMAN = 0.41;
+  float visc = 0.00001461;
+  float pr = 0.71;
+  float c1 = 0.320;
+  float c2 = 0.264;
+  float c3 = 15.1;
+  float cd = 0.2;
+  float ct = 0.01;
+  float sf_c = 0.3;
+  float sf_d = 2.5;
+  float sf_e = 4.0;
+  float soil_moisture_day_rel = 0.33;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+
+    float Re_star = (ustarR_d[pos] * 0.009) / visc;
+    float Ct_star = pow(pr, -0.667) * pow(Re_star, -0.5);
+    float beta = c1 - c2 * (exp((cd * -c3 * pai_d[pos])));
+    float nec_terra = (cd * pai_d[pos]) / (beta * beta * 2);
+
+    float kb1_fst_part = (cd * VON_KARMAN) / (4 * ct * beta * (1 - exp(nec_terra * -0.5)));
+    float kb1_sec_part = (beta * VON_KARMAN * (zom_d[pos] / HGHT)) / Ct_star;
+    float kb1s = (pow(Re_star, 0.25) * 2.46) - 2;
+
+    float fc = 1 - pow((ndvi_d[pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+    float fs = 1 - fc;
+
+    float SF = sf_c + (1 / (1 + pow(exp(1.0), (sf_d - (sf_e * soil_moisture_day_rel)))));
+
+    kb1_d[pos] = ((kb1_fst_part * pow(fc, 2)) + (kb1_sec_part * pow(fc, 2) * pow(fs, 2)) + (pow(fs, 2) * kb1s)) * SF;
+  }
+}
+
+__global__ void aerodynamic_resistance_kernel(float *zom_d, float *d0_d, float *ustarR_d, float *kb1_d, float *aerodynamic_resistance_d, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  float zu = 10.0;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+
+    float DISP = d0_d[pos];
+    float zom = zom_d[pos];
+    float zoh_terra = zom / pow(exp(1.0), (kb1_d[pos]));
+
+    float temp_kb_1_terra = log(zom / zoh_terra);
+    float temp_rah1_terra = (1 / (ustarR_d[pos] * VON_KARMAN));
+    float temp_rah2 = log(((zu - DISP) / zom));
+    float temp_rah3_terra = temp_rah1_terra * temp_kb_1_terra;
+
+    aerodynamic_resistance_d[pos] = temp_rah1_terra * temp_rah2 + temp_rah3_terra;
+  }
+}
+
+__global__ void sensible_heat_flux_kernel(float *surface_temperature_d, float *rahR_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d, double a, double b, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+
+    sensible_heat_flux_d[pos] = RHO * SPECIFIC_HEAT_AIR * (a + b * (surface_temperature_d[pos] - 273.15)) / rahR_d[pos];
+
+    if (!isnan(sensible_heat_flux_d[pos]) && sensible_heat_flux_d[pos] > (net_radiation_d[pos] - soil_heat_d[pos]))
+    {
+      sensible_heat_flux_d[pos] = net_radiation_d[pos] - soil_heat_d[pos];
+    }
+  }
+}
+
+__global__ void latent_heat_flux_kernel(float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d, float *latent_heat_flux_d, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+    latent_heat_flux_d[pos] = net_radiation_d[pos] - soil_heat_d[pos] - sensible_heat_flux_d[pos];
+  }
+}
+
+__global__ void net_radiation_24h_kernel(float *albedo_d, float Rs24h, float Ra24h, float *net_radiation_24h_d, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  int FL = 110;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+    net_radiation_24h_d[pos] = (1 - albedo_d[pos]) * Rs24h - FL * Rs24h / Ra24h;
+  }
+}
+
+__global__ void evapotranspiration_fraction_kernel(float *net_radiation_d, float *soil_heat_d, float *latent_heat_flux_d, float *evapotranspiration_fraction_d, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+    evapotranspiration_fraction_d[pos] = latent_heat_flux_d[pos] / (net_radiation_d[pos] - soil_heat_d[pos]);
+  }
+}
+
+__global__ void sensible_heat_flux_24h_kernel(float *net_radiation_24h_d, float *evapotranspiration_fraction_d, float *sensible_heat_flux_24h_d, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+    sensible_heat_flux_24h_d[pos] = (1 - evapotranspiration_fraction_d[pos]) * net_radiation_24h_d[pos];
+  }
+}
+
+__global__ void latent_heat_flux_24h_kernel(float *net_radiation_24h_d, float *evapotranspiration_fraction_d, float *latent_heat_flux_24h_d, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+    latent_heat_flux_24h_d[pos] = evapotranspiration_fraction_d[pos] * net_radiation_24h_d[pos];
+  }
+}
+
+__global__ void evapotranspiration_24h_kernel(float *latent_heat_flux_24h_d, float *evapotranspiration_24h_d, float v7_max, float v7_min, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+    evapotranspiration_24h_d[pos] = (latent_heat_flux_24h_d[pos] * 86400) / ((2.501 - 0.00236 * (v7_max + v7_min) / 2) * 1e+6);
+  }
+}
+
+__global__ void evapotranspiration_kernel(float *net_radiation_24h_d, float *evapotranspiration_fraction_d, float *evapotranspiration_d, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+    evapotranspiration_d[pos] = net_radiation_24h_d[pos] * evapotranspiration_fraction_d[pos] * 0.035;
+  }
+}
+
 __global__ void rah_correction_cycle_STEEP(float *surface_temperature_pointer, float *d0_pointer, float *kb1_pointer, float *zom_pointer, float *ustarR_pointer,
                                            float *ustarW_pointer, float *rahR_pointer, float *rahW_pointer, float *H_pointer, double a, double b, int height,
                                            int width)

@@ -80,13 +80,16 @@ struct Products
   float *evapotranspiration_24h;
   float *evapotranspiration;
 
-  float *zom_d, *ts_d, *ustarR_d, *ustarW_d, *rahR_d, *rahW_d, *d0_d, *kb1_d, *sensible_heat_flux_d;
-
-  float *tal_d, *only1_d;
   float *band_blue_d, *band_green_d, *band_red_d, *band_nir_d, *band_swir1_d, *band_termal_d, *band_swir2_d;
   float *radiance_blue_d, *radiance_green_d, *radiance_red_d, *radiance_nir_d, *radiance_swir1_d, *radiance_termal_d, *radiance_swir2_d;
   float *reflectance_blue_d, *reflectance_green_d, *reflectance_red_d, *reflectance_nir_d, *reflectance_swir1_d, *reflectance_termal_d, *reflectance_swir2_d;
-  float *albedo_d, *ndvi_d, *soil_heat_d, *surface_temperature_d, *net_radiation_d;
+
+  float *only1_d;
+  float *tal_d, *albedo_d, *ndvi_d, *pai_d, *lai_d, *evi_d;
+  float *enb_d, *eo_d, *ea_d, *short_wave_radiation_d, *large_wave_radiation_surface_d, *large_wave_radiation_atmosphere_d;
+  float *soil_heat_d, *surface_temperature_d, *net_radiation_d;
+  float *d0_d, *kb1_d, *zom_d, *ts_d, *ustarR_d, *ustarW_d, *rahR_d, *rahW_d, *sensible_heat_flux_d;
+  float *latent_heat_flux_d, *net_radiation_24h_d, *evapotranspiration_fraction_d, *sensible_heat_flux_24h_d, *latent_heat_flux_24h_d, *evapotranspiration_24h_d, *evapotranspiration_d;
 
   /**
    * @brief  Constructor.
