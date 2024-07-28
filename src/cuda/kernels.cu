@@ -99,6 +99,261 @@ __global__ void albedo_kernel(float *reflectance_blue_d, float *reflectance_gree
                     reflectance_swir2_d[pos] * ref_w_coeff_d[PARAM_BAND_SWIR2_INDEX];
 
     albedo_d[pos] = (alb_toa - 0.03) / (tal_d[pos] * tal_d[pos]);
+
+    if (albedo_d[pos] <= 0)
+      albedo_d[pos] = NAN;
+  }
+}
+
+__global__ void ndvi_kernel(float *band_nir_d, float *band_red_d, float *ndvi_d, int width, int height)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width;
+  unsigned int col = idx % width;
+
+  if (col < width && row < height)
+  {
+    unsigned int pos = row * width + col;
+
+    ndvi_d[pos] = (band_nir_d[pos] - band_red_d[pos]) / (band_nir_d[pos] + band_red_d[pos]);
+
+    if (ndvi_d[pos] <= -1 || ndvi_d[pos] >= 1)
+      ndvi_d[pos] = NAN;
+  }
+}
+
+__global__ void pai_kernel(float *band_nir_d, float *band_red_d, float *pai_d, int width, int height)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width;
+  unsigned int col = idx % width;
+
+  if (col < width && row < height)
+  {
+    unsigned int pos = row * width + col;
+
+    pai_d[pos] = 10.1 * (band_nir_d[pos] - sqrt(band_red_d[pos])) + 3.1;
+
+    if (pai_d[pos] <= 0)
+      pai_d[pos] = NAN;
+  }
+}
+
+__global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *lai_d, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+
+    float savi = ((1 + 0.5) * (reflectance_nir_d[pos] - reflectance_red_d[pos])) / (0.5 + (reflectance_nir_d[pos] + reflectance_red_d[pos]));
+
+    if (!isnan(savi) && savi > 0.687)
+      lai_d[pos] = 6;
+    if (!isnan(savi) && savi <= 0.687)
+      lai_d[pos] = -log((0.69 - savi) / 0.59) / 0.91;
+    if (!isnan(savi) && savi < 0.1)
+      lai_d[pos] = 0;
+  }
+}
+
+__global__ void evi_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *reflectance_blue_d, float *evi_d, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+
+    evi_d[pos] = 2.5 * ((reflectance_nir_d[pos] - reflectance_red_d[pos]) / (reflectance_nir_d[pos] + (6 * reflectance_red_d[pos]) - (7.5 * reflectance_blue_d[pos]) + 1));
+
+    if (evi_d[pos] < 0)
+      evi_d[pos] = NAN;
+  }
+}
+
+__global__ void enb_kernel(float *lai_d, float *enb_d, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+
+    if (lai_d[pos] == 0)
+      enb_d[pos] = NAN;
+    else
+      enb_d[pos] = 0.97 + 0.0033 * lai_d[pos];
+
+    if (enb_d[pos] < 0 || lai_d[pos] > 2.99)
+      enb_d[pos] = 0.98;
+  }
+}
+
+__global__ void eo_kernel(float *lai_d, float *ndvi_d, float *eo_d, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+
+    if (lai_d[pos] == 0)
+      eo_d[pos] = NAN;
+    else
+      eo_d[pos] = 0.95 + 0.01 * lai_d[pos];
+
+    if (ndvi_d[pos] < 0 || lai_d[pos] > 2.99)
+      eo_d[pos] = 0.98;
+  }
+}
+
+__global__ void ea_kernel(float *tal_d, float *ea_d, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+    ea_d[pos] = 0.85 * pow((-1 * log(tal_d[pos])), 0.09);
+  }
+}
+
+__global__ void surface_temperature_kernel(float *enb_d, float *radiance_termal_d, float *surface_temperature_d, float k1, float k2, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+    surface_temperature_d[pos] = k2 / (log((enb_d[pos] * k1 / radiance_termal_d[pos]) + 1));
+
+    if (surface_temperature_d[pos] < 0)
+      surface_temperature_d[pos] = 0;
+  }
+}
+
+__global__ void short_wave_radiation_kernel(float *tal_d, float *short_wave_radiation_d, float sun_elevation, float distance_earth_sun, float pi, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+    short_wave_radiation_d[pos] = (1367 * sin(sun_elevation * pi / 180) * tal_d[pos]) / (distance_earth_sun * distance_earth_sun);
+  }
+}
+
+__global__ void large_wave_radiation_surface_kernel(float *surface_temperature_d, float *eo_d, float *large_wave_radiation_surface_d, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+    float temperature_pixel = surface_temperature_d[pos];
+    float surface_temperature_pow_4 = temperature_pixel * temperature_pixel * temperature_pixel * temperature_pixel;
+    large_wave_radiation_surface_d[pos] = eo_d[pos] * 5.67 * 1e-8 * surface_temperature_pow_4;
+  }
+}
+
+__global__ void large_wave_radiation_atmosphere_kernel(float *ea_d, float *large_wave_radiation_atmosphere_d, float temperature, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+    float temperature_kelvin = temperature + 273.15;
+    float temperature_kelvin_pow_4 = temperature_kelvin * temperature_kelvin * temperature_kelvin * temperature_kelvin;
+
+    large_wave_radiation_atmosphere_d[pos] = ea_d[pos] * 5.67 * 1e-8 * temperature_kelvin_pow_4;
+  }
+}
+
+__global__ void net_radiation_kernel(float *short_wave_radiation_d, float *albedo_d, float *large_wave_radiation_atmosphere_d, float *large_wave_radiation_surface_d, float *eo_d, float *net_radiation_d, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+    net_radiation_d[pos] = short_wave_radiation_d[pos] - (short_wave_radiation_d[pos] * albedo_d[pos]) + large_wave_radiation_atmosphere_d[pos] - large_wave_radiation_surface_d[pos] - (1 - eo_d[pos]) * large_wave_radiation_atmosphere_d[pos];
+
+    if (net_radiation_d[pos] < 0)
+      net_radiation_d[pos] = 0;
+  }
+}
+
+__global__ void soil_heat_kernel(float *ndvi_d, float *albedo_d, float *surface_temperature_d, float *net_radiation_d, float *soil_heat_d, int width_band, int height_band)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width_band;
+  unsigned int col = idx % width_band;
+
+  if (col < width_band && row < height_band)
+  {
+    unsigned int pos = row * width_band + col;
+
+    if (ndvi_d[pos] < 0 || ndvi_d[pos] > 0)
+    {
+      float ndvi_pixel_pow_4 = ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos];
+      soil_heat_d[pos] = (surface_temperature_d[pos] - 273.15) * (0.0038 + 0.0074 * albedo_d[pos]) * (1 - 0.98 * ndvi_pixel_pow_4) * net_radiation_d[pos];
+    }
+    else
+    {
+      soil_heat_d[pos] = 0.5 * net_radiation_d[pos];
+    }
+
+    if (soil_heat_d[pos] < 0)
+      soil_heat_d[pos] = 0;
   }
 }
 
