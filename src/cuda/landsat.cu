@@ -98,7 +98,7 @@ Landsat::Landsat(string bands_paths[], MTL mtl, int threads_num)
   HANDLE_ERROR(cudaMemcpy(this->products.tal_d, this->products.tal, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
 };
 
-string Landsat::compute_Rn_G(Sensor sensor, Station station)
+string Landsat::compute_Rn_G(Station station)
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -106,9 +106,9 @@ string Landsat::compute_Rn_G(Sensor sensor, Station station)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  products.radiance_function(mtl, sensor);
-  products.reflectance_function(mtl, sensor);
-  products.albedo_function(mtl, sensor);
+  products.radiance_function(mtl);
+  products.reflectance_function(mtl);
+  products.albedo_function(mtl);
 
   // Vegetation indices
   products.ndvi_function();

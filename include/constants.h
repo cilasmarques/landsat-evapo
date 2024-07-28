@@ -23,6 +23,14 @@ using namespace std::chrono;
 
 // CONSTANTS DECLARATION
 
+#define PARAM_BAND_BLUE_INDEX       0
+#define PARAM_BAND_GREEN_INDEX      1
+#define PARAM_BAND_RED_INDEX        2
+#define PARAM_BAND_NIR_INDEX        3
+#define PARAM_BAND_SWIR1_INDEX      4
+#define PARAM_BAND_TERMAL_INDEX     5
+#define PARAM_BAND_SWIR2_INDEX      6
+
 // Epsilon
 const double EPS = 1e-7;
 

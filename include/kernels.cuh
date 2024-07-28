@@ -3,35 +3,16 @@
 #include "constants.h"
 #include "cuda_utils.h"
 
-__global__ void rad_kernel(float *band_blue_d, float *band_green_d, float *band_red_d, float *band_nir_d,
-                           float *band_swir1_d, float *band_termal_d, float *band_swir2_d,
-                           float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d,
-                           float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d,
-                           float grenscale1_d, float brescale1_d,
-                           float grenscale2_d, float brescale2_d,
-                           float grenscale3_d, float brescale3_d,
-                           float grenscale4_d, float brescale4_d,
-                           float grenscale5_d, float brescale5_d,
-                           float grenscale6_d, float brescale6_d,
-                           float grenscale7_d, float brescale7_d,
-                           float grenscale8_d,
-                           int width, int height);
+__global__ void rad_kernel(float *band_blue_d, float *band_green_d, float *band_red_d, float *band_nir_d, float *band_swir1_d, float *band_termal_d, float *band_swir2_d,
+                           float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d, float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d,
+                           float *rad_add_d, float *rad_mult_d, int width, int height);
 
-__global__ void ref_kernel(float sin_sun, 
-                           float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d, 
-                           float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d,
-                           float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, 
-                           float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d,
-                           int width, int height);
+__global__ void ref_kernel(float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d, float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d,
+                           float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d,
+                           float *ref_add_d, float *ref_mult_d, float sin_sun, int width, int height);
 
-__global__ void ref_kernel(double PI, float sin_sun, float distance_earth_sun,
-                           float esun1, float esun2, float esun3, float esun4,
-                           float esun5, float esun6, float esun7,
-                           float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d,
-                           float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d,
-                           float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d,
-                           float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d,
-                           int width, int height);
+__global__ void albedo_kernel(float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_swir2_d,
+                              float *tal_d, float *albedo_d, float *ref_w_coeff_d, int width, int height);
 
 /**
  * @brief  Compute the rah correction cycle. (STEEP algorithm)

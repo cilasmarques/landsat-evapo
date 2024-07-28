@@ -37,7 +37,7 @@ struct Landsat
 
   string converge_rah_cycle(Station station, int method);
 
-  string compute_Rn_G(Sensor sensor, Station station);
+  string compute_Rn_G(Station station);
 
   string compute_H_ET(Station station);
 

@@ -1,13 +1,17 @@
 #include "parameters.h"
+#include "cuda_utils.h"
 
 MTL::MTL()
 {
-  this->number_sensor = 0;
-  this->julian_day = 0;
   this->year = 0;
+  this->julian_day = 0;
+  this->number_sensor = 0;
   this->sun_elevation = 0;
-  this->rad_add_10 = 0;
-  this->rad_mult_10 = 0;
+  this->rad_add = (float *)malloc(7 * sizeof(float));
+  this->rad_mult = (float *)malloc(7 * sizeof(float));
+  this->ref_add = (float *)malloc(7 * sizeof(float));
+  this->ref_mult = (float *)malloc(7 * sizeof(float));
+  this->ref_w_coeff = (float *)malloc(7 * sizeof(float));
 };
 
 MTL::MTL(string metadata_path)
@@ -59,66 +63,108 @@ MTL::MTL(string metadata_path)
   this->distance_earth_sun = atof(mtl["EARTH_SUN_DISTANCE"].c_str());
   this->image_hour = (hours + minutes / 60.0) * 100;
 
+  this->rad_add = (float *)malloc(7 * sizeof(float));
+  this->rad_mult = (float *)malloc(7 * sizeof(float));
+  this->ref_add = (float *)malloc(7 * sizeof(float));
+  this->ref_mult = (float *)malloc(7 * sizeof(float));
+  this->ref_w_coeff = (float *)malloc(7 * sizeof(float));
+
+  HANDLE_ERROR(cudaMalloc((void **)&this->rad_add_d, (7 * sizeof(float))));
+  HANDLE_ERROR(cudaMalloc((void **)&this->rad_mult_d, (7 * sizeof(float))));
+  HANDLE_ERROR(cudaMalloc((void **)&this->ref_add_d, (7 * sizeof(float))));
+  HANDLE_ERROR(cudaMalloc((void **)&this->ref_mult_d, (7 * sizeof(float))));
+  HANDLE_ERROR(cudaMalloc((void **)&this->ref_w_coeff_d, (7 * sizeof(float))));
+
   if (this->number_sensor == 8)
   {
-    rad_mult_10 = atof(mtl["RADIANCE_MULT_BAND_10"].c_str());
-    rad_add_10 = atof(mtl["RADIANCE_ADD_BAND_10"].c_str());
+    this->ref_w_coeff[PARAM_BAND_BLUE_INDEX] = 0.257048331;
+    this->ref_w_coeff[PARAM_BAND_GREEN_INDEX] = 0.251150748;
+    this->ref_w_coeff[PARAM_BAND_RED_INDEX] = 0.220943613;
+    this->ref_w_coeff[PARAM_BAND_NIR_INDEX] = 0.143411968;
+    this->ref_w_coeff[PARAM_BAND_SWIR1_INDEX] = 0.116657077;
+    this->ref_w_coeff[PARAM_BAND_TERMAL_INDEX] = 0.000000000;
+    this->ref_w_coeff[PARAM_BAND_SWIR2_INDEX] = 0.010788262;
+
+    this->rad_mult[PARAM_BAND_BLUE_INDEX] = atof(mtl["RADIANCE_MULT_BAND_2"].c_str());
+    this->rad_mult[PARAM_BAND_GREEN_INDEX] = atof(mtl["RADIANCE_MULT_BAND_3"].c_str());
+    this->rad_mult[PARAM_BAND_RED_INDEX] = atof(mtl["RADIANCE_MULT_BAND_4"].c_str());
+    this->rad_mult[PARAM_BAND_NIR_INDEX] = atof(mtl["RADIANCE_MULT_BAND_5"].c_str());
+    this->rad_mult[PARAM_BAND_SWIR1_INDEX] = atof(mtl["RADIANCE_MULT_BAND_6"].c_str());
+    this->rad_mult[PARAM_BAND_TERMAL_INDEX] = atof(mtl["RADIANCE_MULT_BAND_10"].c_str());
+    this->rad_mult[PARAM_BAND_SWIR2_INDEX] = atof(mtl["RADIANCE_MULT_BAND_7"].c_str());
+
+    this->rad_add[PARAM_BAND_BLUE_INDEX] = atof(mtl["RADIANCE_ADD_BAND_2"].c_str());
+    this->rad_add[PARAM_BAND_GREEN_INDEX] = atof(mtl["RADIANCE_ADD_BAND_3"].c_str());
+    this->rad_add[PARAM_BAND_RED_INDEX] = atof(mtl["RADIANCE_ADD_BAND_4"].c_str());
+    this->rad_add[PARAM_BAND_NIR_INDEX] = atof(mtl["RADIANCE_ADD_BAND_5"].c_str());
+    this->rad_add[PARAM_BAND_SWIR1_INDEX] = atof(mtl["RADIANCE_ADD_BAND_6"].c_str());
+    this->rad_add[PARAM_BAND_TERMAL_INDEX] = atof(mtl["RADIANCE_ADD_BAND_10"].c_str());
+    this->rad_add[PARAM_BAND_SWIR2_INDEX] = atof(mtl["RADIANCE_ADD_BAND_7"].c_str());
+
+    this->ref_mult[PARAM_BAND_BLUE_INDEX] = atof(mtl["REFLECTANCE_MULT_BAND_2"].c_str());
+    this->ref_mult[PARAM_BAND_GREEN_INDEX] = atof(mtl["REFLECTANCE_MULT_BAND_3"].c_str());
+    this->ref_mult[PARAM_BAND_RED_INDEX] = atof(mtl["REFLECTANCE_MULT_BAND_4"].c_str());
+    this->ref_mult[PARAM_BAND_NIR_INDEX] = atof(mtl["REFLECTANCE_MULT_BAND_5"].c_str());
+    this->ref_mult[PARAM_BAND_SWIR1_INDEX] = atof(mtl["REFLECTANCE_MULT_BAND_6"].c_str());
+    this->ref_mult[PARAM_BAND_TERMAL_INDEX] = atof(mtl["REFLECTANCE_MULT_BAND_10"].c_str());
+    this->ref_mult[PARAM_BAND_SWIR2_INDEX] = atof(mtl["REFLECTANCE_MULT_BAND_7"].c_str());
+
+    this->ref_add[PARAM_BAND_BLUE_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_2"].c_str());
+    this->ref_add[PARAM_BAND_GREEN_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_3"].c_str());
+    this->ref_add[PARAM_BAND_RED_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_4"].c_str());
+    this->ref_add[PARAM_BAND_NIR_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_5"].c_str());
+    this->ref_add[PARAM_BAND_SWIR1_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_6"].c_str());
+    this->ref_add[PARAM_BAND_TERMAL_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_10"].c_str());
+    this->ref_add[PARAM_BAND_SWIR2_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_7"].c_str());
   }
-};
-
-Sensor::Sensor(int number_sensor, int year)
-{
-  string sensor_path = capture_parameter_path(number_sensor, year);
-  load_parameter_values(sensor_path);
-}
-
-string Sensor::capture_parameter_path(int number_sensor, int year)
-{
-  switch (number_sensor)
+  else
   {
-  case 8:
-    return "./src/parameters/LC.data";
-    break;
-  case 7:
-    return "./src/parameters/ETM.data";
-    break;
-  case 5:
-    if (year < 1992)
-      return "./src/parameters/TM1.data";
-    else
-      return "./src/parameters/TM2.data";
-    break;
-  default:
-    cerr << "Sensor problem" << endl;
-    exit(6);
+    this->ref_w_coeff[PARAM_BAND_BLUE_INDEX] = 0.298220602;
+    this->ref_w_coeff[PARAM_BAND_GREEN_INDEX] = 0.270097933;
+    this->ref_w_coeff[PARAM_BAND_RED_INDEX] = 0.230996896;
+    this->ref_w_coeff[PARAM_BAND_NIR_INDEX] = 0.155050651;
+    this->ref_w_coeff[PARAM_BAND_SWIR1_INDEX] = 0.033085493;
+    this->ref_w_coeff[PARAM_BAND_TERMAL_INDEX] = 0.000000000;
+    this->ref_w_coeff[PARAM_BAND_SWIR2_INDEX] = 0.012548425;
+
+    this->rad_mult[PARAM_BAND_BLUE_INDEX] = atof(mtl["RADIANCE_MULT_BAND_1"].c_str());
+    this->rad_mult[PARAM_BAND_GREEN_INDEX] = atof(mtl["RADIANCE_MULT_BAND_2"].c_str());
+    this->rad_mult[PARAM_BAND_RED_INDEX] = atof(mtl["RADIANCE_MULT_BAND_3"].c_str());
+    this->rad_mult[PARAM_BAND_NIR_INDEX] = atof(mtl["RADIANCE_MULT_BAND_4"].c_str());
+    this->rad_mult[PARAM_BAND_SWIR1_INDEX] = atof(mtl["RADIANCE_MULT_BAND_5"].c_str());
+    this->rad_mult[PARAM_BAND_TERMAL_INDEX] = atof(mtl["RADIANCE_MULT_BAND_6"].c_str());
+    this->rad_mult[PARAM_BAND_SWIR2_INDEX] = atof(mtl["RADIANCE_MULT_BAND_7"].c_str());
+
+    this->rad_add[PARAM_BAND_BLUE_INDEX] = atof(mtl["RADIANCE_ADD_BAND_1"].c_str());
+    this->rad_add[PARAM_BAND_GREEN_INDEX] = atof(mtl["RADIANCE_ADD_BAND_2"].c_str());
+    this->rad_add[PARAM_BAND_RED_INDEX] = atof(mtl["RADIANCE_ADD_BAND_3"].c_str());
+    this->rad_add[PARAM_BAND_NIR_INDEX] = atof(mtl["RADIANCE_ADD_BAND_4"].c_str());
+    this->rad_add[PARAM_BAND_SWIR1_INDEX] = atof(mtl["RADIANCE_ADD_BAND_5"].c_str());
+    this->rad_add[PARAM_BAND_TERMAL_INDEX] = atof(mtl["RADIANCE_ADD_BAND_6"].c_str());
+    this->rad_add[PARAM_BAND_SWIR2_INDEX] = atof(mtl["RADIANCE_ADD_BAND_7"].c_str());
+
+    this->ref_mult[PARAM_BAND_BLUE_INDEX] = atof(mtl["REFLECTANCE_MULT_BAND_1"].c_str());
+    this->ref_mult[PARAM_BAND_GREEN_INDEX] = atof(mtl["REFLECTANCE_MULT_BAND_2"].c_str());
+    this->ref_mult[PARAM_BAND_RED_INDEX] = atof(mtl["REFLECTANCE_MULT_BAND_3"].c_str());
+    this->ref_mult[PARAM_BAND_NIR_INDEX] = atof(mtl["REFLECTANCE_MULT_BAND_4"].c_str());
+    this->ref_mult[PARAM_BAND_SWIR1_INDEX] = atof(mtl["REFLECTANCE_MULT_BAND_5"].c_str());
+    this->ref_mult[PARAM_BAND_TERMAL_INDEX] = atof(mtl["REFLECTANCE_MULT_BAND_6"].c_str());
+    this->ref_mult[PARAM_BAND_SWIR2_INDEX] = atof(mtl["REFLECTANCE_MULT_BAND_7"].c_str());
+
+    this->ref_add[PARAM_BAND_BLUE_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_1"].c_str());
+    this->ref_add[PARAM_BAND_GREEN_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_2"].c_str());
+    this->ref_add[PARAM_BAND_RED_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_3"].c_str());
+    this->ref_add[PARAM_BAND_NIR_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_4"].c_str());
+    this->ref_add[PARAM_BAND_SWIR1_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_5"].c_str());
+    this->ref_add[PARAM_BAND_TERMAL_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_6"].c_str());
+    this->ref_add[PARAM_BAND_SWIR2_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_7"].c_str());
   }
-}
 
-void Sensor::load_parameter_values(string sensor_path)
-{
-  ifstream in(sensor_path);
-  if (!in.is_open() || !in)
-  {
-    cerr << "Open sensor parameters problem" << endl;
-    exit(1);
-  }
-
-  string line, token;
-  for (int i = 1; i < 8; i++)
-  {
-    getline(in, line);
-    stringstream lineReader(line);
-    vector<string> nline;
-    while (lineReader >> token)
-      nline.push_back(token);
-
-    this->parameters[i][this->GRESCALE] = atof(nline[0].c_str());
-    this->parameters[i][this->BRESCALE] = atof(nline[1].c_str());
-    this->parameters[i][this->ESUN] = atof(nline[2].c_str());
-    this->parameters[i][this->WB] = atof(nline[3].c_str());
-  }
-
-  in.close();
+  HANDLE_ERROR(cudaMemcpy(this->rad_add_d, this->rad_add, 7 * sizeof(float), cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->rad_mult_d, this->rad_mult, 7 * sizeof(float), cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->ref_add_d, this->ref_add, 7 * sizeof(float), cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->ref_mult_d, this->ref_mult, 7 * sizeof(float), cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->ref_w_coeff_d, this->ref_w_coeff, 7 * sizeof(float), cudaMemcpyHostToDevice));
 };
 
 Station::Station()

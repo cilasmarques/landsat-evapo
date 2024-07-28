@@ -8,10 +8,20 @@
 struct MTL
 {
   double image_hour;
-  double rad_mult_10, rad_add_10;
+  int number_sensor, julian_day, year;
   double sun_elevation, distance_earth_sun;
 
-  int number_sensor, julian_day, year;
+  float *rad_mult;
+  float *rad_add;
+  float *ref_mult;
+  float *ref_add;
+  float *ref_w_coeff;
+
+  float *rad_mult_d;
+  float *rad_add_d;
+  float *ref_mult_d;
+  float *ref_add_d;
+  float *ref_w_coeff_d;
 
   /**
    * @brief  Empty constructor. Setting all attributes to 0.
@@ -25,43 +35,6 @@ struct MTL
   MTL(string metadata_path);
 };
 
-/**
- * @brief  Satellite sensor struct.
- */
-struct Sensor
-{
-  double parameters[8][4];
-  const int GRESCALE = 0;
-  const int BRESCALE = 1;
-  const int ESUN = 2;
-  const int WB = 3;
-
-  /**
-   * @brief  Empty constructor.
-   */
-  Sensor();
-
-  /**
-   * @brief  Constructor.
-   * @param  number_sensor: Number of the satellite sensor.
-   * @param  year: Year of image.
-   */
-  Sensor(int number_sensor, int year);
-
-  /**
-   * @brief  Get the path of the correct sensor parameters based on his number.
-   * @param  number_sensor: Number of the satellite sensor.
-   * @param  year: Year of image.
-   * @retval Path to sensor parameter file.
-   */
-  string capture_parameter_path(int number_sensor, int year);
-
-  /**
-   * @brief  Loads the sensor parameters.
-   * @param  sensor_path: Path to sensor parameter file.
-   */
-  void load_parameter_values(string sensor_path);
-};
 
 /**
  * @brief  Struct to hold the weather station data.

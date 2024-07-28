@@ -11,6 +11,8 @@
 struct Products
 {
   int threads_num = 1;
+  int blocks_num;
+
   int nBytes_band;
   uint32_t width_band;
   uint32_t height_band;
@@ -78,12 +80,13 @@ struct Products
   float *evapotranspiration_24h;
   float *evapotranspiration;
 
-  float *devZom, *devTS, *devUstarR, *devUstarW, *devRahR, *devRahW, *devD0, *devKB1, *devH;
+  float *zom_d, *ts_d, *ustarR_d, *ustarW_d, *rahR_d, *rahW_d, *d0_d, *kb1_d, *sensible_heat_flux_d;
 
   float *tal_d, *only1_d;
   float *band_blue_d, *band_green_d, *band_red_d, *band_nir_d, *band_swir1_d, *band_termal_d, *band_swir2_d;
   float *radiance_blue_d, *radiance_green_d, *radiance_red_d, *radiance_nir_d, *radiance_swir1_d, *radiance_termal_d, *radiance_swir2_d;
   float *reflectance_blue_d, *reflectance_green_d, *reflectance_red_d, *reflectance_nir_d, *reflectance_swir1_d, *reflectance_termal_d, *reflectance_swir2_d;
+  float *albedo_d, *ndvi_d, *soil_heat_d, *surface_temperature_d, *net_radiation_d;
 
   /**
    * @brief  Constructor.
@@ -107,20 +110,20 @@ struct Products
    * @param  mtl: MTL struct.
    * @param  sensor: Sensor struct.
    */
-  void radiance_function(MTL mtl, Sensor sensor);
+  void radiance_function(MTL mtl);
 
   /**
    * @brief  The spectral reflectance for each band is computed.
    * @param  mtl: MTL struct.
    * @param  sensor: Sensor struct.
    */
-  void reflectance_function(MTL mtl, Sensor sensor);
+  void reflectance_function(MTL mtl);
 
   /**
    * @brief  The surface albedo is computed.
    * @param  sensor: Sensor struct.
    */
-  void albedo_function(MTL mtl, Sensor sensor);
+  void albedo_function(MTL mtl);
 
   /**
    * @brief  The NDVI is computed.

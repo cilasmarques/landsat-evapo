@@ -6,6 +6,8 @@ Products::Products() {}
 Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
 {
   this->threads_num = threads_num;
+  this->blocks_num = ceil(width_band * height_band / this->threads_num);
+
   this->width_band = width_band;
   this->height_band = height_band;
   this->nBytes_band = height_band * width_band * sizeof(float);
@@ -92,6 +94,11 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_termal_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_swir2_d, nBytes_band));
 
+  HANDLE_ERROR(cudaMalloc((void **)&this->albedo_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->ndvi_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->soil_heat_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->surface_temperature_d, nBytes_band));
+
   HANDLE_ERROR(cudaMalloc((void **)&this->zom_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->d0_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->kb1_d, nBytes_band));
@@ -162,28 +169,17 @@ void Products::close()
   free(this->evapotranspiration);
 }
 
-void Products::radiance_function(MTL mtl, Sensor sensor)
+void Products::radiance_function(MTL mtl)
 {
-  int blocks_num = ceil(width_band * height_band / this->threads_num);
-
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
 
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  rad_kernel<<<blocks_num, this->threads_num>>>(band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d,
-                                          radiance_blue_d, radiance_green_d, radiance_red_d, radiance_nir_d,
-                                          radiance_swir1_d, radiance_termal_d, radiance_swir2_d,
-                                          sensor.parameters[1][sensor.GRESCALE], sensor.parameters[1][sensor.BRESCALE],
-                                          sensor.parameters[2][sensor.GRESCALE], sensor.parameters[2][sensor.BRESCALE],
-                                          sensor.parameters[3][sensor.GRESCALE], sensor.parameters[3][sensor.BRESCALE],
-                                          sensor.parameters[4][sensor.GRESCALE], sensor.parameters[4][sensor.BRESCALE],
-                                          sensor.parameters[5][sensor.GRESCALE], sensor.parameters[5][sensor.BRESCALE],
-                                          sensor.parameters[6][sensor.GRESCALE], sensor.parameters[6][sensor.BRESCALE],
-                                          sensor.parameters[7][sensor.GRESCALE], sensor.parameters[7][sensor.BRESCALE],
-                                          sensor.parameters[8][sensor.GRESCALE],
-                                          width_band, height_band);
+  rad_kernel<<<this->blocks_num, this->threads_num>>>(band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d,
+                                                      radiance_blue_d, radiance_green_d, radiance_red_d, radiance_nir_d, radiance_swir1_d, radiance_termal_d, radiance_swir2_d,
+                                                      mtl.rad_add_d, mtl.rad_mult_d, width_band, height_band);
   HANDLE_ERROR(cudaDeviceSynchronize());
   HANDLE_ERROR(cudaGetLastError());
 
@@ -201,10 +197,8 @@ void Products::radiance_function(MTL mtl, Sensor sensor)
   HANDLE_ERROR(cudaMemcpy(radiance_swir2, radiance_swir2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 }
 
-void Products::reflectance_function(MTL mtl, Sensor sensor)
+void Products::reflectance_function(MTL mtl)
 {
-  int blocks_num = ceil(width_band * height_band / this->threads_num);
-
   const float sin_sun = sin(mtl.sun_elevation * PI / 180);
 
   system_clock::time_point begin, end;
@@ -213,28 +207,9 @@ void Products::reflectance_function(MTL mtl, Sensor sensor)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  if (mtl.number_sensor == 8)
-  {
-    ref_kernel<<<blocks_num, this->threads_num>>>(sin_sun,
-                                            radiance_blue_d, radiance_green_d, radiance_red_d, radiance_nir_d,
-                                            radiance_swir1_d, radiance_termal_d, radiance_swir2_d,
-                                            reflectance_blue_d, reflectance_green_d, reflectance_red_d, reflectance_nir_d,
-                                            reflectance_swir1_d, reflectance_termal_d, reflectance_swir2_d,
-                                            width_band, height_band);
-  }
-  else
-  {
-    ref_kernel<<<blocks_num, this->threads_num>>>(PI, sin_sun, mtl.distance_earth_sun,
-                                            sensor.parameters[1][sensor.ESUN], sensor.parameters[2][sensor.ESUN],
-                                            sensor.parameters[3][sensor.ESUN], sensor.parameters[4][sensor.ESUN],
-                                            sensor.parameters[5][sensor.ESUN], sensor.parameters[6][sensor.ESUN],
-                                            sensor.parameters[7][sensor.ESUN],
-                                            radiance_blue_d, radiance_green_d, radiance_red_d, radiance_nir_d,
-                                            radiance_swir1_d, radiance_termal_d, radiance_swir2_d,
-                                            reflectance_blue_d, reflectance_green_d, reflectance_red_d, reflectance_nir_d,
-                                            reflectance_swir1_d, reflectance_termal_d, reflectance_swir2_d,
-                                            width_band, height_band);
-  }
+  ref_kernel<<<this->blocks_num, this->threads_num>>>(band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d,
+                                                      reflectance_blue_d, reflectance_green_d, reflectance_red_d, reflectance_nir_d, reflectance_swir1_d, reflectance_termal_d, reflectance_swir2_d,
+                                                      mtl.ref_add_d, mtl.ref_mult_d, sin_sun, width_band, height_band);
 
   HANDLE_ERROR(cudaDeviceSynchronize());
   HANDLE_ERROR(cudaGetLastError());
@@ -254,33 +229,27 @@ void Products::reflectance_function(MTL mtl, Sensor sensor)
   HANDLE_ERROR(cudaMemcpy(reflectance_swir2, reflectance_swir2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 }
 
-void Products::albedo_function(MTL mtl, Sensor sensor)
+void Products::albedo_function(MTL mtl)
 {
-  if (mtl.number_sensor == 8)
-  {
-    for (int i = 0; i < this->height_band * this->width_band; i++)
-    {
-      this->albedo[i] = this->reflectance_blue[i] * sensor.parameters[1][sensor.WB] +
-                        this->reflectance_green[i] * sensor.parameters[2][sensor.WB] +
-                        this->reflectance_red[i] * sensor.parameters[3][sensor.WB] +
-                        this->reflectance_nir[i] * sensor.parameters[4][sensor.WB] +
-                        this->reflectance_swir1[i] * sensor.parameters[5][sensor.WB] +
-                        this->reflectance_termal[i] * sensor.parameters[6][sensor.WB];
-    }
-  }
-  else
-  {
-    for (int i = 0; i < this->height_band * this->width_band; i++)
-    {
-      float alb = this->reflectance_blue[i] * sensor.parameters[1][sensor.WB] +
-                  this->reflectance_green[i] * sensor.parameters[2][sensor.WB] +
-                  this->reflectance_red[i] * sensor.parameters[3][sensor.WB] +
-                  this->reflectance_nir[i] * sensor.parameters[4][sensor.WB] +
-                  this->reflectance_swir1[i] * sensor.parameters[5][sensor.WB] +
-                  this->reflectance_swir2[i] * sensor.parameters[7][sensor.WB];
-      this->albedo[i] = (alb - 0.03) / (this->tal[i] * this->tal[i]);
-    }
-  }
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+  albedo_kernel<<<this->blocks_num, this->threads_num>>>(reflectance_blue_d, reflectance_green_d, reflectance_red_d, reflectance_nir_d, reflectance_swir1_d, reflectance_swir2_d,
+                                                         tal_d, albedo_d, mtl.ref_w_coeff_d, width_band, height_band);
+
+  HANDLE_ERROR(cudaDeviceSynchronize());
+  HANDLE_ERROR(cudaGetLastError());
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  std::cout << "CUDACORE,ALBEDO," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+
+  // Copy data back to host
+  HANDLE_ERROR(cudaMemcpy(albedo, albedo_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 }
 
 void Products::ndvi_function()

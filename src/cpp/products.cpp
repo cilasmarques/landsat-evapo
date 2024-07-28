@@ -127,8 +127,9 @@ void Products::close()
   free(this->evapotranspiration);
 }
 
-void Products::radiance_function(MTL mtl, Sensor sensor)
+void Products::radiance_function(MTL mtl)
 {
+  // https://www.usgs.gov/landsat-missions/using-usgs-landsat-level-1-data-product
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
 
@@ -137,13 +138,13 @@ void Products::radiance_function(MTL mtl, Sensor sensor)
 
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    this->radiance_blue[i] = this->band_blue[i] * sensor.parameters[1][sensor.GRESCALE] + sensor.parameters[1][sensor.BRESCALE];
-    this->radiance_green[i] = this->band_green[i] * sensor.parameters[2][sensor.GRESCALE] + sensor.parameters[2][sensor.BRESCALE];
-    this->radiance_red[i] = this->band_red[i] * sensor.parameters[3][sensor.GRESCALE] + sensor.parameters[3][sensor.BRESCALE];
-    this->radiance_nir[i] = this->band_nir[i] * sensor.parameters[4][sensor.GRESCALE] + sensor.parameters[4][sensor.BRESCALE];
-    this->radiance_swir1[i] = this->band_swir1[i] * sensor.parameters[5][sensor.GRESCALE] + sensor.parameters[5][sensor.BRESCALE];
-    this->radiance_termal[i] = this->band_termal[i] * sensor.parameters[6][sensor.GRESCALE] + sensor.parameters[6][sensor.BRESCALE];
-    this->radiance_swir2[i] = this->band_swir2[i] * sensor.parameters[7][sensor.GRESCALE] + sensor.parameters[7][sensor.BRESCALE];
+    this->radiance_blue[i] = this->band_blue[i] * mtl.rad_mult[PARAM_BAND_BLUE_INDEX] + mtl.rad_add[PARAM_BAND_BLUE_INDEX];
+    this->radiance_green[i] = this->band_green[i] * mtl.rad_mult[PARAM_BAND_GREEN_INDEX] + mtl.rad_add[PARAM_BAND_GREEN_INDEX];
+    this->radiance_red[i] = this->band_red[i] * mtl.rad_mult[PARAM_BAND_RED_INDEX] + mtl.rad_add[PARAM_BAND_RED_INDEX];
+    this->radiance_nir[i] = this->band_nir[i] * mtl.rad_mult[PARAM_BAND_NIR_INDEX] + mtl.rad_add[PARAM_BAND_NIR_INDEX];
+    this->radiance_swir1[i] = this->band_swir1[i] * mtl.rad_mult[PARAM_BAND_SWIR1_INDEX] + mtl.rad_add[PARAM_BAND_SWIR1_INDEX];
+    this->radiance_swir2[i] = this->band_swir2[i] * mtl.rad_mult[PARAM_BAND_TERMAL_INDEX] + mtl.rad_add[PARAM_BAND_TERMAL_INDEX];
+    this->radiance_termal[i] = this->band_termal[i] * mtl.rad_mult[PARAM_BAND_SWIR2_INDEX] + mtl.rad_add[PARAM_BAND_SWIR2_INDEX];
 
     if (radiance_blue[i] <= 0)
       this->radiance_blue[i] = NAN;
@@ -167,8 +168,9 @@ void Products::radiance_function(MTL mtl, Sensor sensor)
   // std::cout << "SERIAL,RADIANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
-void Products::reflectance_function(MTL mtl, Sensor sensor)
+void Products::reflectance_function(MTL mtl)
 {
+  // https://www.usgs.gov/landsat-missions/using-usgs-landsat-level-1-data-product
   const float sin_sun = sin(mtl.sun_elevation * PI / 180);
 
   system_clock::time_point begin, end;
@@ -177,31 +179,30 @@ void Products::reflectance_function(MTL mtl, Sensor sensor)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  if (mtl.number_sensor == 8)
+  for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    for (int i = 0; i < this->height_band * this->width_band; i++)
-    {
-      this->reflectance_blue[i] = this->radiance_blue[i] / sin_sun;
-      this->reflectance_green[i] = this->radiance_green[i] / sin_sun;
-      this->reflectance_red[i] = this->radiance_red[i] / sin_sun;
-      this->reflectance_nir[i] = this->radiance_nir[i] / sin_sun;
-      this->reflectance_swir1[i] = this->radiance_swir1[i] / sin_sun;
-      this->reflectance_termal[i] = this->radiance_termal[i] / sin_sun;
-      this->reflectance_swir2[i] = this->radiance_swir2[i] / sin_sun;
-    }
-  }
-  else
-  {
-    for (int i = 0; i < this->height_band * this->width_band; i++)
-    {
-      this->reflectance_blue[i] = (PI * this->radiance_blue[i]) / (sensor.parameters[1][sensor.ESUN] * sin_sun);
-      this->reflectance_green[i] = (PI * this->radiance_green[i]) / (sensor.parameters[2][sensor.ESUN] * sin_sun);
-      this->reflectance_red[i] = (PI * this->radiance_red[i]) / (sensor.parameters[3][sensor.ESUN] * sin_sun);
-      this->reflectance_nir[i] = (PI * this->radiance_nir[i]) / (sensor.parameters[4][sensor.ESUN] * sin_sun);
-      this->reflectance_swir1[i] = (PI * this->radiance_swir1[i]) / (sensor.parameters[5][sensor.ESUN] * sin_sun);
-      this->reflectance_termal[i] = (PI * this->radiance_termal[i]) / (sensor.parameters[6][sensor.ESUN] * sin_sun);
-      this->reflectance_swir2[i] = (PI * this->radiance_swir2[i]) / (sensor.parameters[7][sensor.ESUN] * sin_sun);
-    }
+    this->reflectance_blue[i] = (this->band_blue[i] * mtl.ref_mult[PARAM_BAND_BLUE_INDEX] + mtl.ref_add[PARAM_BAND_BLUE_INDEX]) / sin_sun;
+    this->reflectance_green[i] = (this->band_green[i] * mtl.ref_mult[PARAM_BAND_GREEN_INDEX] + mtl.ref_add[PARAM_BAND_GREEN_INDEX]) / sin_sun;
+    this->reflectance_red[i] = (this->band_red[i] * mtl.ref_mult[PARAM_BAND_RED_INDEX] + mtl.ref_add[PARAM_BAND_RED_INDEX]) / sin_sun;
+    this->reflectance_nir[i] = (this->band_nir[i] * mtl.ref_mult[PARAM_BAND_NIR_INDEX] + mtl.ref_add[PARAM_BAND_NIR_INDEX]) / sin_sun;
+    this->reflectance_swir1[i] = (this->band_swir1[i] * mtl.ref_mult[PARAM_BAND_SWIR1_INDEX] + mtl.ref_add[PARAM_BAND_SWIR1_INDEX]) / sin_sun;
+    this->reflectance_termal[i] = (this->band_swir2[i] * mtl.ref_mult[PARAM_BAND_TERMAL_INDEX] + mtl.ref_add[PARAM_BAND_TERMAL_INDEX]) / sin_sun;
+    this->reflectance_swir2[i] = (this->band_termal[i] * mtl.ref_mult[PARAM_BAND_SWIR2_INDEX] + mtl.ref_add[PARAM_BAND_SWIR2_INDEX]) / sin_sun;
+
+    if (reflectance_blue[i] <= 0)
+      this->reflectance_blue[i] = NAN;
+    if (reflectance_green[i] <= 0)
+      this->reflectance_green[i] = NAN;
+    if (reflectance_red[i] <= 0)
+      this->reflectance_red[i] = NAN;
+    if (reflectance_nir[i] <= 0)
+      this->reflectance_nir[i] = NAN;
+    if (reflectance_swir1[i] <= 0)
+      this->reflectance_swir1[i] = NAN;
+    if (reflectance_termal[i] <= 0)
+      this->reflectance_termal[i] = NAN;
+    if (reflectance_swir2[i] <= 0)
+      this->reflectance_swir2[i] = NAN;
   }
 
   end = system_clock::now();
@@ -210,32 +211,22 @@ void Products::reflectance_function(MTL mtl, Sensor sensor)
   // std::cout << "SERIAL,REFLECTANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
-void Products::albedo_function(MTL mtl, Sensor sensor)
+void Products::albedo_function(MTL mtl)
 {
-  if (mtl.number_sensor == 8)
+  // https://doi.org/10.1016/j.rse.2017.10.031
+  for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    for (int i = 0; i < this->height_band * this->width_band; i++)
-    {
-      this->albedo[i] = this->reflectance_blue[i] * sensor.parameters[1][sensor.WB] +
-                        this->reflectance_green[i] * sensor.parameters[2][sensor.WB] +
-                        this->reflectance_red[i] * sensor.parameters[3][sensor.WB] +
-                        this->reflectance_nir[i] * sensor.parameters[4][sensor.WB] +
-                        this->reflectance_swir1[i] * sensor.parameters[5][sensor.WB] +
-                        this->reflectance_termal[i] * sensor.parameters[6][sensor.WB];
-    }
-  }
-  else
-  {
-    for (int i = 0; i < this->height_band * this->width_band; i++)
-    {
-      float alb = this->reflectance_blue[i] * sensor.parameters[1][sensor.WB] +
-                  this->reflectance_green[i] * sensor.parameters[2][sensor.WB] +
-                  this->reflectance_red[i] * sensor.parameters[3][sensor.WB] +
-                  this->reflectance_nir[i] * sensor.parameters[4][sensor.WB] +
-                  this->reflectance_swir1[i] * sensor.parameters[5][sensor.WB] +
-                  this->reflectance_swir2[i] * sensor.parameters[7][sensor.WB];
-      this->albedo[i] = (alb - 0.03) / (this->tal[i] * this->tal[i]);
-    }
+    float alb = this->reflectance_blue[i] * mtl.ref_w_coeff[PARAM_BAND_BLUE_INDEX] +
+                this->reflectance_green[i] * mtl.ref_w_coeff[PARAM_BAND_GREEN_INDEX] +
+                this->reflectance_red[i] * mtl.ref_w_coeff[PARAM_BAND_RED_INDEX] +
+                this->reflectance_nir[i] * mtl.ref_w_coeff[PARAM_BAND_NIR_INDEX] +
+                this->reflectance_swir1[i] * mtl.ref_w_coeff[PARAM_BAND_SWIR1_INDEX] +
+                this->reflectance_swir2[i] * mtl.ref_w_coeff[PARAM_BAND_SWIR2_INDEX];
+
+    this->albedo[i] = (alb - 0.03) / (this->tal[i] * this->tal[i]);
+
+    if (albedo[i] <= 0)
+      this->albedo[i] = NAN;
   }
 }
 
