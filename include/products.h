@@ -30,21 +30,21 @@ struct Products
   float *tal;
   float *only1;
 
-  float *radiance1;
-  float *radiance2;
-  float *radiance3;
-  float *radiance4;
-  float *radiance5;
-  float *radiance6;
-  float *radiance7;
+  float *radiance_blue;
+  float *radiance_green;
+  float *radiance_red;
+  float *radiance_nir;
+  float *radiance_swir1;
+  float *radiance_termal;
+  float *radiance_swir2;
 
-  float *reflectance1;
-  float *reflectance2;
-  float *reflectance3;
-  float *reflectance4;
-  float *reflectance5;
-  float *reflectance6;
-  float *reflectance7;
+  float *reflectance_blue;
+  float *reflectance_green;
+  float *reflectance_red;
+  float *reflectance_nir;
+  float *reflectance_swir1;
+  float *reflectance_termal;
+  float *reflectance_swir2;
 
   float *albedo;
   float *ndvi;
@@ -82,8 +82,8 @@ struct Products
 
   float *tal_d, *only1_d;
   float *band_blue_d, *band_green_d, *band_red_d, *band_nir_d, *band_swir1_d, *band_termal_d, *band_swir2_d;
-  float *radiance1_d, *radiance2_d, *radiance3_d, *radiance4_d, *radiance5_d, *radiance6_d, *radiance7_d;
-  float *reflectance1_d, *reflectance2_d, *reflectance3_d, *reflectance4_d, *reflectance5_d, *reflectance6_d, *reflectance7_d;
+  float *radiance_blue_d, *radiance_green_d, *radiance_red_d, *radiance_nir_d, *radiance_swir1_d, *radiance_termal_d, *radiance_swir2_d;
+  float *reflectance_blue_d, *reflectance_green_d, *reflectance_red_d, *reflectance_nir_d, *reflectance_swir1_d, *reflectance_termal_d, *reflectance_swir2_d;
 
   /**
    * @brief  Constructor.

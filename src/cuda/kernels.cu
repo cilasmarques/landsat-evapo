@@ -1,9 +1,9 @@
 #include "kernels.cuh"
 
-__global__ void rad_kernel(float *band1_d, float *band2_d, float *band3_d, float *band4_d,
-                           float *band5_d, float *band6_d, float *band7_d,
-                           float *radiance1_d, float *radiance2_d, float *radiance3_d, float *radiance4_d,
-                           float *radiance5_d, float *radiance6_d, float *radiance7_d,
+__global__ void rad_kernel(float *band_blue_d, float *band_green_d, float *band_red_d, float *band_nir_d,
+                           float *band_swir1_d, float *band_termal_d, float *band_swir2_d,
+                           float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d,
+                           float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d,
                            float grenscale1_d, float brescale1_d,
                            float grenscale2_d, float brescale2_d,
                            float grenscale3_d, float brescale3_d,
@@ -24,21 +24,21 @@ __global__ void rad_kernel(float *band1_d, float *band2_d, float *band3_d, float
   {
     unsigned int pos = row * width + col;
 
-    radiance1_d[pos] = band1_d[pos] * grenscale1_d + brescale1_d;
-    radiance2_d[pos] = band2_d[pos] * grenscale2_d + brescale2_d;
-    radiance3_d[pos] = band3_d[pos] * grenscale3_d + brescale3_d;
-    radiance4_d[pos] = band4_d[pos] * grenscale4_d + brescale4_d;
-    radiance5_d[pos] = band5_d[pos] * grenscale5_d + brescale5_d;
-    radiance6_d[pos] = band6_d[pos] * grenscale6_d + brescale6_d;
-    radiance7_d[pos] = band7_d[pos] * grenscale7_d + brescale7_d;
+    radiance_blue_d[pos] = band_blue_d[pos] * grenscale1_d + brescale1_d;
+    radiance_green_d[pos] = band_green_d[pos] * grenscale2_d + brescale2_d;
+    radiance_red_d[pos] = band_red_d[pos] * grenscale3_d + brescale3_d;
+    radiance_nir_d[pos] = band_nir_d[pos] * grenscale4_d + brescale4_d;
+    radiance_swir1_d[pos] = band_swir1_d[pos] * grenscale5_d + brescale5_d;
+    radiance_termal_d[pos] = band_termal_d[pos] * grenscale6_d + brescale6_d;
+    radiance_swir2_d[pos] = band_swir2_d[pos] * grenscale7_d + brescale7_d;
   }
 }
 
 __global__ void ref_kernel(float sin_sun,
-                           float *radiance1_d, float *radiance2_d, float *radiance3_d, float *radiance4_d,
-                           float *radiance5_d, float *radiance6_d, float *radiance7_d,
-                           float *reflectance1_d, float *reflectance2_d, float *reflectance3_d, float *reflectance4_d,
-                           float *reflectance5_d, float *reflectance6_d, float *reflectance7_d,
+                           float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d,
+                           float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d,
+                           float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d,
+                           float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d,
                            int width, int height)
 {
   unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -51,23 +51,23 @@ __global__ void ref_kernel(float sin_sun,
   {
     unsigned int pos = row * width + col;
 
-    reflectance1_d[pos] = radiance1_d[pos] / sin_sun;
-    reflectance2_d[pos] = radiance2_d[pos] / sin_sun;
-    reflectance3_d[pos] = radiance3_d[pos] / sin_sun;
-    reflectance4_d[pos] = radiance4_d[pos] / sin_sun;
-    reflectance5_d[pos] = radiance5_d[pos] / sin_sun;
-    reflectance6_d[pos] = radiance6_d[pos] / sin_sun;
-    reflectance7_d[pos] = radiance7_d[pos] / sin_sun;
+    reflectance_blue_d[pos] = radiance_blue_d[pos] / sin_sun;
+    reflectance_green_d[pos] = radiance_green_d[pos] / sin_sun;
+    reflectance_red_d[pos] = radiance_red_d[pos] / sin_sun;
+    reflectance_nir_d[pos] = radiance_nir_d[pos] / sin_sun;
+    reflectance_swir1_d[pos] = radiance_swir1_d[pos] / sin_sun;
+    reflectance_termal_d[pos] = radiance_termal_d[pos] / sin_sun;
+    reflectance_swir2_d[pos] = radiance_swir2_d[pos] / sin_sun;
   }
 }
 
 __global__ void ref_kernel(double PI, float sin_sun, float distance_earth_sun,
                            float esun1, float esun2, float esun3, float esun4,
                            float esun5, float esun6, float esun7,
-                           float *radiance1_d, float *radiance2_d, float *radiance3_d, float *radiance4_d,
-                           float *radiance5_d, float *radiance6_d, float *radiance7_d,
-                           float *reflectance1_d, float *reflectance2_d, float *reflectance3_d, float *reflectance4_d,
-                           float *reflectance5_d, float *reflectance6_d, float *reflectance7_d,
+                           float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d,
+                           float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d,
+                           float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d,
+                           float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d,
                            int width, int height)
 {
   unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -80,13 +80,13 @@ __global__ void ref_kernel(double PI, float sin_sun, float distance_earth_sun,
   {
     unsigned int pos = row * width + col;
 
-    reflectance1_d[pos] = (PI * radiance1_d[pos] * distance_earth_sun * distance_earth_sun) / (esun1 * sin_sun);
-    reflectance2_d[pos] = (PI * radiance2_d[pos] * distance_earth_sun * distance_earth_sun) / (esun2 * sin_sun);
-    reflectance3_d[pos] = (PI * radiance3_d[pos] * distance_earth_sun * distance_earth_sun) / (esun3 * sin_sun);
-    reflectance4_d[pos] = (PI * radiance4_d[pos] * distance_earth_sun * distance_earth_sun) / (esun4 * sin_sun);
-    reflectance5_d[pos] = (PI * radiance5_d[pos] * distance_earth_sun * distance_earth_sun) / (esun5 * sin_sun);
-    reflectance6_d[pos] = (PI * radiance6_d[pos] * distance_earth_sun * distance_earth_sun) / (esun6 * sin_sun);
-    reflectance7_d[pos] = (PI * radiance7_d[pos] * distance_earth_sun * distance_earth_sun) / (esun7 * sin_sun);
+    reflectance_blue_d[pos] = (PI * radiance_blue_d[pos] * distance_earth_sun * distance_earth_sun) / (esun1 * sin_sun);
+    reflectance_green_d[pos] = (PI * radiance_green_d[pos] * distance_earth_sun * distance_earth_sun) / (esun2 * sin_sun);
+    reflectance_red_d[pos] = (PI * radiance_red_d[pos] * distance_earth_sun * distance_earth_sun) / (esun3 * sin_sun);
+    reflectance_nir_d[pos] = (PI * radiance_nir_d[pos] * distance_earth_sun * distance_earth_sun) / (esun4 * sin_sun);
+    reflectance_swir1_d[pos] = (PI * radiance_swir1_d[pos] * distance_earth_sun * distance_earth_sun) / (esun5 * sin_sun);
+    reflectance_termal_d[pos] = (PI * radiance_termal_d[pos] * distance_earth_sun * distance_earth_sun) / (esun6 * sin_sun);
+    reflectance_swir2_d[pos] = (PI * radiance_swir2_d[pos] * distance_earth_sun * distance_earth_sun) / (esun7 * sin_sun);
   }
 }
 

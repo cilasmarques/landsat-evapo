@@ -247,25 +247,25 @@ void Landsat::save_products(string output_path)
   std::cout.rdbuf(outputProds.rdbuf());
 
   std::cout << "==== reflectance 1" << std::endl;
-  printLinearPointer(products.reflectance1, height_band, width_band);
+  printLinearPointer(products.reflectance_blue, height_band, width_band);
 
   std::cout << "==== reflectance 2" << std::endl;
-  printLinearPointer(products.reflectance2, height_band, width_band);
+  printLinearPointer(products.reflectance_green, height_band, width_band);
 
   std::cout << "==== reflectance 3" << std::endl;
-  printLinearPointer(products.reflectance3, height_band, width_band);
+  printLinearPointer(products.reflectance_red, height_band, width_band);
 
   std::cout << "==== reflectance 4" << std::endl;
-  printLinearPointer(products.reflectance4, height_band, width_band);
+  printLinearPointer(products.reflectance_nir, height_band, width_band);
 
   std::cout << "==== reflectance 5" << std::endl;
-  printLinearPointer(products.reflectance5, height_band, width_band);
+  printLinearPointer(products.reflectance_swir1, height_band, width_band);
 
   std::cout << "==== reflectance 6" << std::endl;
-  printLinearPointer(products.reflectance6, height_band, width_band);
+  printLinearPointer(products.reflectance_termal, height_band, width_band);
 
   std::cout << "==== reflectance 7" << std::endl;
-  printLinearPointer(products.reflectance7, height_band, width_band);
+  printLinearPointer(products.reflectance_swir2, height_band, width_band);
 
   std::cout << "==== albedo" << std::endl;
   printLinearPointer(products.albedo, height_band, width_band);

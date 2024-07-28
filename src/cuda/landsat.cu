@@ -1,7 +1,6 @@
 #include "landsat.h"
-#include "cuda_utils.h"
 
-Landsat::Landsat(string bands_paths[], string land_cover_path, MTL mtl, int threads_num)
+Landsat::Landsat(string bands_paths[], MTL mtl, int threads_num)
 {
   // Open bands
   for (int i = 0; i < 8; i++)
@@ -42,25 +41,25 @@ Landsat::Landsat(string bands_paths[], string land_cover_path, MTL mtl, int thre
         switch (i)
         {
         case 0:
-          this->products.band1[line * width + col] = value;
+          this->products.band_blue[line * width + col] = value;
           break;
         case 1:
-          this->products.band2[line * width + col] = value;
+          this->products.band_green[line * width + col] = value;
           break;
         case 2:
-          this->products.band3[line * width + col] = value;
+          this->products.band_red[line * width + col] = value;
           break;
         case 3:
-          this->products.band4[line * width + col] = value;
+          this->products.band_nir[line * width + col] = value;
           break;
         case 4:
-          this->products.band5[line * width + col] = value;
+          this->products.band_swir1[line * width + col] = value;
           break;
         case 5:
-          this->products.band6[line * width + col] = value;
+          this->products.band_termal[line * width + col] = value;
           break;
         case 6:
-          this->products.band7[line * width + col] = value;
+          this->products.band_swir2[line * width + col] = value;
           break;
         default:
           break;
@@ -71,30 +70,30 @@ Landsat::Landsat(string bands_paths[], string land_cover_path, MTL mtl, int thre
   }
 
   // Get tal data
-  TIFF *tal_band = this->bands_resampled[7];
+  TIFF *elevation_band = this->bands_resampled[7];
   for (int line = 0; line < height; line++)
   {
-    tdata_t band_line_buff = _TIFFmalloc(TIFFScanlineSize(tal_band));
-    unsigned short curr_band_line_size = TIFFScanlineSize(tal_band) / width;
-    TIFFReadScanline(tal_band, band_line_buff, line);
+    tdata_t band_line_buff = _TIFFmalloc(TIFFScanlineSize(elevation_band));
+    unsigned short curr_band_line_size = TIFFScanlineSize(elevation_band) / width;
+    TIFFReadScanline(elevation_band, band_line_buff, line);
 
     for (int col = 0; col < width; col++)
     {
       float value = 0;
       memcpy(&value, static_cast<unsigned char *>(band_line_buff) + col * curr_band_line_size, curr_band_line_size);
 
-      this->products.tal[line * width + col] = value;
+      this->products.tal[line * width + col] = 0.75 + 2 * pow(10, -5) * value;
     }
     _TIFFfree(band_line_buff);
   }
 
-  HANDLE_ERROR(cudaMemcpy(this->products.band1_d, this->products.band1, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
-  HANDLE_ERROR(cudaMemcpy(this->products.band2_d, this->products.band2, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
-  HANDLE_ERROR(cudaMemcpy(this->products.band3_d, this->products.band3, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
-  HANDLE_ERROR(cudaMemcpy(this->products.band4_d, this->products.band4, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
-  HANDLE_ERROR(cudaMemcpy(this->products.band5_d, this->products.band5, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
-  HANDLE_ERROR(cudaMemcpy(this->products.band6_d, this->products.band6, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
-  HANDLE_ERROR(cudaMemcpy(this->products.band7_d, this->products.band7, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->products.band_blue_d, this->products.band_blue, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->products.band_green_d, this->products.band_green, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->products.band_red_d, this->products.band_red, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->products.band_nir_d, this->products.band_nir, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->products.band_swir1_d, this->products.band_swir1, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->products.band_termal_d, this->products.band_termal, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
+  HANDLE_ERROR(cudaMemcpy(this->products.band_swir2_d, this->products.band_swir2, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
   HANDLE_ERROR(cudaMemcpy(this->products.tal_d, this->products.tal, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
 };
 
@@ -253,11 +252,65 @@ void Landsat::save_products(string output_path)
   std::streambuf *coutProds = std::cout.rdbuf();
   std::cout.rdbuf(outputProds.rdbuf());
 
+  std::cout << "==== reflectance 1" << std::endl;
+  printLinearPointer(products.reflectance_blue, height_band, width_band);
+
+  std::cout << "==== reflectance 2" << std::endl;
+  printLinearPointer(products.reflectance_green, height_band, width_band);
+
+  std::cout << "==== reflectance 3" << std::endl;
+  printLinearPointer(products.reflectance_red, height_band, width_band);
+
+  std::cout << "==== reflectance 4" << std::endl;
+  printLinearPointer(products.reflectance_nir, height_band, width_band);
+
+  std::cout << "==== reflectance 5" << std::endl;
+  printLinearPointer(products.reflectance_swir1, height_band, width_band);
+
+  std::cout << "==== reflectance 6" << std::endl;
+  printLinearPointer(products.reflectance_termal, height_band, width_band);
+
+  std::cout << "==== reflectance 7" << std::endl;
+  printLinearPointer(products.reflectance_swir2, height_band, width_band);
+
   std::cout << "==== albedo" << std::endl;
   printLinearPointer(products.albedo, height_band, width_band);
 
   std::cout << "==== ndvi" << std::endl;
   printLinearPointer(products.ndvi, height_band, width_band);
+
+  std::cout << "==== enb" << std::endl;
+  printLinearPointer(products.enb_emissivity, height_band, width_band);
+
+  std::cout << "==== pai" << std::endl;
+  printLinearPointer(products.pai, height_band, width_band);
+
+  std::cout << "==== lai" << std::endl;
+  printLinearPointer(products.lai, height_band, width_band);
+
+  std::cout << "==== savi" << std::endl;
+  printLinearPointer(products.savi, height_band, width_band);
+
+  std::cout << "==== evi" << std::endl;
+  printLinearPointer(products.evi, height_band, width_band);
+
+  std::cout << "==== surface_temperature" << std::endl;
+  printLinearPointer(products.surface_temperature, height_band, width_band);
+
+  std::cout << "==== short_wave_radiation" << std::endl;
+  printLinearPointer(products.short_wave_radiation, height_band, width_band);
+
+  std::cout << "==== large_wave_radiation_surface" << std::endl;
+  printLinearPointer(products.large_wave_radiation_surface, height_band, width_band);
+
+  std::cout << "==== large_wave_radiation_atmosphere" << std::endl;
+  printLinearPointer(products.large_wave_radiation_atmosphere, height_band, width_band);
+
+  std::cout << "==== ea" << std::endl;
+  printLinearPointer(products.ea_emissivity, height_band, width_band);
+
+  std::cout << "==== eo" << std::endl;
+  printLinearPointer(products.eo_emissivity, height_band, width_band);
 
   std::cout << "==== net_radiation" << std::endl;
   printLinearPointer(products.net_radiation, height_band, width_band);

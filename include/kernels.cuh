@@ -5,8 +5,8 @@
 
 __global__ void rad_kernel(float *band_blue_d, float *band_green_d, float *band_red_d, float *band_nir_d,
                            float *band_swir1_d, float *band_termal_d, float *band_swir2_d,
-                           float *radiance1_d, float *radiance2_d, float *radiance3_d, float *radiance4_d,
-                           float *radiance5_d, float *radiance6_d, float *radiance7_d,
+                           float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d,
+                           float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d,
                            float grenscale1_d, float brescale1_d,
                            float grenscale2_d, float brescale2_d,
                            float grenscale3_d, float brescale3_d,
@@ -18,19 +18,19 @@ __global__ void rad_kernel(float *band_blue_d, float *band_green_d, float *band_
                            int width, int height);
 
 __global__ void ref_kernel(float sin_sun, 
-                           float *radiance1_d, float *radiance2_d, float *radiance3_d, float *radiance4_d, 
-                           float *radiance5_d, float *radiance6_d, float *radiance7_d,
-                           float *reflectance1_d, float *reflectance2_d, float *reflectance3_d, float *reflectance4_d, 
-                           float *reflectance5_d, float *reflectance6_d, float *reflectance7_d,
+                           float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d, 
+                           float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d,
+                           float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, 
+                           float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d,
                            int width, int height);
 
 __global__ void ref_kernel(double PI, float sin_sun, float distance_earth_sun,
                            float esun1, float esun2, float esun3, float esun4,
                            float esun5, float esun6, float esun7,
-                           float *radiance1_d, float *radiance2_d, float *radiance3_d, float *radiance4_d,
-                           float *radiance5_d, float *radiance6_d, float *radiance7_d,
-                           float *reflectance1_d, float *reflectance2_d, float *reflectance3_d, float *reflectance4_d,
-                           float *reflectance5_d, float *reflectance6_d, float *reflectance7_d,
+                           float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d,
+                           float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d,
+                           float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d,
+                           float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d,
                            int width, int height);
 
 /**

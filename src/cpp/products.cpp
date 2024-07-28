@@ -19,21 +19,21 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   this->band_swir2 = (float *)malloc(nBytes_band);
   this->tal = (float *)malloc(nBytes_band);
 
-  this->radiance1 = (float *)malloc(nBytes_band);
-  this->radiance2 = (float *)malloc(nBytes_band);
-  this->radiance3 = (float *)malloc(nBytes_band);
-  this->radiance4 = (float *)malloc(nBytes_band);
-  this->radiance5 = (float *)malloc(nBytes_band);
-  this->radiance6 = (float *)malloc(nBytes_band);
-  this->radiance7 = (float *)malloc(nBytes_band);
+  this->radiance_blue = (float *)malloc(nBytes_band);
+  this->radiance_green = (float *)malloc(nBytes_band);
+  this->radiance_red = (float *)malloc(nBytes_band);
+  this->radiance_nir = (float *)malloc(nBytes_band);
+  this->radiance_swir1 = (float *)malloc(nBytes_band);
+  this->radiance_termal = (float *)malloc(nBytes_band);
+  this->radiance_swir2 = (float *)malloc(nBytes_band);
 
-  this->reflectance1 = (float *)malloc(nBytes_band);
-  this->reflectance2 = (float *)malloc(nBytes_band);
-  this->reflectance3 = (float *)malloc(nBytes_band);
-  this->reflectance4 = (float *)malloc(nBytes_band);
-  this->reflectance5 = (float *)malloc(nBytes_band);
-  this->reflectance6 = (float *)malloc(nBytes_band);
-  this->reflectance7 = (float *)malloc(nBytes_band);
+  this->reflectance_blue = (float *)malloc(nBytes_band);
+  this->reflectance_green = (float *)malloc(nBytes_band);
+  this->reflectance_red = (float *)malloc(nBytes_band);
+  this->reflectance_nir = (float *)malloc(nBytes_band);
+  this->reflectance_swir1 = (float *)malloc(nBytes_band);
+  this->reflectance_termal = (float *)malloc(nBytes_band);
+  this->reflectance_swir2 = (float *)malloc(nBytes_band);
 
   this->albedo = (float *)malloc(nBytes_band);
   this->ndvi = (float *)malloc(nBytes_band);
@@ -79,21 +79,21 @@ void Products::close()
   free(this->band_swir2);
   free(this->tal);
 
-  free(this->radiance1);
-  free(this->radiance2);
-  free(this->radiance3);
-  free(this->radiance4);
-  free(this->radiance5);
-  free(this->radiance6);
-  free(this->radiance7);
+  free(this->radiance_blue);
+  free(this->radiance_green);
+  free(this->radiance_red);
+  free(this->radiance_nir);
+  free(this->radiance_swir1);
+  free(this->radiance_termal);
+  free(this->radiance_swir2);
 
-  free(this->reflectance1);
-  free(this->reflectance2);
-  free(this->reflectance3);
-  free(this->reflectance4);
-  free(this->reflectance5);
-  free(this->reflectance6);
-  free(this->reflectance7);
+  free(this->reflectance_blue);
+  free(this->reflectance_green);
+  free(this->reflectance_red);
+  free(this->reflectance_nir);
+  free(this->reflectance_swir1);
+  free(this->reflectance_termal);
+  free(this->reflectance_swir2);
 
   free(this->albedo);
   free(this->ndvi);
@@ -137,28 +137,28 @@ void Products::radiance_function(MTL mtl, Sensor sensor)
 
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    this->radiance1[i] = this->band_blue[i] * sensor.parameters[1][sensor.GRESCALE] + sensor.parameters[1][sensor.BRESCALE];
-    this->radiance2[i] = this->band_green[i] * sensor.parameters[2][sensor.GRESCALE] + sensor.parameters[2][sensor.BRESCALE];
-    this->radiance3[i] = this->band_red[i] * sensor.parameters[3][sensor.GRESCALE] + sensor.parameters[3][sensor.BRESCALE];
-    this->radiance4[i] = this->band_nir[i] * sensor.parameters[4][sensor.GRESCALE] + sensor.parameters[4][sensor.BRESCALE];
-    this->radiance5[i] = this->band_swir1[i] * sensor.parameters[5][sensor.GRESCALE] + sensor.parameters[5][sensor.BRESCALE];
-    this->radiance6[i] = this->band_termal[i] * sensor.parameters[6][sensor.GRESCALE] + sensor.parameters[6][sensor.BRESCALE];
-    this->radiance7[i] = this->band_swir2[i] * sensor.parameters[7][sensor.GRESCALE] + sensor.parameters[7][sensor.BRESCALE];
+    this->radiance_blue[i] = this->band_blue[i] * sensor.parameters[1][sensor.GRESCALE] + sensor.parameters[1][sensor.BRESCALE];
+    this->radiance_green[i] = this->band_green[i] * sensor.parameters[2][sensor.GRESCALE] + sensor.parameters[2][sensor.BRESCALE];
+    this->radiance_red[i] = this->band_red[i] * sensor.parameters[3][sensor.GRESCALE] + sensor.parameters[3][sensor.BRESCALE];
+    this->radiance_nir[i] = this->band_nir[i] * sensor.parameters[4][sensor.GRESCALE] + sensor.parameters[4][sensor.BRESCALE];
+    this->radiance_swir1[i] = this->band_swir1[i] * sensor.parameters[5][sensor.GRESCALE] + sensor.parameters[5][sensor.BRESCALE];
+    this->radiance_termal[i] = this->band_termal[i] * sensor.parameters[6][sensor.GRESCALE] + sensor.parameters[6][sensor.BRESCALE];
+    this->radiance_swir2[i] = this->band_swir2[i] * sensor.parameters[7][sensor.GRESCALE] + sensor.parameters[7][sensor.BRESCALE];
 
-    if (radiance1[i] <= 0)
-      this->radiance1[i] = NAN;
-    if (radiance2[i] <= 0)
-      this->radiance2[i] = NAN;
-    if (radiance3[i] <= 0)
-      this->radiance3[i] = NAN;
-    if (radiance4[i] <= 0)
-      this->radiance4[i] = NAN;
-    if (radiance5[i] <= 0)
-      this->radiance5[i] = NAN;
-    if (radiance6[i] <= 0)
-      this->radiance6[i] = NAN;
-    if (radiance7[i] <= 0)
-      this->radiance7[i] = NAN;
+    if (radiance_blue[i] <= 0)
+      this->radiance_blue[i] = NAN;
+    if (radiance_green[i] <= 0)
+      this->radiance_green[i] = NAN;
+    if (radiance_red[i] <= 0)
+      this->radiance_red[i] = NAN;
+    if (radiance_nir[i] <= 0)
+      this->radiance_nir[i] = NAN;
+    if (radiance_swir1[i] <= 0)
+      this->radiance_swir1[i] = NAN;
+    if (radiance_termal[i] <= 0)
+      this->radiance_termal[i] = NAN;
+    if (radiance_swir2[i] <= 0)
+      this->radiance_swir2[i] = NAN;
   }
 
   end = system_clock::now();
@@ -181,26 +181,26 @@ void Products::reflectance_function(MTL mtl, Sensor sensor)
   {
     for (int i = 0; i < this->height_band * this->width_band; i++)
     {
-      this->reflectance1[i] = this->radiance1[i] / sin_sun;
-      this->reflectance2[i] = this->radiance2[i] / sin_sun;
-      this->reflectance3[i] = this->radiance3[i] / sin_sun;
-      this->reflectance4[i] = this->radiance4[i] / sin_sun;
-      this->reflectance5[i] = this->radiance5[i] / sin_sun;
-      this->reflectance6[i] = this->radiance6[i] / sin_sun;
-      this->reflectance7[i] = this->radiance7[i] / sin_sun;
+      this->reflectance_blue[i] = this->radiance_blue[i] / sin_sun;
+      this->reflectance_green[i] = this->radiance_green[i] / sin_sun;
+      this->reflectance_red[i] = this->radiance_red[i] / sin_sun;
+      this->reflectance_nir[i] = this->radiance_nir[i] / sin_sun;
+      this->reflectance_swir1[i] = this->radiance_swir1[i] / sin_sun;
+      this->reflectance_termal[i] = this->radiance_termal[i] / sin_sun;
+      this->reflectance_swir2[i] = this->radiance_swir2[i] / sin_sun;
     }
   }
   else
   {
     for (int i = 0; i < this->height_band * this->width_band; i++)
     {
-      this->reflectance1[i] = (PI * this->radiance1[i]) / (sensor.parameters[1][sensor.ESUN] * sin_sun);
-      this->reflectance2[i] = (PI * this->radiance2[i]) / (sensor.parameters[2][sensor.ESUN] * sin_sun);
-      this->reflectance3[i] = (PI * this->radiance3[i]) / (sensor.parameters[3][sensor.ESUN] * sin_sun);
-      this->reflectance4[i] = (PI * this->radiance4[i]) / (sensor.parameters[4][sensor.ESUN] * sin_sun);
-      this->reflectance5[i] = (PI * this->radiance5[i]) / (sensor.parameters[5][sensor.ESUN] * sin_sun);
-      this->reflectance6[i] = (PI * this->radiance6[i]) / (sensor.parameters[6][sensor.ESUN] * sin_sun);
-      this->reflectance7[i] = (PI * this->radiance7[i]) / (sensor.parameters[7][sensor.ESUN] * sin_sun);
+      this->reflectance_blue[i] = (PI * this->radiance_blue[i]) / (sensor.parameters[1][sensor.ESUN] * sin_sun);
+      this->reflectance_green[i] = (PI * this->radiance_green[i]) / (sensor.parameters[2][sensor.ESUN] * sin_sun);
+      this->reflectance_red[i] = (PI * this->radiance_red[i]) / (sensor.parameters[3][sensor.ESUN] * sin_sun);
+      this->reflectance_nir[i] = (PI * this->radiance_nir[i]) / (sensor.parameters[4][sensor.ESUN] * sin_sun);
+      this->reflectance_swir1[i] = (PI * this->radiance_swir1[i]) / (sensor.parameters[5][sensor.ESUN] * sin_sun);
+      this->reflectance_termal[i] = (PI * this->radiance_termal[i]) / (sensor.parameters[6][sensor.ESUN] * sin_sun);
+      this->reflectance_swir2[i] = (PI * this->radiance_swir2[i]) / (sensor.parameters[7][sensor.ESUN] * sin_sun);
     }
   }
 
@@ -216,24 +216,24 @@ void Products::albedo_function(MTL mtl, Sensor sensor)
   {
     for (int i = 0; i < this->height_band * this->width_band; i++)
     {
-      this->albedo[i] = this->reflectance1[i] * sensor.parameters[1][sensor.WB] +
-                        this->reflectance2[i] * sensor.parameters[2][sensor.WB] +
-                        this->reflectance3[i] * sensor.parameters[3][sensor.WB] +
-                        this->reflectance4[i] * sensor.parameters[4][sensor.WB] +
-                        this->reflectance5[i] * sensor.parameters[5][sensor.WB] +
-                        this->reflectance6[i] * sensor.parameters[6][sensor.WB];
+      this->albedo[i] = this->reflectance_blue[i] * sensor.parameters[1][sensor.WB] +
+                        this->reflectance_green[i] * sensor.parameters[2][sensor.WB] +
+                        this->reflectance_red[i] * sensor.parameters[3][sensor.WB] +
+                        this->reflectance_nir[i] * sensor.parameters[4][sensor.WB] +
+                        this->reflectance_swir1[i] * sensor.parameters[5][sensor.WB] +
+                        this->reflectance_termal[i] * sensor.parameters[6][sensor.WB];
     }
   }
   else
   {
     for (int i = 0; i < this->height_band * this->width_band; i++)
     {
-      float alb = this->reflectance1[i] * sensor.parameters[1][sensor.WB] +
-                  this->reflectance2[i] * sensor.parameters[2][sensor.WB] +
-                  this->reflectance3[i] * sensor.parameters[3][sensor.WB] +
-                  this->reflectance4[i] * sensor.parameters[4][sensor.WB] +
-                  this->reflectance5[i] * sensor.parameters[5][sensor.WB] +
-                  this->reflectance7[i] * sensor.parameters[7][sensor.WB];
+      float alb = this->reflectance_blue[i] * sensor.parameters[1][sensor.WB] +
+                  this->reflectance_green[i] * sensor.parameters[2][sensor.WB] +
+                  this->reflectance_red[i] * sensor.parameters[3][sensor.WB] +
+                  this->reflectance_nir[i] * sensor.parameters[4][sensor.WB] +
+                  this->reflectance_swir1[i] * sensor.parameters[5][sensor.WB] +
+                  this->reflectance_swir2[i] * sensor.parameters[7][sensor.WB];
       this->albedo[i] = (alb - 0.03) / (this->tal[i] * this->tal[i]);
     }
   }
@@ -242,14 +242,14 @@ void Products::albedo_function(MTL mtl, Sensor sensor)
 void Products::ndvi_function()
 {
   for (int i = 0; i < this->height_band * this->width_band; i++)
-    this->ndvi[i] = (this->reflectance4[i] - this->reflectance3[i]) / (this->reflectance4[i] + this->reflectance3[i]);
+    this->ndvi[i] = (this->reflectance_nir[i] - this->reflectance_red[i]) / (this->reflectance_nir[i] + this->reflectance_red[i]);
 };
 
 void Products::pai_function()
 {
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    double pai_value = 10.1 * (this->reflectance4[i] - sqrt(this->reflectance3[i])) + 3.1;
+    double pai_value = 10.1 * (this->reflectance_nir[i] - sqrt(this->reflectance_red[i])) + 3.1;
 
     if (pai_value < 0)
       pai_value = 0;
@@ -262,7 +262,7 @@ void Products::lai_function()
 {
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    float savi = ((1 + 0.5) * (this->reflectance4[i] - this->reflectance3[i])) / (0.5 + (this->reflectance4[i] + this->reflectance3[i]));
+    float savi = ((1 + 0.5) * (this->reflectance_nir[i] - this->reflectance_red[i])) / (0.5 + (this->reflectance_nir[i] + this->reflectance_red[i]));
     this->savi[i] = savi;
 
     if (!isnan(savi) && savi > 0.687)
@@ -278,7 +278,7 @@ void Products::evi_function()
 {
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    double evi_value = 2.5 * ((this->reflectance4[i] - this->reflectance3[i]) / (this->reflectance4[i] + (6 * this->reflectance3[i]) - (7.5 * this->reflectance1[i]) + 1));
+    double evi_value = 2.5 * ((this->reflectance_nir[i] - this->reflectance_red[i]) / (this->reflectance_nir[i] + (6 * this->reflectance_red[i]) - (7.5 * this->reflectance_blue[i]) + 1));
 
     if (evi_value < 0)
       evi_value = 0;
@@ -346,7 +346,7 @@ void Products::surface_temperature_function(MTL mtl)
   float surface_temperature_value;
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    surface_temperature_value = k2 / (log((this->enb_emissivity[i] * k1 / this->radiance6[i]) + 1));
+    surface_temperature_value = k2 / (log((this->enb_emissivity[i] * k1 / this->radiance_termal[i]) + 1));
 
     if (definitelyLessThan(surface_temperature_value, 0))
       surface_temperature_value = 0;
