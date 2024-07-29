@@ -971,7 +971,8 @@ string Products::rah_correction_function_threads(float ndvi_min, float ndvi_max,
     {
       int start_line = j * lines_per_thread;
       int end_line = (j == threads_num - 1) ? height_band : (j + 1) * lines_per_thread;
-      threads[j] = thread(rah_correction_cycle_STEEP, start_line, end_line, width_band, a, b, surface_temperature,
+      threads[j] = thread(rah_correction_cycle_STEEP, start_line, end_line,
+                          width_band, a, b, surface_temperature,
                           d0, zom, kb1, sensible_heat_flux, ustar,
                           aerodynamic_resistance);
     }

@@ -759,7 +759,7 @@ string Products::sensible_heat_flux_function(float a, float b)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  sensible_heat_flux_kernel<<<this->blocks_num, this->threads_num>>>(surface_temperature_d, rahR_d, net_radiation_d, soil_heat_d, sensible_heat_flux_d, a, b, width_band, height_band);
+  sensible_heat_flux_kernel<<<this->blocks_num, this->threads_num>>>(surface_temperature_d, rahW_d, net_radiation_d, soil_heat_d, sensible_heat_flux_d, a, b, width_band, height_band);
 
   HANDLE_ERROR(cudaDeviceSynchronize());
   HANDLE_ERROR(cudaGetLastError());
