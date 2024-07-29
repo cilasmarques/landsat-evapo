@@ -45,7 +45,7 @@ Candidate::Candidate(float ndvi, float temperature, float net_radiation, float s
   this->ustar = 0;
 }
 
-void Candidate::setAerodynamicResistance(double u200, double A_ZOM, double B_ZOM, double VON_KARMAN)
+void Candidate::setAerodynamicResistance(float u200, float A_ZOM, float B_ZOM, float VON_KARMAN)
 {
   this->zom = exp(A_ZOM + B_ZOM * this->ndvi);
   this->ustar = (VON_KARMAN * u200) / log(200 / this->zom);

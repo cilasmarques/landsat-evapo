@@ -32,28 +32,28 @@ using namespace std::chrono;
 #define PARAM_BAND_SWIR2_INDEX      6
 
 // Epsilon
-const double EPS = 1e-7;
+const float EPS = 1e-7;
 
 // Not a number
-const double NaN = -sqrt(-1.0);
+const float NaN = -sqrt(-1.0);
 
 // Pi
-const double PI = acos(-1);
+const float PI = acos(-1);
 
 // Karman's constant
-const double VON_KARMAN = 0.41;
+const float VON_KARMAN = 0.41;
 
 // Earth's gravity
-const double GRAVITY = 9.81;
+const float GRAVITY = 9.81;
 
 // Atmospheric density
-const double RHO = 1.15;
+const float RHO = 1.15;
 
 // Specific heat of air
-const double SPECIFIC_HEAT_AIR = 1004;
+const float SPECIFIC_HEAT_AIR = 1004;
 
 // Solar constant
-const double GSC = 0.082;
+const float GSC = 0.082;
 
 // Agricultural field land cover value
 // Available at https://mapbiomas.org/downloads_codigos

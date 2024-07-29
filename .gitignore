@@ -4,6 +4,7 @@ output/*
 input/*
 analysis/*
 dev*
+__untrack__/*
 
 # Prerequisites
 *.d

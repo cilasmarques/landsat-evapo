@@ -172,7 +172,7 @@ Station::Station()
   this->temperature_image = 0;
 };
 
-Station::Station(string station_data_path, double image_hour)
+Station::Station(string station_data_path, float image_hour)
 {
   ifstream in(station_data_path);
   if (!in.is_open() || !in)
@@ -202,7 +202,7 @@ Station::Station(string station_data_path, double image_hour)
     exit(12);
   }
 
-  double diff = fabs(atof(this->info[0][2].c_str()) - image_hour);
+  float diff = fabs(atof(this->info[0][2].c_str()) - image_hour);
   this->temperature_image = atof(this->info[0][6].c_str());
   this->v6 = atof(this->info[0][5].c_str());
   this->v7_max = atof(this->info[0][6].c_str());

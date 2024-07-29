@@ -176,10 +176,10 @@ string Landsat::converge_rah_cycle(Station station, int method)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  double ustar_station = (VON_KARMAN * station.v6) / (log(station.WIND_SPEED / station.SURFACE_ROUGHNESS));
-  double u10 = (ustar_station / VON_KARMAN) * log(10 / station.SURFACE_ROUGHNESS);
-  double ndvi_min = 1.0;
-  double ndvi_max = -1.0;
+  float ustar_station = (VON_KARMAN * station.v6) / (log(station.WIND_SPEED / station.SURFACE_ROUGHNESS));
+  float u10 = (ustar_station / VON_KARMAN) * log(10 / station.SURFACE_ROUGHNESS);
+  float ndvi_min = 1.0;
+  float ndvi_max = -1.0;
 
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
@@ -214,18 +214,18 @@ string Landsat::compute_H_ET(Station station)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  double dr = (1 / mtl.distance_earth_sun) * (1 / mtl.distance_earth_sun);
-  double sigma = 0.409 * sin(((2 * PI / 365) * mtl.julian_day) - 1.39);
-  double phi = (PI / 180) * station.latitude;
-  double omegas = acos(-tan(phi) * tan(sigma));
-  double Ra24h = (((24 * 60 / PI) * GSC * dr) * (omegas * sin(phi) * sin(sigma) + cos(phi) * cos(sigma) * sin(omegas))) * (1000000 / 86400.0);
-  double Rs24h = station.INTERNALIZATION_FACTOR * sqrt(station.v7_max - station.v7_min) * Ra24h;
+  float dr = (1 / mtl.distance_earth_sun) * (1 / mtl.distance_earth_sun);
+  float sigma = 0.409 * sin(((2 * PI / 365) * mtl.julian_day) - 1.39);
+  float phi = (PI / 180) * station.latitude;
+  float omegas = acos(-tan(phi) * tan(sigma));
+  float Ra24h = (((24 * 60 / PI) * GSC * dr) * (omegas * sin(phi) * sin(sigma) + cos(phi) * cos(sigma) * sin(omegas))) * (1000000 / 86400.0);
+  float Rs24h = station.INTERNALIZATION_FACTOR * sqrt(station.v7_max - station.v7_min) * Ra24h;
 
-  double dt_pq_terra = products.H_pq_terra * products.rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
-  double dt_pf_terra = products.H_pf_terra * products.rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
+  float dt_pq_terra = products.H_pq_terra * products.rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
+  float dt_pf_terra = products.H_pf_terra * products.rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
 
-  double b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
-  double a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
+  float b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
+  float a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
 
   result += products.sensible_heat_flux_function(a, b);
   result += products.latent_heat_flux_function();

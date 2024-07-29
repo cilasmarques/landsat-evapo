@@ -9,10 +9,10 @@ struct Candidate
 {
   int line, col;
   int negative_neighbour;
-  double coefficient_variation;
+  float coefficient_variation;
   float ndvi, temperature, ustar;
   float net_radiation, soil_heat_flux, ho, zom;
-  vector<double> aerodynamic_resistance;
+  vector<float> aerodynamic_resistance;
 
   /**
    * @brief  Empty constructor, all attributes are initialized with 0.
@@ -44,7 +44,7 @@ struct Candidate
    * @param  B_ZOM: Coefficient B.
    * @param  VON_KARMAN: Karman's constant.
    */
-  void setAerodynamicResistance(double u200, double A_ZOM, double B_ZOM, double VON_KARMAN);
+  void setAerodynamicResistance(float u200, float A_ZOM, float B_ZOM, float VON_KARMAN);
 
   /**
    * @brief  Prints the data contained at the struct.

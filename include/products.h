@@ -182,7 +182,7 @@ struct Products
    * @brief  The large wave radiation is computed.
    * @param  temperature: Pixel's temperature.
    */
-  string large_wave_radiation_atmosphere_function(double temperature);
+  string large_wave_radiation_atmosphere_function(float temperature);
 
   /**
    * @brief  The net radiation is computed.
@@ -204,20 +204,20 @@ struct Products
    * @param  ndvi_max: Maximum NDVI.
    * @param  ndvi_min: Minimum NDVI.
    */
-  string kb_function(double ndvi_max, double ndvi_min);
+  string kb_function(float ndvi_max, float ndvi_min);
 
   /**
    * @brief  The zom is computed.
    * @param  A_ZOM: Coefficient A.
    * @param  B_ZOM: Coefficient B.
    */
-  string zom_fuction(double A_ZOM, double B_ZOM);
+  string zom_fuction(float A_ZOM, float B_ZOM);
 
   /**
    * @brief  The ustar is computed.
    * @param  u10: Wind speed at 10 m.
    */
-  string ustar_fuction(double u10);
+  string ustar_fuction(float u10);
 
   /**
    * @brief  The aerodynamic resistance is computed.
@@ -229,7 +229,7 @@ struct Products
    * @param  a: Coefficient A.
    * @param  b: Coefficient B.
    */
-  string sensible_heat_flux_function(double a, double b);
+  string sensible_heat_flux_function(float a, float b);
 
   /**
    * @brief  The latent heat flux is computed.
@@ -241,7 +241,7 @@ struct Products
    * @param  Ra24h: Net radiation 24h.
    * @param  Rs24h: Solar radiation 24h.
    */
-  string net_radiation_24h_function(double Ra24h, double Rs24h);
+  string net_radiation_24h_function(float Ra24h, float Rs24h);
 
   /**
    * @brief  The evapotranspiration fraction is computed.
@@ -276,7 +276,7 @@ struct Products
    * @param  cold_pixel: Cold pixel.
    * @return  string: Time message.
    */
-  string rah_correction_function_serial(double ndvi_min, double ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
+  string rah_correction_function_serial(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
 
   /**
    * @brief  The  aerodynamic resistance convergence is computed.
@@ -286,7 +286,7 @@ struct Products
    * @param  cold_pixel: Cold pixel.
    * @return  string: Time message.
    */
-  string rah_correction_function_threads(double ndvi_min, double ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
+  string rah_correction_function_threads(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
 
   /**
    * @brief  The  aerodynamic resistance convergence is computed.
@@ -296,5 +296,5 @@ struct Products
    * @param  cold_pixel: Cold pixel.
    * @return  string: Time message.
    */
-  string rah_correction_function_blocks(double ndvi_min, double ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
+  string rah_correction_function_blocks(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
 };

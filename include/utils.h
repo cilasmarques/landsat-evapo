@@ -8,7 +8,7 @@
  * @param  b: Second value.
  * @retval TRUE if they are approximately equals, and FALSE otherwise.
  */
-bool approximatelyEqual(double a, double b);
+bool approximatelyEqual(float a, float b);
 
 /**
  * @brief  Determines if a and b are essentially equals based on a epsilon.
@@ -16,7 +16,7 @@ bool approximatelyEqual(double a, double b);
  * @param  b: Second value.
  * @retval TRUE if they are essentially equals, and FALSE otherwise.
  */
-bool essentiallyEqual(double a, double b);
+bool essentiallyEqual(float a, float b);
 
 /**
  * @brief  Determines if a is definitely greater than b based on a epsilon.
@@ -24,7 +24,7 @@ bool essentiallyEqual(double a, double b);
  * @param  b: Second value.
  * @retval TRUE if a is definitely greater than b, and FALSE otherwise.
  */
-bool definitelyGreaterThan(double a, double b);
+bool definitelyGreaterThan(float a, float b);
 
 /**
  * @brief  Determines if a is definitely less than b based on a epsilon.
@@ -32,7 +32,7 @@ bool definitelyGreaterThan(double a, double b);
  * @param  b: Second value.
  * @retval TRUE if a is definitely less than b, and FALSE otherwise.
  */
-bool definitelyLessThan(double a, double b);
+bool definitelyLessThan(float a, float b);
 
 /**
  * @brief  Prints a pointer.

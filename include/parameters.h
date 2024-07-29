@@ -7,9 +7,9 @@
  */
 struct MTL
 {
-  double image_hour;
+  float image_hour;
   int number_sensor, julian_day, year;
-  double sun_elevation, distance_earth_sun;
+  float sun_elevation, distance_earth_sun;
 
   float *rad_mult;
   float *rad_add;
@@ -42,15 +42,15 @@ struct MTL
 struct Station
 {
   vector<vector<string>> info;
-  double temperature_image;
-  double v6, v7_max, v7_min;
-  double latitude, longitude;
+  float temperature_image;
+  float v6, v7_max, v7_min;
+  float latitude, longitude;
 
   const int WIND_SPEED = 3;
-  const double SURFACE_ROUGHNESS = 0.024;
-  const double A_ZOM = -3;
-  const double B_ZOM = 6.47;
-  const double INTERNALIZATION_FACTOR = 0.16;
+  const float SURFACE_ROUGHNESS = 0.024;
+  const float A_ZOM = -3;
+  const float B_ZOM = 6.47;
+  const float INTERNALIZATION_FACTOR = 0.16;
 
   /**
    * @brief  Empty constructor. Set temperature_image to 0.
@@ -62,5 +62,5 @@ struct Station
    * @param  station_data_path: Weather station data file.
    * @param  image_hour: Image hour.
    */
-  Station(string station_data_path, double image_hour);
+  Station(string station_data_path, float image_hour);
 };

@@ -1,21 +1,21 @@
 #include "utils.h"
 
-bool approximatelyEqual(double a, double b)
+bool approximatelyEqual(float a, float b)
 {
   return fabs(a - b) <= ((fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * EPS);
 }
 
-bool essentiallyEqual(double a, double b)
+bool essentiallyEqual(float a, float b)
 {
   return fabs(a - b) <= ((fabs(a) > fabs(b) ? fabs(b) : fabs(a)) * EPS);
 }
 
-bool definitelyGreaterThan(double a, double b)
+bool definitelyGreaterThan(float a, float b)
 {
   return (a - b) > ((fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * EPS);
 }
 
-bool definitelyLessThan(double a, double b)
+bool definitelyLessThan(float a, float b)
 {
   return (b - a) > ((fabs(a) < fabs(b) ? fabs(b) : fabs(a)) * EPS);
 }

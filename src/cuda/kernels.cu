@@ -494,7 +494,7 @@ __global__ void aerodynamic_resistance_kernel(float *zom_d, float *d0_d, float *
   }
 }
 
-__global__ void sensible_heat_flux_kernel(float *surface_temperature_d, float *rahR_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d, double a, double b, int width_band, int height_band)
+__global__ void sensible_heat_flux_kernel(float *surface_temperature_d, float *rahR_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d, float a, float b, int width_band, int height_band)
 {
   unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -623,7 +623,7 @@ __global__ void evapotranspiration_kernel(float *net_radiation_24h_d, float *eva
 }
 
 __global__ void rah_correction_cycle_STEEP(float *surface_temperature_pointer, float *d0_pointer, float *kb1_pointer, float *zom_pointer, float *ustarR_pointer,
-                                           float *ustarW_pointer, float *rahR_pointer, float *rahW_pointer, float *H_pointer, double a, double b, int height,
+                                           float *ustarW_pointer, float *rahR_pointer, float *rahW_pointer, float *H_pointer, float a, float b, int height,
                                            int width)
 {
   // Identify 1D position
@@ -637,16 +637,16 @@ __global__ void rah_correction_cycle_STEEP(float *surface_temperature_pointer, f
   {
     unsigned int pos = row * width + col;
 
-    double DISP = d0_pointer[pos];
-    double dT_ini_terra = a + b * (surface_temperature_pointer[pos] - 273.15);
+    float DISP = d0_pointer[pos];
+    float dT_ini_terra = a + b * (surface_temperature_pointer[pos] - 273.15);
 
-    double sensibleHeatFlux = RHO * SPECIFIC_HEAT_AIR * (dT_ini_terra) / rahR_pointer[pos];
-    double L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustarR_pointer[pos], 3) * surface_temperature_pointer[pos]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
+    float sensibleHeatFlux = RHO * SPECIFIC_HEAT_AIR * (dT_ini_terra) / rahR_pointer[pos];
+    float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustarR_pointer[pos], 3) * surface_temperature_pointer[pos]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
 
-    double y2 = pow((1 - (16 * (10 - DISP)) / L), 0.25);
-    double x200 = pow((1 - (16 * (10 - DISP)) / L), 0.25);
+    float y2 = pow((1 - (16 * (10 - DISP)) / L), 0.25);
+    float x200 = pow((1 - (16 * (10 - DISP)) / L), 0.25);
 
-    double psi2, psi200;
+    float psi2, psi200;
     if (!isnan(L) && L > 0)
     {
       psi2 = -5 * ((10 - DISP) / L);
@@ -658,13 +658,13 @@ __global__ void rah_correction_cycle_STEEP(float *surface_temperature_pointer, f
       psi200 = 2 * log((1 + x200) / 2) + log((1 + x200 * x200) / 2) - 2 * atan(x200) + 0.5 * M_PI;
     }
 
-    double ust = (VON_KARMAN * ustarR_pointer[pos]) / (log((10 - DISP) / zom_pointer[pos]) - psi200);
+    float ust = (VON_KARMAN * ustarR_pointer[pos]) / (log((10 - DISP) / zom_pointer[pos]) - psi200);
 
-    double zoh_terra = zom_pointer[pos] / pow(exp(1.0), (kb1_pointer[pos]));
-    double temp_rah1_corr_terra = (ust * VON_KARMAN);
-    double temp_rah2_corr_terra = log((10 - DISP) / zom_pointer[pos]) - psi2;
-    double temp_rah3_corr_terra = temp_rah1_corr_terra * log(zom_pointer[pos] / zoh_terra);
-    double rah = (temp_rah1_corr_terra * temp_rah2_corr_terra) + temp_rah3_corr_terra;
+    float zoh_terra = zom_pointer[pos] / pow(exp(1.0), (kb1_pointer[pos]));
+    float temp_rah1_corr_terra = (ust * VON_KARMAN);
+    float temp_rah2_corr_terra = log((10 - DISP) / zom_pointer[pos]) - psi2;
+    float temp_rah3_corr_terra = temp_rah1_corr_terra * log(zom_pointer[pos] / zoh_terra);
+    float rah = (temp_rah1_corr_terra * temp_rah2_corr_terra) + temp_rah3_corr_terra;
 
     ustarW_pointer[pos] = ust;
     rahW_pointer[pos] = rah;

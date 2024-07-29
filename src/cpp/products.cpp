@@ -268,7 +268,7 @@ string Products::pai_function()
 
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    double pai_value = 10.1 * (this->reflectance_nir[i] - sqrt(this->reflectance_red[i])) + 3.1;
+    float pai_value = 10.1 * (this->reflectance_nir[i] - sqrt(this->reflectance_red[i])) + 3.1;
 
     if (pai_value < 0)
       pai_value = 0;
@@ -319,7 +319,7 @@ string Products::evi_function()
 
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    double evi_value = 2.5 * ((this->reflectance_nir[i] - this->reflectance_red[i]) / (this->reflectance_nir[i] + (6 * this->reflectance_red[i]) - (7.5 * this->reflectance_blue[i]) + 1));
+    float evi_value = 2.5 * ((this->reflectance_nir[i] - this->reflectance_red[i]) / (this->reflectance_nir[i] + (6 * this->reflectance_red[i]) - (7.5 * this->reflectance_blue[i]) + 1));
 
     if (evi_value < 0)
       evi_value = 0;
@@ -399,7 +399,7 @@ string Products::ea_emissivity_function()
 
 string Products::surface_temperature_function(MTL mtl)
 {
-  double k1, k2;
+  float k1, k2;
   switch (mtl.number_sensor)
   {
   case 5:
@@ -485,7 +485,7 @@ string Products::large_wave_radiation_surface_function()
   return "SERIAL,LARGE_WAVE_RADIATION_SURFACE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::large_wave_radiation_atmosphere_function(double temperature)
+string Products::large_wave_radiation_atmosphere_function(float temperature)
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -590,7 +590,7 @@ string Products::d0_fuction()
   return "SERIAL,D0," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::kb_function(double ndvi_max, double ndvi_min)
+string Products::kb_function(float ndvi_max, float ndvi_min)
 {
   float HGHT = 4;
 
@@ -645,7 +645,7 @@ string Products::kb_function(double ndvi_max, double ndvi_min)
   return "SERIAL,KB1," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::zom_fuction(double A_ZOM, double B_ZOM)
+string Products::zom_fuction(float A_ZOM, float B_ZOM)
 {
   float HGHT = 4;
   float CD = 0.01;
@@ -675,7 +675,7 @@ string Products::zom_fuction(double A_ZOM, double B_ZOM)
   return "SERIAL,ZOM," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::ustar_fuction(double u10)
+string Products::ustar_fuction(float u10)
 {
   float zu = 10;
 
@@ -728,7 +728,7 @@ string Products::aerodynamic_resistance_fuction()
   return "SERIAL,RAH_INI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::sensible_heat_flux_function(double a, double b)
+string Products::sensible_heat_flux_function(float a, float b)
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -769,7 +769,7 @@ string Products::latent_heat_flux_function()
   return "SERIAL,LATENT_HEAT_FLUX," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::net_radiation_24h_function(double Ra24h, double Rs24h)
+string Products::net_radiation_24h_function(float Ra24h, float Rs24h)
 {
   int FL = 110;
 
@@ -873,36 +873,36 @@ string Products::evapotranspiration_function()
   return "SERIAL,EVAPOTRANSPIRATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::rah_correction_function_serial(double ndvi_min, double ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
+string Products::rah_correction_function_serial(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
 {
   system_clock::time_point begin_core, end_core;
   int64_t general_time_core, initial_time_core, final_time_core;
 
-  double hot_pixel_aerodynamic = aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
+  float hot_pixel_aerodynamic = aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
   hot_pixel.aerodynamic_resistance.push_back(hot_pixel_aerodynamic);
 
-  double cold_pixel_aerodynamic = aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
+  float cold_pixel_aerodynamic = aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
   cold_pixel.aerodynamic_resistance.push_back(cold_pixel_aerodynamic);
 
-  double fc_hot = 1 - pow((ndvi[hot_pixel.line * width_band + hot_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
-  double fc_cold = 1 - pow((ndvi[cold_pixel.line * width_band + cold_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+  float fc_hot = 1 - pow((ndvi[hot_pixel.line * width_band + hot_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+  float fc_cold = 1 - pow((ndvi[cold_pixel.line * width_band + cold_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
 
   for (int i = 0; i < 2; i++)
   {
     this->rah_ini_pq_terra = hot_pixel.aerodynamic_resistance[i];
     this->rah_ini_pf_terra = cold_pixel.aerodynamic_resistance[i];
 
-    double LEc_terra = 0.55 * fc_hot * (hot_pixel.net_radiation - hot_pixel.soil_heat_flux) * 0.78;
-    double LEc_terra_pf = 1.75 * fc_cold * (cold_pixel.net_radiation - cold_pixel.soil_heat_flux) * 0.78;
+    float LEc_terra = 0.55 * fc_hot * (hot_pixel.net_radiation - hot_pixel.soil_heat_flux) * 0.78;
+    float LEc_terra_pf = 1.75 * fc_cold * (cold_pixel.net_radiation - cold_pixel.soil_heat_flux) * 0.78;
 
     this->H_pf_terra = cold_pixel.net_radiation - cold_pixel.soil_heat_flux - LEc_terra_pf;
-    double dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
+    float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
 
     this->H_pq_terra = hot_pixel.net_radiation - hot_pixel.soil_heat_flux - LEc_terra;
-    double dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
+    float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
 
-    double b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
-    double a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
+    float b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
+    float a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
 
     // ==== Paralelization core
     begin_core = system_clock::now();
@@ -917,17 +917,17 @@ string Products::rah_correction_function_serial(double ndvi_min, double ndvi_max
     final_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     // ==== Paralelization core
 
-    double rah_hot = this->aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
+    float rah_hot = this->aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
     hot_pixel.aerodynamic_resistance.push_back(rah_hot);
 
-    double rah_cold = this->aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
+    float rah_cold = this->aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
     cold_pixel.aerodynamic_resistance.push_back(rah_cold);
   }
 
   return "SERIAL,RAH_CYCLE," + std::to_string(general_time_core) + "," + std::to_string(initial_time_core) + "," + std::to_string(final_time_core) + "\n";
 }
 
-string Products::rah_correction_function_threads(double ndvi_min, double ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
+string Products::rah_correction_function_threads(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
 {
   system_clock::time_point begin_core, end_core;
   int64_t general_time_core, initial_time_core, final_time_core;
@@ -937,31 +937,31 @@ string Products::rah_correction_function_threads(double ndvi_min, double ndvi_ma
   thread threads[threads_num];
   // ==== Threads setup
 
-  double hot_pixel_aerodynamic = aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
+  float hot_pixel_aerodynamic = aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
   hot_pixel.aerodynamic_resistance.push_back(hot_pixel_aerodynamic);
 
-  double cold_pixel_aerodynamic = aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
+  float cold_pixel_aerodynamic = aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
   cold_pixel.aerodynamic_resistance.push_back(cold_pixel_aerodynamic);
 
-  double fc_hot = 1 - pow((ndvi[hot_pixel.line * width_band + hot_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
-  double fc_cold = 1 - pow((ndvi[cold_pixel.line * width_band + cold_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+  float fc_hot = 1 - pow((ndvi[hot_pixel.line * width_band + hot_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+  float fc_cold = 1 - pow((ndvi[cold_pixel.line * width_band + cold_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
 
   for (int i = 0; i < 2; i++)
   {
     this->rah_ini_pq_terra = hot_pixel.aerodynamic_resistance[i];
     this->rah_ini_pf_terra = cold_pixel.aerodynamic_resistance[i];
 
-    double LEc_terra = 0.55 * fc_hot * (hot_pixel.net_radiation - hot_pixel.soil_heat_flux) * 0.78;
-    double LEc_terra_pf = 1.75 * fc_cold * (cold_pixel.net_radiation - cold_pixel.soil_heat_flux) * 0.78;
+    float LEc_terra = 0.55 * fc_hot * (hot_pixel.net_radiation - hot_pixel.soil_heat_flux) * 0.78;
+    float LEc_terra_pf = 1.75 * fc_cold * (cold_pixel.net_radiation - cold_pixel.soil_heat_flux) * 0.78;
 
     this->H_pf_terra = cold_pixel.net_radiation - cold_pixel.soil_heat_flux - LEc_terra_pf;
-    double dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
+    float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
 
     this->H_pq_terra = hot_pixel.net_radiation - hot_pixel.soil_heat_flux - LEc_terra;
-    double dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
+    float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
 
-    double b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
-    double a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
+    float b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
+    float a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
 
     // ==== Paralelization core
     begin_core = system_clock::now();
@@ -984,10 +984,10 @@ string Products::rah_correction_function_threads(double ndvi_min, double ndvi_ma
     final_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     // ==== Paralelization core
 
-    double rah_hot = this->aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
+    float rah_hot = this->aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
     hot_pixel.aerodynamic_resistance.push_back(rah_hot);
 
-    double rah_cold = this->aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
+    float rah_cold = this->aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
     cold_pixel.aerodynamic_resistance.push_back(rah_cold);
   }
 
