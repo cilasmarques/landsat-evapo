@@ -6,7 +6,7 @@ Products::Products() {}
 Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
 {
   this->threads_num = threads_num;
-  this->blocks_num = ceil(width_band * height_band / this->threads_num);
+  this->blocks_num = (width_band * height_band + this->threads_num - 1) / this->threads_num;
 
   this->width_band = width_band;
   this->height_band = height_band;
