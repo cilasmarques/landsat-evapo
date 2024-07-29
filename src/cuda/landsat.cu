@@ -291,9 +291,6 @@ void Landsat::save_products(string output_path)
   std::cout << "==== lai" << std::endl;
   printLinearPointer(products.lai, height_band, width_band);
 
-  std::cout << "==== savi" << std::endl;
-  printLinearPointer(products.savi, height_band, width_band);
-
   std::cout << "==== evi" << std::endl;
   printLinearPointer(products.evi, height_band, width_band);
 
@@ -332,6 +329,9 @@ void Landsat::save_products(string output_path)
 
   std::cout << "==== ustar" << std::endl;
   printLinearPointer(products.ustar, height_band, width_band);
+
+  std::cout << "==== rah" << std::endl;
+  printLinearPointer(products.aerodynamic_resistance, height_band, width_band);
 
   std::cout << "==== sensible_heat_flux" << std::endl;
   printLinearPointer(products.sensible_heat_flux, height_band, width_band);
