@@ -143,8 +143,8 @@ void Products::radiance_function(MTL mtl)
     this->radiance_red[i] = this->band_red[i] * mtl.rad_mult[PARAM_BAND_RED_INDEX] + mtl.rad_add[PARAM_BAND_RED_INDEX];
     this->radiance_nir[i] = this->band_nir[i] * mtl.rad_mult[PARAM_BAND_NIR_INDEX] + mtl.rad_add[PARAM_BAND_NIR_INDEX];
     this->radiance_swir1[i] = this->band_swir1[i] * mtl.rad_mult[PARAM_BAND_SWIR1_INDEX] + mtl.rad_add[PARAM_BAND_SWIR1_INDEX];
-    this->radiance_swir2[i] = this->band_swir2[i] * mtl.rad_mult[PARAM_BAND_TERMAL_INDEX] + mtl.rad_add[PARAM_BAND_TERMAL_INDEX];
-    this->radiance_termal[i] = this->band_termal[i] * mtl.rad_mult[PARAM_BAND_SWIR2_INDEX] + mtl.rad_add[PARAM_BAND_SWIR2_INDEX];
+    this->radiance_termal[i] = this->band_termal[i] * mtl.rad_mult[PARAM_BAND_TERMAL_INDEX] + mtl.rad_add[PARAM_BAND_TERMAL_INDEX];
+    this->radiance_swir2[i] = this->band_swir2[i] * mtl.rad_mult[PARAM_BAND_SWIR2_INDEX] + mtl.rad_add[PARAM_BAND_SWIR2_INDEX];
 
     if (radiance_blue[i] <= 0)
       this->radiance_blue[i] = NAN;
