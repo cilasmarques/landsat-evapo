@@ -97,22 +97,22 @@ void Products::close()
 
   free(this->albedo);
   free(this->ndvi);
-  free(this->soil_heat);
-  free(this->surface_temperature);
-  free(this->net_radiation);
   free(this->lai);
   free(this->evi);
   free(this->pai);
+
   free(this->enb_emissivity);
   free(this->eo_emissivity);
   free(this->ea_emissivity);
   free(this->short_wave_radiation);
   free(this->large_wave_radiation_surface);
   free(this->large_wave_radiation_atmosphere);
-
   free(this->surface_temperature);
-  free(this->d0);
+  free(this->net_radiation);
+  free(this->soil_heat);
+
   free(this->zom);
+  free(this->d0);
   free(this->ustar);
   free(this->kb1);
   free(this->aerodynamic_resistance);
@@ -125,9 +125,9 @@ void Products::close()
   free(this->latent_heat_flux_24h);
   free(this->evapotranspiration_24h);
   free(this->evapotranspiration);
-}
+};
 
-void Products::radiance_function(MTL mtl)
+string Products::radiance_function(MTL mtl)
 {
   // https://www.usgs.gov/landsat-missions/using-usgs-landsat-level-1-data-product
   system_clock::time_point begin, end;
@@ -165,10 +165,10 @@ void Products::radiance_function(MTL mtl)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  // std::cout << "SERIAL,RADIANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "SERIAL,RADIANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
-void Products::reflectance_function(MTL mtl)
+string Products::reflectance_function(MTL mtl)
 {
   // https://www.usgs.gov/landsat-missions/using-usgs-landsat-level-1-data-product
   const float sin_sun = sin(mtl.sun_elevation * PI / 180);
@@ -208,11 +208,17 @@ void Products::reflectance_function(MTL mtl)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  // std::cout << "SERIAL,REFLECTANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "SERIAL,REFLECTANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
-void Products::albedo_function(MTL mtl)
+string Products::albedo_function(MTL mtl)
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   // https://doi.org/10.1016/j.rse.2017.10.031
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
@@ -228,16 +234,38 @@ void Products::albedo_function(MTL mtl)
     if (albedo[i] <= 0)
       this->albedo[i] = NAN;
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,ALBEDO," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
-void Products::ndvi_function()
+string Products::ndvi_function()
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
     this->ndvi[i] = (this->reflectance_nir[i] - this->reflectance_red[i]) / (this->reflectance_nir[i] + this->reflectance_red[i]);
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,NDVI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::pai_function()
+string Products::pai_function()
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
     double pai_value = 10.1 * (this->reflectance_nir[i] - sqrt(this->reflectance_red[i])) + 3.1;
@@ -247,10 +275,21 @@ void Products::pai_function()
 
     this->pai[i] = pai_value;
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,PAI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::lai_function()
+string Products::lai_function()
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
     float savi = ((1 + 0.5) * (this->reflectance_nir[i] - this->reflectance_red[i])) / (0.5 + (this->reflectance_nir[i] + this->reflectance_red[i]));
@@ -263,10 +302,21 @@ void Products::lai_function()
     if (!isnan(savi) && savi < 0.1)
       this->lai[i] = 0;
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,LAI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::evi_function()
+string Products::evi_function()
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
     double evi_value = 2.5 * ((this->reflectance_nir[i] - this->reflectance_red[i]) / (this->reflectance_nir[i] + (6 * this->reflectance_red[i]) - (7.5 * this->reflectance_blue[i]) + 1));
@@ -276,10 +326,21 @@ void Products::evi_function()
 
     this->evi[i] = evi_value;
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,EVI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::enb_emissivity_function()
+string Products::enb_emissivity_function()
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
     if (this->lai[i] == 0)
@@ -290,10 +351,21 @@ void Products::enb_emissivity_function()
     if ((ndvi[i] < 0) || (lai[i] > 2.99))
       this->enb_emissivity[i] = 0.98;
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,ENB_EMISSIVITY," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::eo_emissivity_function()
+string Products::eo_emissivity_function()
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
     this->eo_emissivity[i] = 0.95 + 0.01 * this->lai[i];
@@ -301,15 +373,31 @@ void Products::eo_emissivity_function()
     if (definitelyLessThan(this->ndvi[i], 0) || definitelyGreaterThan(this->lai[i], 2.99))
       this->eo_emissivity[i] = 0.98;
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,EO_EMISSIVITY," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::ea_emissivity_function()
+string Products::ea_emissivity_function()
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
     this->ea_emissivity[i] = 0.85 * pow((-1 * log(this->tal[i])), 0.09);
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,EA_EMISSIVITY," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::surface_temperature_function(MTL mtl)
+string Products::surface_temperature_function(MTL mtl)
 {
   double k1, k2;
   switch (mtl.number_sensor)
@@ -334,6 +422,12 @@ void Products::surface_temperature_function(MTL mtl)
     exit(6);
   }
 
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   float surface_temperature_value;
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
@@ -344,37 +438,81 @@ void Products::surface_temperature_function(MTL mtl)
 
     this->surface_temperature[i] = surface_temperature_value;
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,SURFACE_TEMPERATURE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::short_wave_radiation_function(MTL mtl)
+string Products::short_wave_radiation_function(MTL mtl)
 {
   float costheta = sin(mtl.sun_elevation * PI / 180);
 
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
     this->short_wave_radiation[i] = (1367 * costheta * this->tal[i]) / (mtl.distance_earth_sun * mtl.distance_earth_sun);
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,SHORT_WAVE_RADIATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::large_wave_radiation_surface_function()
+string Products::large_wave_radiation_surface_function()
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
     float temperature_pixel = this->surface_temperature[i];
     float surface_temperature_pow_4 = temperature_pixel * temperature_pixel * temperature_pixel * temperature_pixel;
     this->large_wave_radiation_surface[i] = this->eo_emissivity[i] * 5.67 * 1e-8 * surface_temperature_pow_4;
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,LARGE_WAVE_RADIATION_SURFACE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::large_wave_radiation_atmosphere_function(double temperature)
+string Products::large_wave_radiation_atmosphere_function(double temperature)
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   float temperature_kelvin = temperature + 273.15;
   float temperature_kelvin_pow_4 = temperature_kelvin * temperature_kelvin * temperature_kelvin * temperature_kelvin;
 
   for (int i = 0; i < this->height_band * this->width_band; i++)
     this->large_wave_radiation_atmosphere[i] = this->ea_emissivity[i] * 5.67 * 1e-8 * temperature_kelvin_pow_4;
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,LARGE_WAVE_RADIATION_ATMOSPHERE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::net_radiation_function()
+string Products::net_radiation_function()
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
     this->net_radiation[i] = this->short_wave_radiation[i] -
@@ -385,10 +523,21 @@ void Products::net_radiation_function()
     if (definitelyLessThan(this->net_radiation[i], 0))
       this->net_radiation[i] = 0;
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,NET_RADIATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::soil_heat_flux_function()
+string Products::soil_heat_flux_function()
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
     if (definitelyLessThan(this->ndvi[i], 0) || definitelyGreaterThan(this->ndvi[i], 0))
@@ -403,12 +552,23 @@ void Products::soil_heat_flux_function()
     if (definitelyLessThan(this->soil_heat[i], 0))
       this->soil_heat[i] = 0;
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,SOIL_HEAT_FLUX," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::d0_fuction()
+string Products::d0_fuction()
 {
   float CD1 = 20.6;
   float HGHT = 4;
+
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
@@ -423,9 +583,14 @@ void Products::d0_fuction()
 
     this->d0[i] = DISP;
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,D0," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::kb_function(double ndvi_max, double ndvi_min)
+string Products::kb_function(double ndvi_max, double ndvi_min)
 {
   float HGHT = 4;
 
@@ -439,6 +604,12 @@ void Products::kb_function(double ndvi_max, double ndvi_min)
   float sf_c = 0.3;
   float sf_d = 2.5;
   float sf_e = 4.0;
+
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
@@ -467,14 +638,25 @@ void Products::kb_function(double ndvi_max, double ndvi_min)
                     (pow(fs, 2) * kb1s)) *
                    SF;
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,KB1," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::zom_fuction(double A_ZOM, double B_ZOM)
+string Products::zom_fuction(double A_ZOM, double B_ZOM)
 {
   float HGHT = 4;
   float CD = 0.01;
   float CR = 0.35;
   float PSICORR = 0.2;
+
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   float gama;
   for (int i = 0; i < this->height_band * this->width_band; i++)
@@ -486,11 +668,22 @@ void Products::zom_fuction(double A_ZOM, double B_ZOM)
 
     this->zom[i] = (HGHT - this->d0[i]) * pow(exp(1.0), (-VON_KARMAN * gama) + PSICORR);
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,ZOM," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::ustar_fuction(double u10)
+string Products::ustar_fuction(double u10)
 {
   float zu = 10;
+
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
@@ -498,11 +691,22 @@ void Products::ustar_fuction(double u10)
     float zom = this->zom[i];
     this->ustar[i] = (u10 * VON_KARMAN) / log((zu - DISP) / zom);
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,USTAR," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::aerodynamic_resistance_fuction()
+string Products::aerodynamic_resistance_fuction()
 {
   float zu = 10.0;
+
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
@@ -517,10 +721,21 @@ void Products::aerodynamic_resistance_fuction()
 
     this->aerodynamic_resistance[i] = temp_rah1_terra * temp_rah2 + temp_rah3_terra;
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,RAH_INI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::sensible_heat_flux_function(double a, double b)
+string Products::sensible_heat_flux_function(double a, double b)
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
     this->sensible_heat_flux[i] = RHO * SPECIFIC_HEAT_AIR * (a + b * (this->surface_temperature[i] - 273.15)) / this->aerodynamic_resistance[i];
@@ -530,50 +745,132 @@ void Products::sensible_heat_flux_function(double a, double b)
       this->sensible_heat_flux[i] = this->net_radiation[i] - this->soil_heat[i];
     }
   }
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,SENSIBLE_HEAT_FLUX," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::latent_heat_flux_function()
+string Products::latent_heat_flux_function()
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
     this->latent_heat_flux[i] = this->net_radiation[i] - this->soil_heat[i] - this->sensible_heat_flux[i];
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,LATENT_HEAT_FLUX," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::net_radiation_24h_function(double Ra24h, double Rs24h)
+string Products::net_radiation_24h_function(double Ra24h, double Rs24h)
 {
   int FL = 110;
 
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
     this->net_radiation_24h[i] = (1 - this->albedo[i]) * Rs24h - FL * Rs24h / Ra24h;
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,NET_RADIATION_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::evapotranspiration_fraction_fuction()
+string Products::evapotranspiration_fraction_fuction()
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
     this->evapotranspiration_fraction[i] = this->latent_heat_flux[i] / (this->net_radiation[i] - this->soil_heat[i]);
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,EVAPOTRANSPIRATION_FRACTION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::sensible_heat_flux_24h_fuction()
+string Products::sensible_heat_flux_24h_fuction()
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
     this->sensible_heat_flux_24h[i] = (1 - this->evapotranspiration_fraction[i]) * this->net_radiation_24h[i];
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,SENSIBLE_HEAT_FLUX_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::latent_heat_flux_24h_function()
+string Products::latent_heat_flux_24h_function()
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
     this->latent_heat_flux_24h[i] = this->evapotranspiration_fraction[i] * this->net_radiation_24h[i];
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,LATENT_HEAT_FLUX_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::evapotranspiration_24h_function(Station station)
+string Products::evapotranspiration_24h_function(Station station)
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
     this->evapotranspiration_24h[i] = (this->latent_heat_flux_24h[i] * 86400) / ((2.501 - 0.00236 * (station.v7_max + station.v7_min) / 2) * 1e+6);
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,EVAPOTRANSPIRATION_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::evapotranspiration_function()
+string Products::evapotranspiration_function()
 {
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
   for (int i = 0; i < this->height_band * this->width_band; i++)
     this->evapotranspiration[i] = this->net_radiation_24h[i] * this->evapotranspiration_fraction[i] * 0.035;
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "SERIAL,EVAPOTRANSPIRATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::rah_correction_function_serial(double ndvi_min, double ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
@@ -627,7 +924,7 @@ string Products::rah_correction_function_serial(double ndvi_min, double ndvi_max
     cold_pixel.aerodynamic_resistance.push_back(rah_cold);
   }
 
-  return "P2 - RAH - PARALLEL - CORE, " + to_string(general_time_core) + ", " + to_string(initial_time_core) + ", " + to_string(final_time_core) + "\n";
+  return "SERIAL,RAH_CYCLE," + std::to_string(general_time_core) + "," + std::to_string(initial_time_core) + "," + std::to_string(final_time_core) + "\n";
 }
 
 string Products::rah_correction_function_threads(double ndvi_min, double ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
@@ -694,5 +991,5 @@ string Products::rah_correction_function_threads(double ndvi_min, double ndvi_ma
     cold_pixel.aerodynamic_resistance.push_back(rah_cold);
   }
 
-  return "P2 - RAH - PARALLEL - CORE, " + to_string(general_time_core) + ", " + to_string(initial_time_core) + ", " + to_string(final_time_core) + "\n";
+  return "THREADS,RAH_CYCLE," + std::to_string(general_time_core) + "," + std::to_string(initial_time_core) + "," + std::to_string(final_time_core) + "\n";
 }

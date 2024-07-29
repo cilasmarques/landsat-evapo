@@ -87,8 +87,7 @@ struct Products
   float *only1_d;
   float *tal_d, *albedo_d, *ndvi_d, *pai_d, *lai_d, *evi_d;
   float *enb_d, *eo_d, *ea_d, *short_wave_radiation_d, *large_wave_radiation_surface_d, *large_wave_radiation_atmosphere_d;
-  float *soil_heat_d, *surface_temperature_d, *net_radiation_d;
-  float *d0_d, *kb1_d, *zom_d, *ts_d, *ustarR_d, *ustarW_d, *rahR_d, *rahW_d, *sensible_heat_flux_d;
+  float *soil_heat_d, *surface_temperature_d, *net_radiation_d, *d0_d, *kb1_d, *zom_d, *ustarR_d, *ustarW_d, *rahR_d, *rahW_d, *sensible_heat_flux_d;
   float *latent_heat_flux_d, *net_radiation_24h_d, *evapotranspiration_fraction_d, *sensible_heat_flux_24h_d, *latent_heat_flux_24h_d, *evapotranspiration_24h_d, *evapotranspiration_d;
 
   /**
@@ -113,161 +112,161 @@ struct Products
    * @param  mtl: MTL struct.
    * @param  sensor: Sensor struct.
    */
-  void radiance_function(MTL mtl);
+  string radiance_function(MTL mtl);
 
   /**
    * @brief  The spectral reflectance for each band is computed.
    * @param  mtl: MTL struct.
    * @param  sensor: Sensor struct.
    */
-  void reflectance_function(MTL mtl);
+  string reflectance_function(MTL mtl);
 
   /**
    * @brief  The surface albedo is computed.
    * @param  sensor: Sensor struct.
    */
-  void albedo_function(MTL mtl);
+  string albedo_function(MTL mtl);
 
   /**
    * @brief  The NDVI is computed.
    */
-  void ndvi_function();
+  string ndvi_function();
 
   /**
    * @brief  The PAI is computed.
    */
-  void pai_function();
+  string pai_function();
 
   /**
    * @brief  The LAI is computed.
    */
-  void lai_function();
+  string lai_function();
 
   /**
    * @brief  The EVI is computed.
    */
-  void evi_function();
+  string evi_function();
 
   /**
    * @brief  The emissivity is computed.
    */
-  void enb_emissivity_function();
+  string enb_emissivity_function();
 
   /**
    * @brief  The emissivity is computed.
    */
-  void eo_emissivity_function();
+  string eo_emissivity_function();
 
   /**
    * @brief  The emissivity is computed.
    */
-  void ea_emissivity_function();
+  string ea_emissivity_function();
 
   /**
    * @brief  The surface temperature is computed.
    */
-  void surface_temperature_function(MTL mtl);
+  string surface_temperature_function(MTL mtl);
 
   /**
    * @brief  The short wave radiation is computed.
    * @param  mtl: MTL struct.
    */
-  void short_wave_radiation_function(MTL mtl);
+  string short_wave_radiation_function(MTL mtl);
 
   /**
    * @brief  The large wave radiation is computed.
    */
-  void large_wave_radiation_surface_function();
+  string large_wave_radiation_surface_function();
 
   /**
    * @brief  The large wave radiation is computed.
    * @param  temperature: Pixel's temperature.
    */
-  void large_wave_radiation_atmosphere_function(double temperature);
+  string large_wave_radiation_atmosphere_function(double temperature);
 
   /**
    * @brief  The net radiation is computed.
    */
-  void net_radiation_function();
+  string net_radiation_function();
 
   /**
    * @brief  The soil heat flux is computed.
    */
-  void soil_heat_flux_function();
+  string soil_heat_flux_function();
 
   /**
    * @brief  The d0 is computed.
    */
-  void d0_fuction();
+  string d0_fuction();
 
   /**
    * @brief  The kb is computed.
    * @param  ndvi_max: Maximum NDVI.
    * @param  ndvi_min: Minimum NDVI.
    */
-  void kb_function(double ndvi_max, double ndvi_min);
+  string kb_function(double ndvi_max, double ndvi_min);
 
   /**
    * @brief  The zom is computed.
    * @param  A_ZOM: Coefficient A.
    * @param  B_ZOM: Coefficient B.
    */
-  void zom_fuction(double A_ZOM, double B_ZOM);
+  string zom_fuction(double A_ZOM, double B_ZOM);
 
   /**
    * @brief  The ustar is computed.
    * @param  u10: Wind speed at 10 m.
    */
-  void ustar_fuction(double u10);
+  string ustar_fuction(double u10);
 
   /**
    * @brief  The aerodynamic resistance is computed.
    */
-  void aerodynamic_resistance_fuction();
+  string aerodynamic_resistance_fuction();
 
   /**
    * @brief  The sensible heat flux is computed.
    * @param  a: Coefficient A.
    * @param  b: Coefficient B.
    */
-  void sensible_heat_flux_function(double a, double b);
+  string sensible_heat_flux_function(double a, double b);
 
   /**
    * @brief  The latent heat flux is computed.
    */
-  void latent_heat_flux_function();
+  string latent_heat_flux_function();
 
   /**
    * @brief  The net radiation is computed.
    * @param  Ra24h: Net radiation 24h.
    * @param  Rs24h: Solar radiation 24h.
    */
-  void net_radiation_24h_function(double Ra24h, double Rs24h);
+  string net_radiation_24h_function(double Ra24h, double Rs24h);
 
   /**
    * @brief  The evapotranspiration fraction is computed.
    */
-  void evapotranspiration_fraction_fuction();
+  string evapotranspiration_fraction_fuction();
 
   /**
    * @brief  The sensible heat flux is computed.
    */
-  void sensible_heat_flux_24h_fuction();
+  string sensible_heat_flux_24h_fuction();
 
   /**
    * @brief  The latent heat flux is computed.
    */
-  void latent_heat_flux_24h_function();
+  string latent_heat_flux_24h_function();
 
   /**
    * @brief  The evapotranspiration is computed.
    */
-  void evapotranspiration_24h_function(Station station);
+  string evapotranspiration_24h_function(Station station);
 
   /**
    * @brief  The evapotranspiration is computed.
    */
-  void evapotranspiration_function();
+  string evapotranspiration_function();
 
   /**
    * @brief  The  aerodynamic resistance convergence is computed.

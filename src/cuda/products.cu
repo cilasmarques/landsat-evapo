@@ -113,7 +113,6 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   HANDLE_ERROR(cudaMalloc((void **)&this->zom_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->d0_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->kb1_d, nBytes_band));
-  HANDLE_ERROR(cudaMalloc((void **)&this->ts_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->ustarR_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->ustarW_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->rahR_d, nBytes_band));
@@ -131,14 +130,14 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
 
 void Products::close()
 {
-  free(band_blue);
-  free(band_green);
-  free(band_red);
-  free(band_nir);
-  free(band_swir1);
-  free(band_termal);
-  free(band_swir2);
-  free(tal);
+  free(this->band_blue);
+  free(this->band_green);
+  free(this->band_red);
+  free(this->band_nir);
+  free(this->band_swir1);
+  free(this->band_termal);
+  free(this->band_swir2);
+  free(this->tal);
 
   free(this->radiance_blue);
   free(this->radiance_green);
@@ -158,22 +157,22 @@ void Products::close()
 
   free(this->albedo);
   free(this->ndvi);
-  free(this->soil_heat);
-  free(this->surface_temperature);
-  free(this->net_radiation);
   free(this->lai);
   free(this->evi);
   free(this->pai);
+
   free(this->enb_emissivity);
   free(this->eo_emissivity);
   free(this->ea_emissivity);
   free(this->short_wave_radiation);
   free(this->large_wave_radiation_surface);
   free(this->large_wave_radiation_atmosphere);
-
   free(this->surface_temperature);
-  free(this->d0);
+  free(this->net_radiation);
+  free(this->soil_heat);
+
   free(this->zom);
+  free(this->d0);
   free(this->ustar);
   free(this->kb1);
   free(this->aerodynamic_resistance);
@@ -186,9 +185,67 @@ void Products::close()
   free(this->latent_heat_flux_24h);
   free(this->evapotranspiration_24h);
   free(this->evapotranspiration);
-}
 
-void Products::radiance_function(MTL mtl)
+  HANDLE_ERROR(cudaFree(this->band_blue_d));
+  HANDLE_ERROR(cudaFree(this->band_green_d));
+  HANDLE_ERROR(cudaFree(this->band_red_d));
+  HANDLE_ERROR(cudaFree(this->band_nir_d));
+  HANDLE_ERROR(cudaFree(this->band_swir1_d));
+  HANDLE_ERROR(cudaFree(this->band_termal_d));
+  HANDLE_ERROR(cudaFree(this->band_swir2_d));
+  HANDLE_ERROR(cudaFree(this->tal_d));
+
+  HANDLE_ERROR(cudaFree(this->radiance_blue_d));
+  HANDLE_ERROR(cudaFree(this->radiance_green_d));
+  HANDLE_ERROR(cudaFree(this->radiance_red_d));
+  HANDLE_ERROR(cudaFree(this->radiance_nir_d));
+  HANDLE_ERROR(cudaFree(this->radiance_swir1_d));
+  HANDLE_ERROR(cudaFree(this->radiance_termal_d));
+  HANDLE_ERROR(cudaFree(this->radiance_swir2_d));
+
+  HANDLE_ERROR(cudaFree(this->reflectance_blue_d));
+  HANDLE_ERROR(cudaFree(this->reflectance_green_d));
+  HANDLE_ERROR(cudaFree(this->reflectance_red_d));
+  HANDLE_ERROR(cudaFree(this->reflectance_nir_d));
+  HANDLE_ERROR(cudaFree(this->reflectance_swir1_d));
+  HANDLE_ERROR(cudaFree(this->reflectance_termal_d));
+  HANDLE_ERROR(cudaFree(this->reflectance_swir2_d));
+
+  HANDLE_ERROR(cudaFree(this->albedo_d));
+  HANDLE_ERROR(cudaFree(this->ndvi_d));
+  HANDLE_ERROR(cudaFree(this->pai_d));
+  HANDLE_ERROR(cudaFree(this->lai_d));
+  HANDLE_ERROR(cudaFree(this->evi_d));
+
+  HANDLE_ERROR(cudaFree(this->enb_d));
+  HANDLE_ERROR(cudaFree(this->eo_d));
+  HANDLE_ERROR(cudaFree(this->ea_d));
+  HANDLE_ERROR(cudaFree(this->short_wave_radiation_d));
+  HANDLE_ERROR(cudaFree(this->large_wave_radiation_surface_d));
+  HANDLE_ERROR(cudaFree(this->large_wave_radiation_atmosphere_d));
+  HANDLE_ERROR(cudaFree(this->surface_temperature_d));
+  HANDLE_ERROR(cudaFree(this->net_radiation_d));
+  HANDLE_ERROR(cudaFree(this->soil_heat_d));
+
+  HANDLE_ERROR(cudaFree(this->zom_d));
+  HANDLE_ERROR(cudaFree(this->d0_d));
+  HANDLE_ERROR(cudaFree(this->kb1_d));
+  HANDLE_ERROR(cudaFree(this->ustarR_d));
+  HANDLE_ERROR(cudaFree(this->ustarW_d));
+  HANDLE_ERROR(cudaFree(this->rahR_d));
+  HANDLE_ERROR(cudaFree(this->rahW_d));
+  HANDLE_ERROR(cudaFree(this->sensible_heat_flux_d));
+
+  HANDLE_ERROR(cudaFree(this->latent_heat_flux_d));
+  HANDLE_ERROR(cudaFree(this->net_radiation_24h_d));
+  HANDLE_ERROR(cudaFree(this->evapotranspiration_fraction_d));
+  HANDLE_ERROR(cudaFree(this->sensible_heat_flux_24h_d));
+  HANDLE_ERROR(cudaFree(this->latent_heat_flux_24h_d));
+  HANDLE_ERROR(cudaFree(this->evapotranspiration_24h_d));
+  HANDLE_ERROR(cudaFree(this->evapotranspiration_d));
+};
+
+string Products::radiance_function(MTL mtl)
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -205,7 +262,6 @@ void Products::radiance_function(MTL mtl)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,RADIANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
   HANDLE_ERROR(cudaMemcpy(radiance_blue, radiance_blue_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(radiance_green, radiance_green_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
@@ -214,9 +270,11 @@ void Products::radiance_function(MTL mtl)
   HANDLE_ERROR(cudaMemcpy(radiance_swir1, radiance_swir1_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(radiance_termal, radiance_termal_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(radiance_swir2, radiance_swir2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,RADIANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
-void Products::reflectance_function(MTL mtl)
+string Products::reflectance_function(MTL mtl)
 {
   const float sin_sun = sin(mtl.sun_elevation * PI / 180);
 
@@ -236,9 +294,7 @@ void Products::reflectance_function(MTL mtl)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,REFLECTANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(reflectance_blue, reflectance_blue_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(reflectance_green, reflectance_green_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(reflectance_red, reflectance_red_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
@@ -246,9 +302,11 @@ void Products::reflectance_function(MTL mtl)
   HANDLE_ERROR(cudaMemcpy(reflectance_swir1, reflectance_swir1_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(reflectance_termal, reflectance_termal_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(reflectance_swir2, reflectance_swir2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,REFLECTANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
-void Products::albedo_function(MTL mtl)
+string Products::albedo_function(MTL mtl)
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -265,13 +323,13 @@ void Products::albedo_function(MTL mtl)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,ALBEDO," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(albedo, albedo_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,ALBEDO," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
-void Products::ndvi_function()
+string Products::ndvi_function()
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -287,13 +345,13 @@ void Products::ndvi_function()
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,NDVI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(ndvi, ndvi_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,NDVI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::pai_function()
+string Products::pai_function()
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -309,13 +367,13 @@ void Products::pai_function()
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,PAI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(pai, pai_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,PAI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::lai_function()
+string Products::lai_function()
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -331,13 +389,13 @@ void Products::lai_function()
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,LAI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(lai, lai_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,LAI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::evi_function()
+string Products::evi_function()
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -353,13 +411,13 @@ void Products::evi_function()
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,EVI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(evi, evi_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,EVI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::enb_emissivity_function()
+string Products::enb_emissivity_function()
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -375,13 +433,13 @@ void Products::enb_emissivity_function()
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,ENB," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(enb_emissivity, enb_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,ENB_EMISSIVITY," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::eo_emissivity_function()
+string Products::eo_emissivity_function()
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -397,13 +455,13 @@ void Products::eo_emissivity_function()
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,EO," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(eo_emissivity, eo_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,EO_EMISSIVITY," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::ea_emissivity_function()
+string Products::ea_emissivity_function()
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -419,13 +477,13 @@ void Products::ea_emissivity_function()
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,EA," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(ea_emissivity, ea_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,EA_EMISSIVITY," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::surface_temperature_function(MTL mtl)
+string Products::surface_temperature_function(MTL mtl)
 {
   double k1, k2;
   switch (mtl.number_sensor)
@@ -464,13 +522,13 @@ void Products::surface_temperature_function(MTL mtl)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,SURFACE_TEMPERATURE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(surface_temperature, surface_temperature_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,SURFACE_TEMPERATURE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::short_wave_radiation_function(MTL mtl)
+string Products::short_wave_radiation_function(MTL mtl)
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -486,13 +544,13 @@ void Products::short_wave_radiation_function(MTL mtl)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,SHORT_WAVE_RADIATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(short_wave_radiation, short_wave_radiation_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,SHORT_WAVE_RADIATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::large_wave_radiation_surface_function()
+string Products::large_wave_radiation_surface_function()
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -508,13 +566,13 @@ void Products::large_wave_radiation_surface_function()
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,LARGE_WAVE_RADIATION_SURFACE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(large_wave_radiation_surface, large_wave_radiation_surface_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,LARGE_WAVE_RADIATION_SURFACE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::large_wave_radiation_atmosphere_function(double temperature)
+string Products::large_wave_radiation_atmosphere_function(double temperature)
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -530,13 +588,13 @@ void Products::large_wave_radiation_atmosphere_function(double temperature)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,LARGE_WAVE_RADIATION_ATMOSPHERE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(large_wave_radiation_atmosphere, large_wave_radiation_atmosphere_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,LARGE_WAVE_RADIATION_ATMOSPHERE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::net_radiation_function()
+string Products::net_radiation_function()
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -552,13 +610,13 @@ void Products::net_radiation_function()
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,NET_RADIATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(net_radiation, net_radiation_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,NET_RADIATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::soil_heat_flux_function()
+string Products::soil_heat_flux_function()
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -574,13 +632,13 @@ void Products::soil_heat_flux_function()
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,SOIL_HEAT_FLUX," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(soil_heat, soil_heat_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,SOIL_HEAT_FLUX," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::d0_fuction()
+string Products::d0_fuction()
 {
   float CD1 = 20.6;
   float HGHT = 4;
@@ -599,13 +657,13 @@ void Products::d0_fuction()
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,D0," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(d0, d0_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,D0," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::zom_fuction(double A_ZOM, double B_ZOM)
+string Products::zom_fuction(double A_ZOM, double B_ZOM)
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -621,13 +679,13 @@ void Products::zom_fuction(double A_ZOM, double B_ZOM)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,ZOM," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(zom, zom_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,ZOM," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::ustar_fuction(double u10)
+string Products::ustar_fuction(double u10)
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -643,13 +701,13 @@ void Products::ustar_fuction(double u10)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,USTAR," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(ustar, ustarR_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,USTAR," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::kb_function(double ndvi_max, double ndvi_min)
+string Products::kb_function(double ndvi_max, double ndvi_min)
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -665,13 +723,13 @@ void Products::kb_function(double ndvi_max, double ndvi_min)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,KB," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(kb1, kb1_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,KB," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::aerodynamic_resistance_fuction()
+string Products::aerodynamic_resistance_fuction()
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -687,13 +745,13 @@ void Products::aerodynamic_resistance_fuction()
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,RAH_INI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(aerodynamic_resistance, rahR_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,RAH_INI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::sensible_heat_flux_function(double a, double b)
+string Products::sensible_heat_flux_function(double a, double b)
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -709,13 +767,13 @@ void Products::sensible_heat_flux_function(double a, double b)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,SENSIBLE_HEAT_FLUX," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(sensible_heat_flux, sensible_heat_flux_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,SENSIBLE_HEAT_FLUX," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::latent_heat_flux_function()
+string Products::latent_heat_flux_function()
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -731,13 +789,13 @@ void Products::latent_heat_flux_function()
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,LATENT_HEAT_FLUX," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(latent_heat_flux, latent_heat_flux_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,LATENT_HEAT_FLUX," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::net_radiation_24h_function(double Ra24h, double Rs24h)
+string Products::net_radiation_24h_function(double Ra24h, double Rs24h)
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -753,13 +811,13 @@ void Products::net_radiation_24h_function(double Ra24h, double Rs24h)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,NET_RADIATION_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(net_radiation_24h, net_radiation_24h_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,NET_RADIATION_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::evapotranspiration_fraction_fuction()
+string Products::evapotranspiration_fraction_fuction()
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -775,13 +833,13 @@ void Products::evapotranspiration_fraction_fuction()
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,EVAPOTRANSPIRATION_FRACTION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(evapotranspiration_fraction, evapotranspiration_fraction_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,EVAPOTRANSPIRATION_FRACTION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::sensible_heat_flux_24h_fuction()
+string Products::sensible_heat_flux_24h_fuction()
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -797,13 +855,13 @@ void Products::sensible_heat_flux_24h_fuction()
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,SENSIBLE_HEAT_FLUX_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(sensible_heat_flux_24h, sensible_heat_flux_24h_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,SENSIBLE_HEAT_FLUX_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::latent_heat_flux_24h_function()
+string Products::latent_heat_flux_24h_function()
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -819,13 +877,13 @@ void Products::latent_heat_flux_24h_function()
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,LATENT_HEAT_FLUX_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(latent_heat_flux_24h, latent_heat_flux_24h_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,LATENT_HEAT_FLUX_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::evapotranspiration_24h_function(Station station)
+string Products::evapotranspiration_24h_function(Station station)
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -841,13 +899,13 @@ void Products::evapotranspiration_24h_function(Station station)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,EVAPOTRANSPIRATION_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(evapotranspiration_24h, evapotranspiration_24h_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,EVAPOTRANSPIRATION_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-void Products::evapotranspiration_function()
+string Products::evapotranspiration_function()
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
@@ -863,10 +921,10 @@ void Products::evapotranspiration_function()
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "CUDACORE,EVAPOTRANSPIRATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  // Copy data back to host
   HANDLE_ERROR(cudaMemcpy(evapotranspiration, evapotranspiration_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,EVAPOTRANSPIRATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::rah_correction_function_blocks(double ndvi_min, double ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
@@ -909,10 +967,6 @@ string Products::rah_correction_function_blocks(double ndvi_min, double ndvi_max
     double b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
     double a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
 
-    HANDLE_ERROR(cudaMemcpy(ts_d, surface_temperature, nBytes_band, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(zom_d, zom, nBytes_band, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(d0_d, d0, nBytes_band, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(kb1_d, kb1, nBytes_band, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpy(ustarR_d, ustar, nBytes_band, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpy(rahR_d, aerodynamic_resistance, nBytes_band, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpy(sensible_heat_flux_d, sensible_heat_flux, nBytes_band, cudaMemcpyHostToDevice)); // An empty array to receive the results
@@ -921,7 +975,7 @@ string Products::rah_correction_function_blocks(double ndvi_min, double ndvi_max
     begin_core = system_clock::now();
     initial_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    rah_correction_cycle_STEEP<<<num_blocks, threads_per_block>>>(ts_d, d0_d, kb1_d, zom_d, ustarR_d, ustarW_d, rahR_d, rahW_d, sensible_heat_flux_d, a, b, height_band, width_band);
+    rah_correction_cycle_STEEP<<<num_blocks, threads_per_block>>>(surface_temperature_d, d0_d, kb1_d, zom_d, ustarR_d, ustarW_d, rahR_d, rahW_d, sensible_heat_flux_d, a, b, height_band, width_band);
     HANDLE_ERROR(cudaDeviceSynchronize());
     HANDLE_ERROR(cudaGetLastError());
 
@@ -941,5 +995,5 @@ string Products::rah_correction_function_blocks(double ndvi_min, double ndvi_max
     cold_pixel.aerodynamic_resistance.push_back(rah_cold);
   }
 
-  return "P2 - RAH - PARALLEL - CORE, " + to_string(general_time_core) + ", " + to_string(initial_time_core) + ", " + to_string(final_time_core) + "\n";
+  return "CUDACORE,RAH_CYCLE," + std::to_string(general_time_core) + "," + std::to_string(initial_time_core) + "," + std::to_string(final_time_core) + "\n";
 }

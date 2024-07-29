@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  time_output << "PHASE,TIMESTAMP,START_TIME,END_TIME" << std::endl;
+  time_output << "STRATEGY,PHASE,TIMESTAMP,START_TIME,END_TIME" << std::endl;
   time_output << landsat.compute_Rn_G(station);
   time_output << landsat.select_endmembers(method);
   time_output << landsat.converge_rah_cycle(station, method);

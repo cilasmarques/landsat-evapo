@@ -100,41 +100,43 @@ Landsat::Landsat(string bands_paths[], MTL mtl, int threads_num)
 
 string Landsat::compute_Rn_G(Station station)
 {
+  string result = "";
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
 
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  products.radiance_function(mtl);
-  products.reflectance_function(mtl);
-  products.albedo_function(mtl);
+  result += products.radiance_function(mtl);
+  result += products.reflectance_function(mtl);
+  result += products.albedo_function(mtl);
 
   // Vegetation indices
-  products.ndvi_function();
-  products.pai_function();
-  products.lai_function();
-  products.evi_function();
+  result += products.ndvi_function();
+  result += products.pai_function();
+  result += products.lai_function();
+  result += products.evi_function();
 
   // Emissivity indices
-  products.enb_emissivity_function();
-  products.eo_emissivity_function();
-  products.ea_emissivity_function();
-  products.surface_temperature_function(mtl);
+  result += products.enb_emissivity_function();
+  result += products.eo_emissivity_function();
+  result += products.ea_emissivity_function();
+  result += products.surface_temperature_function(mtl);
 
   // Radiation waves
-  products.short_wave_radiation_function(mtl);
-  products.large_wave_radiation_surface_function();
-  products.large_wave_radiation_atmosphere_function(station.temperature_image);
+  result += products.short_wave_radiation_function(mtl);
+  result += products.large_wave_radiation_surface_function();
+  result += products.large_wave_radiation_atmosphere_function(station.temperature_image);
 
   // Main products
-  products.net_radiation_function();
-  products.soil_heat_flux_function();
+  result += products.net_radiation_function();
+  result += products.soil_heat_flux_function();
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  return "P1 - Rn_G," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  result += "GPU_CORES,P1_INITIAL_PROD," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return result;
 }
 
 string Landsat::select_endmembers(int method)
@@ -162,7 +164,7 @@ string Landsat::select_endmembers(int method)
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  return "P2 - PIXEL SELECTION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "GPU_CORES,P2_PIXEL_SEL," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
 string Landsat::converge_rah_cycle(Station station, int method)
@@ -187,11 +189,11 @@ string Landsat::converge_rah_cycle(Station station, int method)
       ndvi_max = products.ndvi[i];
   }
 
-  products.d0_fuction();
-  products.zom_fuction(station.A_ZOM, station.B_ZOM);
-  products.ustar_fuction(u10);
-  products.kb_function(ndvi_max, ndvi_min);
-  products.aerodynamic_resistance_fuction();
+  result += products.d0_fuction();
+  result += products.zom_fuction(station.A_ZOM, station.B_ZOM);
+  result += products.ustar_fuction(u10);
+  result += products.kb_function(ndvi_max, ndvi_min);
+  result += products.aerodynamic_resistance_fuction();
 
   result += products.rah_correction_function_blocks(ndvi_min, ndvi_max, hot_pixel, cold_pixel);
 
@@ -199,12 +201,13 @@ string Landsat::converge_rah_cycle(Station station, int method)
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  result += "P2 - RAH CYCLE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  result += "GPU_CORES,P3_RAH," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   return result;
 };
 
 string Landsat::compute_H_ET(Station station)
 {
+  string result = "";
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
 
@@ -224,21 +227,20 @@ string Landsat::compute_H_ET(Station station)
   double b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
   double a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
 
-  for (int line = 0; line < height_band; line++)
-  {
-    products.sensible_heat_flux_function(a, b);
-    products.latent_heat_flux_function();
-    products.net_radiation_24h_function(Ra24h, Rs24h);
-    products.evapotranspiration_fraction_fuction();
-    products.sensible_heat_flux_24h_fuction();
-    products.latent_heat_flux_24h_function();
-    products.evapotranspiration_24h_function(station);
-    products.evapotranspiration_function();
-  }
+  result += products.sensible_heat_flux_function(a, b);
+  result += products.latent_heat_flux_function();
+  result += products.net_radiation_24h_function(Ra24h, Rs24h);
+  result += products.evapotranspiration_fraction_fuction();
+  result += products.sensible_heat_flux_24h_fuction();
+  result += products.latent_heat_flux_24h_function();
+  result += products.evapotranspiration_24h_function(station);
+  result += products.evapotranspiration_function();
+
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  return "P2 - FINAL PRODUCTS," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  result += "GPU_CORES,P4_FINAL_PROD," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return result;
 };
 
 void Landsat::save_products(string output_path)
@@ -318,6 +320,18 @@ void Landsat::save_products(string output_path)
 
   std::cout << "==== soil_heat" << std::endl;
   printLinearPointer(products.soil_heat, height_band, width_band);
+
+  std::cout << "==== d0" << std::endl;
+  printLinearPointer(products.d0, height_band, width_band);
+
+  std::cout << "==== zom" << std::endl;
+  printLinearPointer(products.zom, height_band, width_band);
+
+  std::cout << "==== kb1" << std::endl;
+  printLinearPointer(products.kb1, height_band, width_band);
+
+  std::cout << "==== ustar" << std::endl;
+  printLinearPointer(products.ustar, height_band, width_band);
 
   std::cout << "==== sensible_heat_flux" << std::endl;
   printLinearPointer(products.sensible_heat_flux, height_band, width_band);
