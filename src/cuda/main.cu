@@ -85,14 +85,14 @@ int main(int argc, char *argv[])
   time_output << landsat.select_endmembers(method);
   time_output << landsat.converge_rah_cycle(station, method);
   time_output << landsat.compute_H_ET(station);
+  time_output << landsat.save_products(output_folder);
 
   end = system_clock::now();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
   general_time = duration_cast<nanoseconds>(end.time_since_epoch() - begin.time_since_epoch()).count();
   time_output << "TOTAL," << general_time << "," << initial_time << "," << final_time << std::endl;
-  time_output.close();
 
-  landsat.save_products(output_products);
+  time_output.close();
   landsat.close();
 
   return 0;

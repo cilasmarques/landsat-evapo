@@ -243,129 +243,44 @@ string Landsat::compute_H_ET(Station station)
   return result;
 };
 
-void Landsat::save_products(string output_path)
+string Landsat::save_products(string output_path)
 {
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
 
   begin = system_clock::now();
-  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();  
 
-  std::ofstream outputProds(output_path);
-  std::streambuf *coutProds = std::cout.rdbuf();
-  std::cout.rdbuf(outputProds.rdbuf());
-
-  std::cout << "==== reflectance 1" << std::endl;
-  printLinearPointer(products.reflectance_blue, height_band, width_band);
-
-  std::cout << "==== reflectance 2" << std::endl;
-  printLinearPointer(products.reflectance_green, height_band, width_band);
-
-  std::cout << "==== reflectance 3" << std::endl;
-  printLinearPointer(products.reflectance_red, height_band, width_band);
-
-  std::cout << "==== reflectance 4" << std::endl;
-  printLinearPointer(products.reflectance_nir, height_band, width_band);
-
-  std::cout << "==== reflectance 5" << std::endl;
-  printLinearPointer(products.reflectance_swir1, height_band, width_band);
-
-  std::cout << "==== reflectance 6" << std::endl;
-  printLinearPointer(products.reflectance_termal, height_band, width_band);
-
-  std::cout << "==== reflectance 7" << std::endl;
-  printLinearPointer(products.reflectance_swir2, height_band, width_band);
-
-  std::cout << "==== albedo" << std::endl;
-  printLinearPointer(products.albedo, height_band, width_band);
-
-  std::cout << "==== ndvi" << std::endl;
-  printLinearPointer(products.ndvi, height_band, width_band);
-
-  std::cout << "==== enb" << std::endl;
-  printLinearPointer(products.enb_emissivity, height_band, width_band);
-
-  std::cout << "==== pai" << std::endl;
-  printLinearPointer(products.pai, height_band, width_band);
-
-  std::cout << "==== lai" << std::endl;
-  printLinearPointer(products.lai, height_band, width_band);
-
-  std::cout << "==== evi" << std::endl;
-  printLinearPointer(products.evi, height_band, width_band);
-
-  std::cout << "==== surface_temperature" << std::endl;
-  printLinearPointer(products.surface_temperature, height_band, width_band);
-
-  std::cout << "==== short_wave_radiation" << std::endl;
-  printLinearPointer(products.short_wave_radiation, height_band, width_band);
-
-  std::cout << "==== large_wave_radiation_surface" << std::endl;
-  printLinearPointer(products.large_wave_radiation_surface, height_band, width_band);
-
-  std::cout << "==== large_wave_radiation_atmosphere" << std::endl;
-  printLinearPointer(products.large_wave_radiation_atmosphere, height_band, width_band);
-
-  std::cout << "==== ea" << std::endl;
-  printLinearPointer(products.ea_emissivity, height_band, width_band);
-
-  std::cout << "==== eo" << std::endl;
-  printLinearPointer(products.eo_emissivity, height_band, width_band);
-
-  std::cout << "==== net_radiation" << std::endl;
-  printLinearPointer(products.net_radiation, height_band, width_band);
-
-  std::cout << "==== soil_heat" << std::endl;
-  printLinearPointer(products.soil_heat, height_band, width_band);
-
-  std::cout << "==== d0" << std::endl;
-  printLinearPointer(products.d0, height_band, width_band);
-
-  std::cout << "==== zom" << std::endl;
-  printLinearPointer(products.zom, height_band, width_band);
-
-  std::cout << "==== kb1" << std::endl;
-  printLinearPointer(products.kb1, height_band, width_band);
-
-  std::cout << "==== ustar" << std::endl;
-  printLinearPointer(products.ustar, height_band, width_band);
-
-  std::cout << "==== rah" << std::endl;
-  printLinearPointer(products.aerodynamic_resistance, height_band, width_band);
-
-  std::cout << "==== sensible_heat_flux" << std::endl;
-  printLinearPointer(products.sensible_heat_flux, height_band, width_band);
-
-  std::cout << "==== latent_heat_flux" << std::endl;
-  printLinearPointer(products.latent_heat_flux, height_band, width_band);
-
-  std::cout << "==== net_radiation_24h" << std::endl;
-  printLinearPointer(products.net_radiation_24h, height_band, width_band);
-
-  std::cout << "==== evapotranspiration_fraction" << std::endl;
-  printLinearPointer(products.evapotranspiration_fraction, height_band, width_band);
-
-  std::cout << "==== sensible_heat_flux_24h" << std::endl;
-  printLinearPointer(products.sensible_heat_flux_24h, height_band, width_band);
-
-  std::cout << "==== latent_heat_flux_24h" << std::endl;
-  printLinearPointer(products.latent_heat_flux_24h, height_band, width_band);
-
-  std::cout << "==== evapotranspiration_24h" << std::endl;
-  printLinearPointer(products.evapotranspiration_24h, height_band, width_band);
-
-  std::cout << "==== evapotranspiration" << std::endl;
-  printLinearPointer(products.evapotranspiration, height_band, width_band);
+  saveTiff(output_path + "/albedo.tif", products.albedo, height_band, width_band);
+  saveTiff(output_path + "/ndvi.tif", products.ndvi, height_band, width_band);
+  saveTiff(output_path + "/pai.tif", products.pai, height_band, width_band);
+  saveTiff(output_path + "/lai.tif", products.lai, height_band, width_band);
+  saveTiff(output_path + "/evi.tif", products.evi, height_band, width_band);
+  saveTiff(output_path + "/enb_emissivity.tif", products.enb_emissivity, height_band, width_band);
+  saveTiff(output_path + "/eo_emissivity.tif", products.eo_emissivity, height_band, width_band);
+  saveTiff(output_path + "/ea_emissivity.tif", products.ea_emissivity, height_band, width_band);
+  saveTiff(output_path + "/surface_temperature.tif", products.surface_temperature, height_band, width_band);
+  saveTiff(output_path + "/net_radiation.tif", products.net_radiation, height_band, width_band);
+  saveTiff(output_path + "/soil_heat_flux.tif", products.soil_heat, height_band, width_band);
+  saveTiff(output_path + "/sensible_heat_flux.tif", products.sensible_heat_flux, height_band, width_band);
+  saveTiff(output_path + "/latent_heat_flux.tif", products.latent_heat_flux, height_band, width_band);
+  saveTiff(output_path + "/net_radiation_24h.tif", products.net_radiation_24h, height_band, width_band);
+  saveTiff(output_path + "/evapotranspiration_fraction.tif", products.evapotranspiration_fraction, height_band, width_band);
+  saveTiff(output_path + "/sensible_heat_flux_24h.tif", products.sensible_heat_flux_24h, height_band, width_band);
+  saveTiff(output_path + "/latent_heat_flux_24h.tif", products.latent_heat_flux_24h, height_band, width_band);
+  saveTiff(output_path + "/evapotranspiration_24h.tif", products.evapotranspiration_24h, height_band, width_band);
+  saveTiff(output_path + "/evapotranspiration.tif", products.evapotranspiration, height_band, width_band);
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  std::cout << "P3 - WRITE PRODUCTS," << general_time << "," << initial_time << "," << final_time << std::endl;
+  
+  return "SERIAL,P5_SAVE_PRODS," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 void Landsat::close()
 {
-  for (int i = 1; i <= 8; i++)
+  for (int i = 1; i < 8; i++)
   {
     TIFFClose(this->bands_resampled[i]);
   }
