@@ -138,8 +138,8 @@ __global__ void pai_kernel(float *band_nir_d, float *band_red_d, float *pai_d, i
 
     pai_d[pos] = 10.1 * (band_nir_d[pos] - sqrt(band_red_d[pos])) + 3.1;
 
-    if (pai_d[pos] <= 0)
-      pai_d[pos] = NAN;
+    if (pai_d[pos] < 0)
+      pai_d[pos] = 0;
   }
 }
 
@@ -163,6 +163,9 @@ __global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, f
       lai_d[pos] = -log((0.69 - savi) / 0.59) / 0.91;
     if (!isnan(savi) && savi < 0.1)
       lai_d[pos] = 0;
+
+    if (lai_d[pos] < 0)
+      lai_d[pos] = 0;
   }
 }
 
@@ -181,11 +184,11 @@ __global__ void evi_kernel(float *reflectance_nir_d, float *reflectance_red_d, f
     evi_d[pos] = 2.5 * ((reflectance_nir_d[pos] - reflectance_red_d[pos]) / (reflectance_nir_d[pos] + (6 * reflectance_red_d[pos]) - (7.5 * reflectance_blue_d[pos]) + 1));
 
     if (evi_d[pos] < 0)
-      evi_d[pos] = NAN;
+      evi_d[pos] = 0;
   }
 }
 
-__global__ void enb_kernel(float *lai_d, float *enb_d, int width, int height)
+__global__ void enb_kernel(float *lai_d, float *ndvi_d, float *enb_d, int width, int height)
 {
   unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -202,7 +205,7 @@ __global__ void enb_kernel(float *lai_d, float *enb_d, int width, int height)
     else
       enb_d[pos] = 0.97 + 0.0033 * lai_d[pos];
 
-    if (enb_d[pos] < 0 || lai_d[pos] > 2.99)
+    if ((ndvi_d[pos] < 0) || (lai_d[pos] > 2.99))
       enb_d[pos] = 0.98;
   }
 }
@@ -224,7 +227,7 @@ __global__ void eo_kernel(float *lai_d, float *ndvi_d, float *eo_d, int width, i
     else
       eo_d[pos] = 0.95 + 0.01 * lai_d[pos];
 
-    if (ndvi_d[pos] < 0 || lai_d[pos] > 2.99)
+    if ((ndvi_d[pos] < 0) || (lai_d[pos] > 2.99))
       eo_d[pos] = 0.98;
   }
 }
@@ -302,12 +305,12 @@ __global__ void large_wave_radiation_atmosphere_kernel(float *ea_d, float *large
   unsigned int row = idx / width;
   unsigned int col = idx % width;
 
+  float temperature_kelvin = temperature + 273.15;
+  float temperature_kelvin_pow_4 = temperature_kelvin * temperature_kelvin * temperature_kelvin * temperature_kelvin;
+
   if (idx < width * height)
   {
     unsigned int pos = row * width + col;
-    float temperature_kelvin = temperature + 273.15;
-    float temperature_kelvin_pow_4 = temperature_kelvin * temperature_kelvin * temperature_kelvin * temperature_kelvin;
-
     large_wave_radiation_atmosphere_d[pos] = ea_d[pos] * 5.67 * 1e-8 * temperature_kelvin_pow_4;
   }
 }
@@ -342,15 +345,13 @@ __global__ void soil_heat_kernel(float *ndvi_d, float *albedo_d, float *surface_
   {
     unsigned int pos = row * width + col;
 
-    if (ndvi_d[pos] < 0 || ndvi_d[pos] > 0)
+    if ((ndvi_d[pos] < 0) || (ndvi_d[pos] > 0))
     {
       float ndvi_pixel_pow_4 = ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos];
       soil_heat_d[pos] = (surface_temperature_d[pos] - 273.15) * (0.0038 + 0.0074 * albedo_d[pos]) * (1 - 0.98 * ndvi_pixel_pow_4) * net_radiation_d[pos];
     }
     else
-    {
       soil_heat_d[pos] = 0.5 * net_radiation_d[pos];
-    }
 
     if (soil_heat_d[pos] < 0)
       soil_heat_d[pos] = 0;

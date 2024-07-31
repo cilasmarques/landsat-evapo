@@ -425,7 +425,7 @@ string Products::enb_emissivity_function()
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  enb_kernel<<<this->blocks_num, this->threads_num>>>(lai_d, enb_d, width_band, height_band);
+  enb_kernel<<<this->blocks_num, this->threads_num>>>(lai_d, ndvi_d, enb_d, width_band, height_band);
 
   HANDLE_ERROR(cudaDeviceSynchronize());
   HANDLE_ERROR(cudaGetLastError());

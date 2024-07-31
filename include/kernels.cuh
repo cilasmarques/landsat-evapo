@@ -22,7 +22,7 @@ __global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, f
 
 __global__ void evi_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *reflectance_blue_d, float *evi_d, int width_band, int height_band);
 
-__global__ void enb_kernel(float *lai_d, float *enb_d, int width_band, int height_band);
+__global__ void enb_kernel(float *lai_d, float *ndvi_d, float *enb_d, int width, int height);
 
 __global__ void eo_kernel(float *lai_d, float *ndvi_d, float *eo_d, int width_band, int height_band);
 

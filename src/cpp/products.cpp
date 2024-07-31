@@ -250,7 +250,12 @@ string Products::ndvi_function()
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   for (int i = 0; i < this->height_band * this->width_band; i++)
+  {
     this->ndvi[i] = (this->reflectance_nir[i] - this->reflectance_red[i]) / (this->reflectance_nir[i] + this->reflectance_red[i]);
+
+    if (ndvi[i] <= -1 || ndvi[i] >= 1)
+      ndvi[i] = NAN;
+  }
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
@@ -301,6 +306,9 @@ string Products::lai_function()
       this->lai[i] = -log((0.69 - savi) / 0.59) / 0.91;
     if (!isnan(savi) && savi < 0.1)
       this->lai[i] = 0;
+
+    if (lai[i] < 0)
+      lai[i] = 0;
   }
 
   end = system_clock::now();
@@ -368,9 +376,13 @@ string Products::eo_emissivity_function()
 
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    this->eo_emissivity[i] = 0.95 + 0.01 * this->lai[i];
 
-    if (definitelyLessThan(this->ndvi[i], 0) || definitelyGreaterThan(this->lai[i], 2.99))
+    if (this->lai[i] == 0)
+      this->eo_emissivity[i] = NAN;
+    else
+      this->eo_emissivity[i] = 0.95 + 0.01 * this->lai[i];
+
+    if ((this->ndvi[i] < 0) || (this->lai[i] > 2.99))
       this->eo_emissivity[i] = 0.98;
   }
 
@@ -433,7 +445,7 @@ string Products::surface_temperature_function(MTL mtl)
   {
     surface_temperature_value = k2 / (log((this->enb_emissivity[i] * k1 / this->radiance_termal[i]) + 1));
 
-    if (definitelyLessThan(surface_temperature_value, 0))
+    if (surface_temperature_value < 0)
       surface_temperature_value = 0;
 
     this->surface_temperature[i] = surface_temperature_value;
@@ -520,7 +532,7 @@ string Products::net_radiation_function()
                              this->large_wave_radiation_atmosphere[i] - this->large_wave_radiation_surface[i] -
                              (1 - this->eo_emissivity[i]) * this->large_wave_radiation_atmosphere[i];
 
-    if (definitelyLessThan(this->net_radiation[i], 0))
+    if (this->net_radiation[i] < 0)
       this->net_radiation[i] = 0;
   }
 
@@ -540,7 +552,7 @@ string Products::soil_heat_flux_function()
 
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    if (definitelyLessThan(this->ndvi[i], 0) || definitelyGreaterThan(this->ndvi[i], 0))
+    if ((this->ndvi[i] < 0) || this->ndvi[i] > 0)
     {
       float ndvi_pixel_pow_4 = this->ndvi[i] * this->ndvi[i] * this->ndvi[i] * this->ndvi[i];
       this->soil_heat[i] = (this->surface_temperature[i] - 273.15) * (0.0038 + 0.0074 * this->albedo[i]) *
@@ -549,7 +561,7 @@ string Products::soil_heat_flux_function()
     else
       this->soil_heat[i] = 0.5 * this->net_radiation[i];
 
-    if (definitelyLessThan(this->soil_heat[i], 0))
+    if (this->soil_heat[i] < 0)
       this->soil_heat[i] = 0;
   }
 
@@ -740,7 +752,7 @@ string Products::sensible_heat_flux_function(float a, float b)
   {
     this->sensible_heat_flux[i] = RHO * SPECIFIC_HEAT_AIR * (a + b * (this->surface_temperature[i] - 273.15)) / this->aerodynamic_resistance[i];
 
-    if (!isnan(this->sensible_heat_flux[i]) && definitelyGreaterThan(this->sensible_heat_flux[i], (this->net_radiation[i] - this->soil_heat[i])))
+    if (!isnan(this->sensible_heat_flux[i]) && this->sensible_heat_flux[i] > (this->net_radiation[i] - this->soil_heat[i]))
     {
       this->sensible_heat_flux[i] = this->net_radiation[i] - this->soil_heat[i];
     }
