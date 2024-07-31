@@ -44,13 +44,13 @@ __global__ void d0_kernel(float *pai_d, float *d0_d, float CD1, float HGHT, int 
 
 __global__ void zom_kernel(float *d0_d, float *pai_d, float *zom_d, float A_ZOM, float B_ZOM, int width_band, int height_band);
 
-__global__ void ustar_kernel(float *zom_d, float *d0_d, float *ustarR_d, float u10, int width_band, int height_band);
+__global__ void ustar_kernel(float *zom_d, float *d0_d, float *ustar_d, float u10, int width_band, int height_band);
 
-__global__ void kb_kernel(float *zom_d, float *ustarR_d, float *pai_d, float *kb1_d, float *ndvi_d, int width_band, int height_band, float ndvi_max, float ndvi_min);
+__global__ void kb_kernel(float *zom_d, float *ustar_d, float *pai_d, float *kb1_d, float *ndvi_d, int width_band, int height_band, float ndvi_max, float ndvi_min);
 
-__global__ void aerodynamic_resistance_kernel(float *zom_d, float *d0_d, float *ustarR_d, float *kb1_d, float *rahR_d, int width_band, int height_band);
+__global__ void aerodynamic_resistance_kernel(float *zom_d, float *d0_d, float *ustar_d, float *kb1_d, float *rah_d, int width_band, int height_band);
 
-__global__ void sensible_heat_flux_kernel(float *surface_temperature_d, float *rahR_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d, float a, float b, int width_band, int height_band);
+__global__ void sensible_heat_flux_kernel(float *surface_temperature_d, float *rah_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d, float a, float b, int width_band, int height_band);
 
 __global__ void latent_heat_flux_kernel(float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d, float *latent_heat_flux_d, int width_band, int height_band);
 
@@ -73,16 +73,14 @@ __global__ void evapotranspiration_kernel(float *net_radiation_24h_d, float *eva
  * @param d0_pointer  Zero plane displacement height
  * @param kb1_pointer  KB-1 stability parameter
  * @param zom_pointer  Roughness length for momentum
- * @param ustarR_pointer  Ustar pointer for reading
- * @param ustarW_pointer  Ustar pointer for writing
- * @param rahR_pointer  Rah pointer for reading
- * @param rahWL_pointer  Rah pointer for writing
+ * @param ustar_pointer  Ustar pointer
+ * @param rah_pointer  Rah pointer 
  * @param H_pointer  Sensible heat flux
  * @param a  Coefficient a
  * @param b  Coefficient b
  * @param height  Height of the input data
  * @param width  Width of the input data
  */
-__global__ void rah_correction_cycle_STEEP(float *surface_temperature_pointer, float *d0_pointer, float *kb1_pointer, float *zom_pointer, float *ustarR_pointer,
-                                           float *ustarW_pointer, float *rahR_pointer, float *rahW_pointer, float *H_pointer, float a, float b, int height,
+__global__ void rah_correction_cycle_STEEP(float *surface_temperature_pointer, float *d0_pointer, float *kb1_pointer, float *zom_pointer,
+                                           float *ustar_pointer, float *rah_pointer, float *H_pointer, float a, float b, int height,
                                            int width);

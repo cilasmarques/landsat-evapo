@@ -87,7 +87,7 @@ struct Products
   float *only1_d;
   float *tal_d, *albedo_d, *ndvi_d, *pai_d, *lai_d, *evi_d;
   float *enb_d, *eo_d, *ea_d, *short_wave_radiation_d, *large_wave_radiation_surface_d, *large_wave_radiation_atmosphere_d;
-  float *soil_heat_d, *surface_temperature_d, *net_radiation_d, *d0_d, *kb1_d, *zom_d, *ustarR_d, *ustarW_d, *rahR_d, *rahW_d, *sensible_heat_flux_d;
+  float *soil_heat_d, *surface_temperature_d, *net_radiation_d, *d0_d, *kb1_d, *zom_d, *ustar_d, *rah_d, *sensible_heat_flux_d;
   float *latent_heat_flux_d, *net_radiation_24h_d, *evapotranspiration_fraction_d, *sensible_heat_flux_24h_d, *latent_heat_flux_24h_d, *evapotranspiration_24h_d, *evapotranspiration_d;
 
   /**

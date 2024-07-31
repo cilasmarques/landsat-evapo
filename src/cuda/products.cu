@@ -113,10 +113,8 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   HANDLE_ERROR(cudaMalloc((void **)&this->zom_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->d0_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->kb1_d, nBytes_band));
-  HANDLE_ERROR(cudaMalloc((void **)&this->ustarR_d, nBytes_band));
-  HANDLE_ERROR(cudaMalloc((void **)&this->ustarW_d, nBytes_band));
-  HANDLE_ERROR(cudaMalloc((void **)&this->rahR_d, nBytes_band));
-  HANDLE_ERROR(cudaMalloc((void **)&this->rahW_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->ustar_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->rah_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->sensible_heat_flux_d, nBytes_band));
 
   HANDLE_ERROR(cudaMalloc((void **)&this->latent_heat_flux_d, nBytes_band));
@@ -230,10 +228,8 @@ void Products::close()
   HANDLE_ERROR(cudaFree(this->zom_d));
   HANDLE_ERROR(cudaFree(this->d0_d));
   HANDLE_ERROR(cudaFree(this->kb1_d));
-  HANDLE_ERROR(cudaFree(this->ustarR_d));
-  HANDLE_ERROR(cudaFree(this->ustarW_d));
-  HANDLE_ERROR(cudaFree(this->rahR_d));
-  HANDLE_ERROR(cudaFree(this->rahW_d));
+  HANDLE_ERROR(cudaFree(this->ustar_d));
+  HANDLE_ERROR(cudaFree(this->rah_d));
   HANDLE_ERROR(cudaFree(this->sensible_heat_flux_d));
 
   HANDLE_ERROR(cudaFree(this->latent_heat_flux_d));
@@ -693,7 +689,7 @@ string Products::ustar_fuction(float u10)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  ustar_kernel<<<this->blocks_num, this->threads_num>>>(zom_d, d0_d, ustarR_d, u10, width_band, height_band);
+  ustar_kernel<<<this->blocks_num, this->threads_num>>>(zom_d, d0_d, ustar_d, u10, width_band, height_band);
 
   HANDLE_ERROR(cudaDeviceSynchronize());
   HANDLE_ERROR(cudaGetLastError());
@@ -702,7 +698,7 @@ string Products::ustar_fuction(float u10)
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  HANDLE_ERROR(cudaMemcpy(ustar, ustarR_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(ustar, ustar_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
   return "CUDACORE,USTAR," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -715,7 +711,7 @@ string Products::kb_function(float ndvi_max, float ndvi_min)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  kb_kernel<<<this->blocks_num, this->threads_num>>>(zom_d, ustarR_d, pai_d, kb1_d, ndvi_d, width_band, height_band, ndvi_max, ndvi_min);
+  kb_kernel<<<this->blocks_num, this->threads_num>>>(zom_d, ustar_d, pai_d, kb1_d, ndvi_d, width_band, height_band, ndvi_max, ndvi_min);
 
   HANDLE_ERROR(cudaDeviceSynchronize());
   HANDLE_ERROR(cudaGetLastError());
@@ -737,7 +733,7 @@ string Products::aerodynamic_resistance_fuction()
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  aerodynamic_resistance_kernel<<<this->blocks_num, this->threads_num>>>(zom_d, d0_d, ustarR_d, kb1_d, rahR_d, width_band, height_band);
+  aerodynamic_resistance_kernel<<<this->blocks_num, this->threads_num>>>(zom_d, d0_d, ustar_d, kb1_d, rah_d, width_band, height_band);
 
   HANDLE_ERROR(cudaDeviceSynchronize());
   HANDLE_ERROR(cudaGetLastError());
@@ -746,7 +742,7 @@ string Products::aerodynamic_resistance_fuction()
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  HANDLE_ERROR(cudaMemcpy(aerodynamic_resistance, rahR_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(aerodynamic_resistance, rah_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
   return "CUDACORE,RAH_INI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -759,7 +755,7 @@ string Products::sensible_heat_flux_function(float a, float b)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  sensible_heat_flux_kernel<<<this->blocks_num, this->threads_num>>>(surface_temperature_d, rahW_d, net_radiation_d, soil_heat_d, sensible_heat_flux_d, a, b, width_band, height_band);
+  sensible_heat_flux_kernel<<<this->blocks_num, this->threads_num>>>(surface_temperature_d, rah_d, net_radiation_d, soil_heat_d, sensible_heat_flux_d, a, b, width_band, height_band);
 
   HANDLE_ERROR(cudaDeviceSynchronize());
   HANDLE_ERROR(cudaGetLastError());
@@ -967,15 +963,11 @@ string Products::rah_correction_function_blocks(float ndvi_min, float ndvi_max, 
     float b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
     float a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
 
-    HANDLE_ERROR(cudaMemcpy(ustarR_d, ustar, nBytes_band, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(rahR_d, aerodynamic_resistance, nBytes_band, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(sensible_heat_flux_d, sensible_heat_flux, nBytes_band, cudaMemcpyHostToDevice)); // An empty array to receive the results
-
     // ==== Paralelization core
     begin_core = system_clock::now();
     initial_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    rah_correction_cycle_STEEP<<<num_blocks, threads_per_block>>>(surface_temperature_d, d0_d, kb1_d, zom_d, ustarR_d, ustarW_d, rahR_d, rahW_d, sensible_heat_flux_d, a, b, height_band, width_band);
+    rah_correction_cycle_STEEP<<<num_blocks, threads_per_block>>>(surface_temperature_d, d0_d, kb1_d, zom_d, ustar_d, rah_d, sensible_heat_flux_d, a, b, height_band, width_band);
     HANDLE_ERROR(cudaDeviceSynchronize());
     HANDLE_ERROR(cudaGetLastError());
 
@@ -984,8 +976,8 @@ string Products::rah_correction_function_blocks(float ndvi_min, float ndvi_max, 
     final_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     // ====
 
-    HANDLE_ERROR(cudaMemcpy(ustar, ustarW_d, nBytes_band, cudaMemcpyDeviceToHost));
-    HANDLE_ERROR(cudaMemcpy(aerodynamic_resistance, rahW_d, nBytes_band, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(ustar, ustar_d, nBytes_band, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(aerodynamic_resistance, rah_d, nBytes_band, cudaMemcpyDeviceToHost));
     HANDLE_ERROR(cudaMemcpy(sensible_heat_flux, sensible_heat_flux_d, nBytes_band, cudaMemcpyDeviceToHost));
 
     float rah_hot = this->aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
