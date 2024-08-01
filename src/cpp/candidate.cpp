@@ -86,7 +86,12 @@ bool equals(Candidate a, Candidate b)
 
 bool compare_candidate_temperature(Candidate a, Candidate b)
 {
-  return a.temperature < b.temperature;
+  bool result = a.temperature < b.temperature;
+
+  if (a.temperature == b.temperature)
+    result = a.ndvi < b.ndvi;
+
+  return result;
 }
 
 bool compare_candidate_ndvi(Candidate a, Candidate b)
