@@ -48,7 +48,7 @@ pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *surface_temper
   vector<float> tsQuartile(3);
   vector<float> ndviQuartile(3);
   vector<float> albedoQuartile(3);
-  get_quartiles(ndvi, ndviQuartile.data(), height_band, width_band, 0.15, 0.85, 0.97);
+  get_quartiles(ndvi, ndviQuartile.data(), height_band, width_band, 0.15, 0.97, 0.97);
   get_quartiles(albedo, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75);
   get_quartiles(surface_temperature, tsQuartile.data(), height_band, width_band, 0.20, 0.85, 0.97);
 
@@ -83,6 +83,9 @@ pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *surface_temper
 
   std::sort(hotCandidates.begin(), hotCandidates.end(), compare_candidate_temperature);
   std::sort(coldCandidates.begin(), coldCandidates.end(), compare_candidate_temperature);
+
+  std::cout << "Hot candidates: " << hotCandidates.size() << std::endl;
+  std::cout << "Cold candidates: " << coldCandidates.size() << std::endl;
 
   unsigned int hotPos = static_cast<unsigned int>(std::floor(hotCandidates.size() * 0.5));
   unsigned int coldPos = static_cast<unsigned int>(std::floor(coldCandidates.size() * 0.5));

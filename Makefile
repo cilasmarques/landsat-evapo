@@ -43,13 +43,13 @@ build-cpp:
 	$(GCC) -I./include -g ./src/cpp/*.cpp -o ./src/main $(CXXFLAGS)
 
 build-nvcc:
-	$(NVCC) -I./include -g ./src/cuda/*.cu -o ./src/main $(CXXFLAGS)
+	$(NVCC) -I./include -g ./src/cuda/*.cu -o ./src/main $(CXXFLAGS) -rdc=true
 
 build-tensor:
 	$(NVCC) -I./include -g ./src/cutensor/*.cu -o ./src/main $(CXXFLAGS) -lcutensor
 
 fix-permissions:
-	sudo chmod -R 777 $(INPUT_DATA_PATH)/*
+	sudo chmod -R 755 $(INPUT_DATA_PATH)/*
 
 docker-landsat-download:
 	docker run \
