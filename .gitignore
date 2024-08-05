@@ -3,8 +3,8 @@ nvidia/*
 output/*
 input/*
 analysis/*
-dev*
 __untrack__/*
+myenv/*
 
 # Prerequisites
 *.d
