@@ -891,18 +891,18 @@ string Products::rah_correction_function_serial(float ndvi_min, float ndvi_max, 
   int64_t general_time_core, initial_time_core, final_time_core;
 
   float hot_pixel_aerodynamic = aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
-  hot_pixel.aerodynamic_resistance.push_back(hot_pixel_aerodynamic);
+  hot_pixel.setAerodynamicResistance(hot_pixel_aerodynamic);
 
   float cold_pixel_aerodynamic = aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
-  cold_pixel.aerodynamic_resistance.push_back(cold_pixel_aerodynamic);
+  cold_pixel.setAerodynamicResistance(cold_pixel_aerodynamic);
 
   float fc_hot = 1 - pow((ndvi[hot_pixel.line * width_band + hot_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
   float fc_cold = 1 - pow((ndvi[cold_pixel.line * width_band + cold_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
 
   for (int i = 0; i < 2; i++)
   {
-    this->rah_ini_pq_terra = hot_pixel.aerodynamic_resistance[i];
-    this->rah_ini_pf_terra = cold_pixel.aerodynamic_resistance[i];
+    this->rah_ini_pq_terra = hot_pixel.aerodynamic_resistance;
+    this->rah_ini_pf_terra = cold_pixel.aerodynamic_resistance;
 
     float LEc_terra = 0.55 * fc_hot * (hot_pixel.net_radiation - hot_pixel.soil_heat_flux) * 0.78;
     float LEc_terra_pf = 1.75 * fc_cold * (cold_pixel.net_radiation - cold_pixel.soil_heat_flux) * 0.78;
@@ -930,10 +930,10 @@ string Products::rah_correction_function_serial(float ndvi_min, float ndvi_max, 
     // ==== Paralelization core
 
     float rah_hot = this->aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
-    hot_pixel.aerodynamic_resistance.push_back(rah_hot);
+    hot_pixel.setAerodynamicResistance(rah_hot);
 
     float rah_cold = this->aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
-    cold_pixel.aerodynamic_resistance.push_back(rah_cold);
+    cold_pixel.setAerodynamicResistance(rah_cold);
   }
 
   return "SERIAL,RAH_CYCLE," + std::to_string(general_time_core) + "," + std::to_string(initial_time_core) + "," + std::to_string(final_time_core) + "\n";
@@ -950,18 +950,18 @@ string Products::rah_correction_function_threads(float ndvi_min, float ndvi_max,
   // ==== Threads setup
 
   float hot_pixel_aerodynamic = aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
-  hot_pixel.aerodynamic_resistance.push_back(hot_pixel_aerodynamic);
+  hot_pixel.setAerodynamicResistance(hot_pixel_aerodynamic);
 
   float cold_pixel_aerodynamic = aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
-  cold_pixel.aerodynamic_resistance.push_back(cold_pixel_aerodynamic);
+  cold_pixel.setAerodynamicResistance(cold_pixel_aerodynamic);
 
   float fc_hot = 1 - pow((ndvi[hot_pixel.line * width_band + hot_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
   float fc_cold = 1 - pow((ndvi[cold_pixel.line * width_band + cold_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
 
   for (int i = 0; i < 2; i++)
   {
-    this->rah_ini_pq_terra = hot_pixel.aerodynamic_resistance[i];
-    this->rah_ini_pf_terra = cold_pixel.aerodynamic_resistance[i];
+    this->rah_ini_pq_terra = hot_pixel.aerodynamic_resistance;
+    this->rah_ini_pf_terra = cold_pixel.aerodynamic_resistance;
 
     float LEc_terra = 0.55 * fc_hot * (hot_pixel.net_radiation - hot_pixel.soil_heat_flux) * 0.78;
     float LEc_terra_pf = 1.75 * fc_cold * (cold_pixel.net_radiation - cold_pixel.soil_heat_flux) * 0.78;
@@ -998,10 +998,10 @@ string Products::rah_correction_function_threads(float ndvi_min, float ndvi_max,
     // ==== Paralelization core
 
     float rah_hot = this->aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
-    hot_pixel.aerodynamic_resistance.push_back(rah_hot);
+    hot_pixel.setAerodynamicResistance(rah_hot);
 
     float rah_cold = this->aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
-    cold_pixel.aerodynamic_resistance.push_back(rah_cold);
+    cold_pixel.setAerodynamicResistance(rah_cold);
   }
 
   return "THREADS,RAH_CYCLE," + std::to_string(general_time_core) + "," + std::to_string(initial_time_core) + "," + std::to_string(final_time_core) + "\n";

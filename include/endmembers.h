@@ -1,8 +1,8 @@
 #pragma once
 
 #include "utils.h"
+#include "cuda_utils.h"
 #include "constants.h"
-#include "parameters.h"
 #include "candidate.h"
 
 /**
@@ -47,6 +47,10 @@ void get_quartiles(float *target, float *v_quartile, int height_band, int width_
  * @retval Candidate
  */
 pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, int height_band, int width_band);
+
+pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float *surface_temperature, float *d_surface_temperature, float *albedo, float *d_albedo,
+                                              float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat,
+                                              int blocks_num, int threads_num, int height_band, int width_band);
 
 /**
  * @brief Get the hot and cold pixels based on the ASEBAL algorithm.

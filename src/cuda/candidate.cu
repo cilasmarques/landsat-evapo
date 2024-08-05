@@ -1,6 +1,6 @@
 #include "candidate.h"
 
-Candidate::Candidate()
+CUDA_HOSTDEV Candidate::Candidate()
 {
   this->ndvi = 0;
   this->temperature = 0;
@@ -15,22 +15,7 @@ Candidate::Candidate()
   this->ustar = 0;
 }
 
-Candidate::Candidate(const Candidate &c)
-{
-  this->ndvi = c.ndvi;
-  this->temperature = c.temperature;
-  this->net_radiation = c.net_radiation;
-  this->soil_heat_flux = c.soil_heat_flux;
-  this->ho = c.ho;
-  this->line = c.line;
-  this->col = c.col;
-  this->negative_neighbour = c.negative_neighbour;
-  this->coefficient_variation = c.coefficient_variation;
-  this->zom = c.zom;
-  this->ustar = c.ustar;
-};
-
-Candidate::Candidate(float ndvi, float temperature, float net_radiation, float soil_heat_flux, float ho, int line, int col)
+CUDA_HOSTDEV Candidate::Candidate(float ndvi, float temperature, float net_radiation, float soil_heat_flux, float ho, int line, int col)
 {
   this->ndvi = ndvi;
   this->temperature = temperature;
@@ -45,38 +30,9 @@ Candidate::Candidate(float ndvi, float temperature, float net_radiation, float s
   this->ustar = 0;
 }
 
-void Candidate::setAerodynamicResistance(float u200, float A_ZOM, float B_ZOM, float VON_KARMAN)
+void Candidate::setAerodynamicResistance(float newRah)
 {
-  this->zom = exp(A_ZOM + B_ZOM * this->ndvi);
-  this->ustar = (VON_KARMAN * u200) / log(200 / this->zom);
-  this->aerodynamic_resistance.push_back(log(20) / (this->ustar * VON_KARMAN));
-}
-
-void Candidate::toString()
-{
-  string toString;
-  printf("NDVI: %.10lf\n", this->ndvi);
-  printf("TS: %.10lf\n", this->temperature);
-  printf("Rn: %.10lf\n", this->net_radiation);
-  printf("Ustar: %.10lf\n", this->ustar);
-  printf("Z0m: %.10lf\n", this->zom);
-  printf("G: %.10lf\n", this->soil_heat_flux);
-  printf("HO: %.10lf\n", this->ho);
-  printf("Negative neighbour: %d\n", this->negative_neighbour);
-  printf("Coefficient variation: %.10lf\n", this->coefficient_variation);
-  printf("Line: %d\n", this->line);
-  printf("Col: %d\n", this->col);
-
-  if (this->aerodynamic_resistance.size() > 0)
-  {
-    printf("Aerodynamic resistance:\n");
-    for (unsigned i = 0; i < this->aerodynamic_resistance.size(); i++)
-    {
-      printf("Aerodynamic resistance[%i]: %.10f\n", i, this->aerodynamic_resistance[i]);
-    }
-  }
-
-  printf("\n");
+  this->aerodynamic_resistance = newRah;
 }
 
 bool equals(Candidate a, Candidate b)
@@ -92,14 +48,4 @@ bool compare_candidate_temperature(Candidate a, Candidate b)
     result = a.ndvi < b.ndvi;
 
   return result;
-}
-
-bool compare_candidate_ndvi(Candidate a, Candidate b)
-{
-  return a.ndvi < b.ndvi;
-}
-
-bool compare_candidate_ho(Candidate a, Candidate b)
-{
-  return a.ho < b.ho;
 }
