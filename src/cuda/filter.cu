@@ -25,14 +25,12 @@ __global__ void process_pixels(Candidate *hotCandidates, Candidate *coldCandidat
 
         if (hotAlbedo && hotNDVI && hotTS)
         {
-            int index = atomicAdd(d_hot_index, 1);
-            hotCandidates[index] = Candidate(ndvi[pos], surface_temperature[pos], net_radiation[pos], soil_heat[pos], ho[pos], row, col);
+            hotCandidates[atomicAdd(d_hot_index, 1)] = Candidate(ndvi[pos], surface_temperature[pos], net_radiation[pos], soil_heat[pos], ho[pos], row, col);
         }
 
         if (coldNDVI && coldAlbedo && coldTS)
         {
-            int index = atomicAdd(d_cold_index, 1);
-            coldCandidates[index] = Candidate(ndvi[pos], surface_temperature[pos], net_radiation[pos], soil_heat[pos], ho[pos], row, col);
+            coldCandidates[atomicAdd(d_cold_index, 1)] = Candidate(ndvi[pos], surface_temperature[pos], net_radiation[pos], soil_heat[pos], ho[pos], row, col);
         }
     }
 }

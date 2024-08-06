@@ -149,7 +149,10 @@ string Landsat::select_endmembers(int method)
 
   if (method == 0)
   { // STEEP
-    pair<Candidate, Candidate> pixels = getEndmembersSTEPP(products.ndvi, products.surface_temperature, products.albedo, products.net_radiation, products.soil_heat, height_band, width_band);
+    pair<Candidate, Candidate> pixels = getEndmembersSTEPP(products.ndvi, products.ndvi_d, products.surface_temperature, products.surface_temperature_d,
+                                                           products.albedo, products.albedo_d, products.net_radiation, products.net_radiation_d,
+                                                           products.soil_heat, products.soil_heat_d, products.blocks_num, products.threads_num,
+                                                           height_band, width_band);
     hot_pixel = pixels.first;
     cold_pixel = pixels.second;
   }
@@ -249,7 +252,7 @@ string Landsat::save_products(string output_path)
   int64_t general_time, initial_time, final_time;
 
   begin = system_clock::now();
-  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();  
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   saveTiff(output_path + "/albedo.tif", products.albedo, height_band, width_band);
   saveTiff(output_path + "/ndvi.tif", products.ndvi, height_band, width_band);
@@ -274,7 +277,7 @@ string Landsat::save_products(string output_path)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  
+
   return "SERIAL,P5_SAVE_PRODS," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
