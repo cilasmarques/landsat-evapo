@@ -5,6 +5,13 @@
 #include "constants.h"
 #include "candidate.h"
 
+static float *d_ho;
+static int hot_index, cold_index = 0;
+static int *d_hot_index, *d_cold_index;
+static Candidate *d_hotCandidates, *d_coldCandidates;
+
+void mallocGPU(int height_band, int width_band);
+
 /**
  * @brief  Compute the H0
  *

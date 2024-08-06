@@ -41,6 +41,32 @@ void get_quartiles(float *target, float *v_quartile, int height_band, int width_
   free(target_values);
 }
 
+void mallocGPU(int height_band, int width_band)
+{
+  const size_t MAXC = sizeof(Candidate) * height_band * width_band;
+
+  cudaMalloc((void **)&d_hot_index, sizeof(int));
+  cudaMalloc((void **)&d_cold_index, sizeof(int));
+  cudaMalloc((void **)&d_ho, sizeof(float) * height_band * width_band);
+  cudaMemcpy(d_hot_index, &hot_index, sizeof(int), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_cold_index, &cold_index, sizeof(int), cudaMemcpyHostToDevice);
+
+  cudaError_t err;
+  err = cudaMalloc((void **)&d_hotCandidates, MAXC);
+  if (err != cudaSuccess)
+  {
+    std::cerr << "CUDA memory allocation for d_hotCandidates failed: " << cudaGetErrorString(err) << std::endl;
+    // Handle the error appropriately
+  }
+
+  err = cudaMalloc((void **)&d_coldCandidates, MAXC);
+  if (err != cudaSuccess)
+  {
+    std::cerr << "CUDA memory allocation for d_coldCandidates failed: " << cudaGetErrorString(err) << std::endl;
+    // Handle the error appropriately
+  }
+}
+
 pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float *surface_temperature, float *d_surface_temperature, float *albedo, float *d_albedo,
                                               float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat,
                                               int blocks_num, int threads_num, int height_band, int width_band)
@@ -84,10 +110,10 @@ pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float 
   HANDLE_ERROR(cudaDeviceSynchronize());
   HANDLE_ERROR(cudaGetLastError());
 
-  cudaMemcpy(hotCandidates, d_hotCandidates, sizeof(Candidate) * MAXC, cudaMemcpyDeviceToHost);
-  cudaMemcpy(coldCandidates, d_coldCandidates, sizeof(Candidate) * MAXC, cudaMemcpyDeviceToHost);
   cudaMemcpy(&hot_index, d_hot_index, sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(&cold_index, d_cold_index, sizeof(int), cudaMemcpyDeviceToHost);
+  cudaMemcpy(hotCandidates, d_hotCandidates, sizeof(Candidate) * hot_index, cudaMemcpyDeviceToHost);
+  cudaMemcpy(coldCandidates, d_coldCandidates, sizeof(Candidate) * cold_index, cudaMemcpyDeviceToHost);
 
   std::sort(hotCandidates, hotCandidates + hot_index, compare_candidate_temperature);
   std::sort(coldCandidates, coldCandidates + cold_index, compare_candidate_temperature);
