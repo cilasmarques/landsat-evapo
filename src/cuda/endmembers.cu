@@ -71,22 +71,11 @@ pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float 
                                               float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat,
                                               int blocks_num, int threads_num, int height_band, int width_band)
 {
-  const int MAXC = 10000000;
-
-  int hot_index, cold_index = 0;
-  int *d_hot_index, *d_cold_index;
-  cudaMalloc((void **)&d_hot_index, sizeof(int));
-  cudaMalloc((void **)&d_cold_index, sizeof(int));
-  cudaMemcpy(d_hot_index, &hot_index, sizeof(int), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_cold_index, &cold_index, sizeof(int), cudaMemcpyHostToDevice);
+  const size_t MAXC = sizeof(Candidate) * height_band * width_band;
 
   Candidate *hotCandidates, *coldCandidates;
-  hotCandidates = (Candidate *)malloc(sizeof(Candidate) * MAXC);
-  coldCandidates = (Candidate *)malloc(sizeof(Candidate) * MAXC);
-
-  Candidate *d_hotCandidates, *d_coldCandidates;
-  cudaMalloc((void **)&d_hotCandidates, sizeof(Candidate) * MAXC);
-  cudaMalloc((void **)&d_coldCandidates, sizeof(Candidate) * MAXC);
+  hotCandidates = (Candidate *)malloc(MAXC);
+  coldCandidates = (Candidate *)malloc(MAXC);
 
   vector<float> tsQuartile(3);
   vector<float> ndviQuartile(3);
@@ -97,9 +86,6 @@ pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float 
 
   float *ho = (float *)malloc(sizeof(float) * height_band * width_band);
   compute_H0(net_radiation, soil_heat, height_band, width_band, ho);
-
-  float *d_ho;
-  cudaMalloc((void **)&d_ho, sizeof(float) * height_band * width_band);
   cudaMemcpy(d_ho, ho, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice);
 
   process_pixels<<<blocks_num, threads_num>>>(d_hotCandidates, d_coldCandidates, d_hot_index, d_cold_index,
