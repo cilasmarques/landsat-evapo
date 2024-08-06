@@ -144,8 +144,6 @@ string Landsat::select_endmembers(int method)
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
 
-  mallocGPU(height_band, width_band);
-
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 

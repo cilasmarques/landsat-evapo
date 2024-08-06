@@ -41,9 +41,16 @@ void get_quartiles(float *target, float *v_quartile, int height_band, int width_
   free(target_values);
 }
 
-void mallocGPU(int height_band, int width_band)
+pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float *surface_temperature, float *d_surface_temperature, float *albedo, float *d_albedo,
+                                              float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat,
+                                              int blocks_num, int threads_num, int height_band, int width_band)
 {
   const size_t MAXC = sizeof(Candidate) * height_band * width_band;
+
+  float *d_ho;
+  int hot_index, cold_index = 0;
+  int *d_hot_index, *d_cold_index;
+  Candidate *d_hotCandidates, *d_coldCandidates;
 
   cudaMalloc((void **)&d_hot_index, sizeof(int));
   cudaMalloc((void **)&d_cold_index, sizeof(int));
@@ -65,13 +72,6 @@ void mallocGPU(int height_band, int width_band)
     std::cerr << "CUDA memory allocation for d_coldCandidates failed: " << cudaGetErrorString(err) << std::endl;
     // Handle the error appropriately
   }
-}
-
-pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float *surface_temperature, float *d_surface_temperature, float *albedo, float *d_albedo,
-                                              float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat,
-                                              int blocks_num, int threads_num, int height_band, int width_band)
-{
-  const size_t MAXC = sizeof(Candidate) * height_band * width_band;
 
   Candidate *hotCandidates, *coldCandidates;
   hotCandidates = (Candidate *)malloc(MAXC);
