@@ -1,12 +1,6 @@
 #include "endmembers.h"
 #include "filter.cuh"
 
-void compute_H0(float *net_radiation, float *soil_heat_flux, int height_band, int width_band, float *ho)
-{
-  for (int i = 0; i < height_band * width_band; i++)
-    ho[i] = net_radiation[i] - soil_heat_flux[i];
-};
-
 void get_quartiles(float *target, float *v_quartile, int height_band, int width_band, float first_interval, float middle_interval, float last_interval)
 {
   const int SIZE = height_band * width_band;
@@ -45,22 +39,37 @@ pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float 
                                               float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat,
                                               int blocks_num, int threads_num, int height_band, int width_band)
 {
-  const int MAXC = 10000000;
+  const size_t MAXC = sizeof(Candidate) * height_band * width_band;
 
+  float *d_ho;
   int hot_index, cold_index = 0;
   int *d_hot_index, *d_cold_index;
+  Candidate *d_hotCandidates, *d_coldCandidates;
+
   cudaMalloc((void **)&d_hot_index, sizeof(int));
   cudaMalloc((void **)&d_cold_index, sizeof(int));
+  cudaMalloc((void **)&d_ho, sizeof(float) * height_band * width_band);
   cudaMemcpy(d_hot_index, &hot_index, sizeof(int), cudaMemcpyHostToDevice);
   cudaMemcpy(d_cold_index, &cold_index, sizeof(int), cudaMemcpyHostToDevice);
 
-  Candidate *hotCandidates, *coldCandidates;
-  hotCandidates = (Candidate *)malloc(sizeof(Candidate) * MAXC);
-  coldCandidates = (Candidate *)malloc(sizeof(Candidate) * MAXC);
+  cudaError_t err;
+  err = cudaMalloc((void **)&d_hotCandidates, MAXC);
+  if (err != cudaSuccess)
+  {
+    std::cerr << "CUDA memory allocation for d_hotCandidates failed: " << cudaGetErrorString(err) << std::endl;
+    // Handle the error appropriately
+  }
 
-  Candidate *d_hotCandidates, *d_coldCandidates;
-  cudaMalloc((void **)&d_hotCandidates, sizeof(Candidate) * MAXC);
-  cudaMalloc((void **)&d_coldCandidates, sizeof(Candidate) * MAXC);
+  err = cudaMalloc((void **)&d_coldCandidates, MAXC);
+  if (err != cudaSuccess)
+  {
+    std::cerr << "CUDA memory allocation for d_coldCandidates failed: " << cudaGetErrorString(err) << std::endl;
+    // Handle the error appropriately
+  }
+
+  Candidate *hotCandidates, *coldCandidates;
+  hotCandidates = (Candidate *)malloc(MAXC);
+  coldCandidates = (Candidate *)malloc(MAXC);
 
   vector<float> tsQuartile(3);
   vector<float> ndviQuartile(3);
@@ -68,13 +77,6 @@ pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float 
   get_quartiles(ndvi, ndviQuartile.data(), height_band, width_band, 0.15, 0.97, 0.97);
   get_quartiles(albedo, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75);
   get_quartiles(surface_temperature, tsQuartile.data(), height_band, width_band, 0.20, 0.85, 0.97);
-
-  float *ho = (float *)malloc(sizeof(float) * height_band * width_band);
-  compute_H0(net_radiation, soil_heat, height_band, width_band, ho);
-
-  float *d_ho;
-  cudaMalloc((void **)&d_ho, sizeof(float) * height_band * width_band);
-  cudaMemcpy(d_ho, ho, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice);
 
   process_pixels<<<blocks_num, threads_num>>>(d_hotCandidates, d_coldCandidates, d_hot_index, d_cold_index,
                                               d_ndvi, d_surface_temperature, d_albedo, d_net_radiation, d_soil_heat, d_ho,
@@ -84,10 +86,10 @@ pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float 
   HANDLE_ERROR(cudaDeviceSynchronize());
   HANDLE_ERROR(cudaGetLastError());
 
-  cudaMemcpy(hotCandidates, d_hotCandidates, sizeof(Candidate) * MAXC, cudaMemcpyDeviceToHost);
-  cudaMemcpy(coldCandidates, d_coldCandidates, sizeof(Candidate) * MAXC, cudaMemcpyDeviceToHost);
   cudaMemcpy(&hot_index, d_hot_index, sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(&cold_index, d_cold_index, sizeof(int), cudaMemcpyDeviceToHost);
+  cudaMemcpy(hotCandidates, d_hotCandidates, sizeof(Candidate) * hot_index, cudaMemcpyDeviceToHost);
+  cudaMemcpy(coldCandidates, d_coldCandidates, sizeof(Candidate) * cold_index, cudaMemcpyDeviceToHost);
 
   std::sort(hotCandidates, hotCandidates + hot_index, compare_candidate_temperature);
   std::sort(coldCandidates, coldCandidates + cold_index, compare_candidate_temperature);
@@ -111,10 +113,10 @@ pair<Candidate, Candidate> getEndmembersASEBAL(float *ndvi, float *surface_tempe
   get_quartiles(surface_temperature, tsQuartile.data(), height_band, width_band, 0.25, 0.75, 0.75);
 
   float *ho = (float *)malloc(sizeof(float) * height_band * width_band);
-  compute_H0(net_radiation, soil_heat, height_band, width_band, ho);
-
   for (int i = 0; i < height_band * width_band; i++)
   {
+    ho[i] = net_radiation[i] - soil_heat[i];
+
     bool hotAlbedo = !std::isnan(albedo[i]) && albedo[i] > albedoQuartile[1];
     bool hotNDVI = !std::isnan(ndvi[i]) && ndvi[i] > 0.10 && ndvi[i] < ndviQuartile[0];
     bool hotTS = !std::isnan(surface_temperature[i]) && surface_temperature[i] > tsQuartile[1];

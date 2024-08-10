@@ -1,11 +1,5 @@
 #include "endmembers.h"
 
-void compute_H0(float *net_radiation, float *soil_heat_flux, int height_band, int width_band, float *ho)
-{
-  for (int i = 0; i < height_band * width_band; i++)
-    ho[i] = net_radiation[i] - soil_heat_flux[i];
-};
-
 void get_quartiles(float *target, float *v_quartile, int height_band, int width_band, float first_interval, float middle_interval, float last_interval)
 {
   const int SIZE = height_band * width_band;
@@ -53,10 +47,10 @@ pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *surface_temper
   get_quartiles(surface_temperature, tsQuartile.data(), height_band, width_band, 0.20, 0.85, 0.97);
 
   float *ho = (float *)malloc(sizeof(float) * height_band * width_band);
-  compute_H0(net_radiation, soil_heat, height_band, width_band, ho);
-
   for (int i = 0; i < height_band * width_band; i++)
   {
+    ho[i] = net_radiation[i] - soil_heat[i];
+
     bool hotNDVI = !std::isnan(ndvi[i]) && ndvi[i] > 0.10 && ndvi[i] < ndviQuartile[0];
     bool hotAlbedo = !std::isnan(albedo[i]) && albedo[i] > albedoQuartile[1] && albedo[i] < albedoQuartile[2];
     bool hotTS = !std::isnan(surface_temperature[i]) && surface_temperature[i] > tsQuartile[1] && surface_temperature[i] < tsQuartile[2];
@@ -103,10 +97,10 @@ pair<Candidate, Candidate> getEndmembersASEBAL(float *ndvi, float *surface_tempe
   get_quartiles(surface_temperature, tsQuartile.data(), height_band, width_band, 0.25, 0.75, 0.75);
 
   float *ho = (float *)malloc(sizeof(float) * height_band * width_band);
-  compute_H0(net_radiation, soil_heat, height_band, width_band, ho);
-
   for (int i = 0; i < height_band * width_band; i++)
   {
+    ho[i] = net_radiation[i] - soil_heat[i];
+
     bool hotAlbedo = !std::isnan(albedo[i]) && albedo[i] > albedoQuartile[1];
     bool hotNDVI = !std::isnan(ndvi[i]) && ndvi[i] > 0.10 && ndvi[i] < ndviQuartile[0];
     bool hotTS = !std::isnan(surface_temperature[i]) && surface_temperature[i] > tsQuartile[1];

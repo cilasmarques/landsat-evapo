@@ -15,6 +15,8 @@ __global__ void process_pixels(Candidate *hotCandidates, Candidate *coldCandidat
     {
         unsigned int pos = row * width_band + col;
 
+        ho[pos] = net_radiation[pos] - soil_heat[pos];
+
         bool hotNDVI = !isnan(ndvi[pos]) && ndvi[pos] > 0.10 && ndvi[pos] < ndviQuartileLow;
         bool hotAlbedo = !isnan(albedo[pos]) && albedo[pos] > albedoQuartileMid && albedo[pos] < albedoQuartileHigh;
         bool hotTS = !isnan(surface_temperature[pos]) && surface_temperature[pos] > tsQuartileMid && surface_temperature[pos] < tsQuartileHigh;

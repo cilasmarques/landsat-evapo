@@ -6,19 +6,6 @@
 #include "candidate.h"
 
 /**
- * @brief  Compute the H0
- *
- * @param  net_radiation: Net radiation vector.
- * @param  soil_heat_flux: Soil heat flux vector.
- * @param  height_band: Band height.
- * @param  width_band: Band width.
- * @param  ho: H0 vector.
- *
- * @retval void
- */
-void compute_H0(float *net_radiation, float *soil_heat_flux, int height_band, int width_band, float *ho);
-
-/**
  * @brief Calculates the four quartiles of a vector.
  *
  * @param target: Vector to be calculated the quartiles.
