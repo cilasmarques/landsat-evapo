@@ -2,6 +2,8 @@
 
 #include "candidate.h"
 
+__global__ void filter_valid_values(const float *target, float *filtered, int height_band, int width_band, int *pos);
+
 __global__ void process_pixels(Candidate *hotCandidates, Candidate *coldCandidates, int *d_indexes,
                                float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, float *ho,
                                float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh,
