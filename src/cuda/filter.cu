@@ -1,6 +1,6 @@
 #include "filter.cuh"
 
-__global__ void process_pixels(Candidate *hotCandidates, Candidate *coldCandidates, int *d_hot_index, int *d_cold_index,
+__global__ void process_pixels(Candidate *hotCandidates, Candidate *coldCandidates, int *d_indexes,
                                float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, float *ho,
                                float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh,
                                float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh, int height_band, int width_band)
@@ -27,12 +27,14 @@ __global__ void process_pixels(Candidate *hotCandidates, Candidate *coldCandidat
 
         if (hotAlbedo && hotNDVI && hotTS)
         {
-            hotCandidates[atomicAdd(d_hot_index, 1)] = Candidate(ndvi[pos], surface_temperature[pos], net_radiation[pos], soil_heat[pos], ho[pos], row, col);
+            int ih = atomicAdd(&d_indexes[0],1);
+            hotCandidates[ih] = Candidate(ndvi[pos], surface_temperature[pos], net_radiation[pos], soil_heat[pos], ho[pos], row, col);
         }
 
         if (coldNDVI && coldAlbedo && coldTS)
         {
-            coldCandidates[atomicAdd(d_cold_index, 1)] = Candidate(ndvi[pos], surface_temperature[pos], net_radiation[pos], soil_heat[pos], ho[pos], row, col);
+            int ic = atomicAdd(&d_indexes[1],1);
+            coldCandidates[ic] = Candidate(ndvi[pos], surface_temperature[pos], net_radiation[pos], soil_heat[pos], ho[pos], row, col);
         }
     }
 }

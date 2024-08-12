@@ -42,15 +42,13 @@ pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float 
   const size_t MAXC = sizeof(Candidate) * height_band * width_band;
 
   float *d_ho;
-  int hot_index, cold_index = 0;
-  int *d_hot_index, *d_cold_index;
+  int *d_indexes;
   Candidate *d_hotCandidates, *d_coldCandidates;
-
-  cudaMalloc((void **)&d_hot_index, sizeof(int));
-  cudaMalloc((void **)&d_cold_index, sizeof(int));
   cudaMalloc((void **)&d_ho, sizeof(float) * height_band * width_band);
-  cudaMemcpy(d_hot_index, &hot_index, sizeof(int), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_cold_index, &cold_index, sizeof(int), cudaMemcpyHostToDevice);
+
+  int indexes[2] = {0,0};
+  cudaMalloc((void **)&d_indexes, sizeof(int) * 2);
+  cudaMemcpy(d_indexes, indexes, sizeof(int) * 2, cudaMemcpyHostToDevice);
 
   cudaError_t err;
   err = cudaMalloc((void **)&d_hotCandidates, MAXC);
@@ -78,7 +76,7 @@ pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float 
   get_quartiles(albedo, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75);
   get_quartiles(surface_temperature, tsQuartile.data(), height_band, width_band, 0.20, 0.85, 0.97);
 
-  process_pixels<<<blocks_num, threads_num>>>(d_hotCandidates, d_coldCandidates, d_hot_index, d_cold_index,
+  process_pixels<<<blocks_num, threads_num>>>(d_hotCandidates, d_coldCandidates, d_indexes,
                                               d_ndvi, d_surface_temperature, d_albedo, d_net_radiation, d_soil_heat, d_ho,
                                               ndviQuartile[0], ndviQuartile[1], tsQuartile[0], tsQuartile[1], tsQuartile[2],
                                               albedoQuartile[0], albedoQuartile[1], albedoQuartile[2], height_band, width_band);
@@ -86,16 +84,15 @@ pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float 
   HANDLE_ERROR(cudaDeviceSynchronize());
   HANDLE_ERROR(cudaGetLastError());
 
-  cudaMemcpy(&hot_index, d_hot_index, sizeof(int), cudaMemcpyDeviceToHost);
-  cudaMemcpy(&cold_index, d_cold_index, sizeof(int), cudaMemcpyDeviceToHost);
-  cudaMemcpy(hotCandidates, d_hotCandidates, sizeof(Candidate) * hot_index, cudaMemcpyDeviceToHost);
-  cudaMemcpy(coldCandidates, d_coldCandidates, sizeof(Candidate) * cold_index, cudaMemcpyDeviceToHost);
+  cudaMemcpy(&indexes, d_indexes, sizeof(int) * 2, cudaMemcpyDeviceToHost);
+  cudaMemcpy(hotCandidates, d_hotCandidates, sizeof(Candidate) * indexes[0], cudaMemcpyDeviceToHost);
+  cudaMemcpy(coldCandidates, d_coldCandidates, sizeof(Candidate) * indexes[1], cudaMemcpyDeviceToHost);
 
-  std::sort(hotCandidates, hotCandidates + hot_index, compare_candidate_temperature);
-  std::sort(coldCandidates, coldCandidates + cold_index, compare_candidate_temperature);
+  std::sort(hotCandidates, hotCandidates + indexes[0], compare_candidate_temperature);
+  std::sort(coldCandidates, coldCandidates + indexes[1], compare_candidate_temperature);
 
-  unsigned int hotPos = static_cast<unsigned int>(std::floor(hot_index * 0.5));
-  unsigned int coldPos = static_cast<unsigned int>(std::floor(cold_index * 0.5));
+  unsigned int hotPos = static_cast<unsigned int>(std::floor(indexes[0] * 0.5));
+  unsigned int coldPos = static_cast<unsigned int>(std::floor(indexes[1] * 0.5));
 
   return {hotCandidates[hotPos], coldCandidates[coldPos]};
 }
