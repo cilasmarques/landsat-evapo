@@ -1,5 +1,18 @@
 #include "filter.cuh"
 
+__global__ void filter_valid_values(const float *target, float *filtered, int height_band, int width_band, int *pos) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int size = height_band * width_band;
+
+    if (idx < size) {
+        float value = target[idx];
+        if (!isnan(value) && !isinf(value)) {
+            int position = atomicAdd(pos, 1);
+            filtered[position] = value;
+        }
+    }
+}
+
 __global__ void process_pixels(Candidate *hotCandidates, Candidate *coldCandidates, int *d_indexes,
                                float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, float *ho,
                                float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh,
