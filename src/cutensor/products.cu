@@ -3,7 +3,11 @@
 #include "tensor.cuh"
 
 static Tensor tensor_normal_contraction;
-static Tensor tensor_normal_trinity;
+static Tensor tensor_add_mult_trinity;
+static Tensor tensor_rpc_binary;
+static Tensor tensor_max_binary;
+static float value0 = 0;
+static float value1 = 1;
 
 Products::Products() {}
 
@@ -134,8 +138,15 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   tensor_normal_contraction = Tensor();
   tensor_normal_contraction.createNormalContraction(height_band, width_band);
 
-  tensor_normal_trinity = Tensor();
-  tensor_normal_trinity.createNormalTrinity(height_band, width_band);
+  tensor_add_mult_trinity = Tensor();
+  tensor_add_mult_trinity.createAddMulTrinity(height_band, width_band);
+
+  tensor_rpc_binary = Tensor();
+  tensor_rpc_binary.createBinary(height_band, width_band, CUTENSOR_OP_RCP, CUTENSOR_OP_RCP, CUTENSOR_OP_MUL);
+
+  tensor_max_binary = Tensor();
+  tensor_max_binary.createBinary(height_band, width_band, CUTENSOR_OP_IDENTITY, CUTENSOR_OP_IDENTITY, CUTENSOR_OP_MAX);
+
 };
 
 void Products::close()
@@ -261,7 +272,7 @@ string Products::radiance_function(MTL mtl)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  // reflectance_blue = mtl.rad_mult[PARAM_BAND_BLUE_INDEX] * band_blue * only1 + mtl.rad_add[PARAM_BAND_BLUE_INDEX] * only1; 
+  // reflectance_blue = mtl.rad_mult[PARAM_BAND_BLUE_INDEX] * band_blue * only1 + mtl.rad_add[PARAM_BAND_BLUE_INDEX] * only1;
   HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&mtl.rad_mult[PARAM_BAND_BLUE_INDEX], band_blue_d, only1_d, (void *)&mtl.rad_add[PARAM_BAND_BLUE_INDEX], only1_d, radiance_blue_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
   HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&mtl.rad_mult[PARAM_BAND_GREEN_INDEX], band_green_d, only1_d, (void *)&mtl.rad_add[PARAM_BAND_GREEN_INDEX], only1_d, radiance_green_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
   HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&mtl.rad_mult[PARAM_BAND_RED_INDEX], band_red_d, only1_d, (void *)&mtl.rad_add[PARAM_BAND_RED_INDEX], only1_d, radiance_red_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
@@ -269,6 +280,14 @@ string Products::radiance_function(MTL mtl)
   HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&mtl.rad_mult[PARAM_BAND_SWIR1_INDEX], band_swir1_d, only1_d, (void *)&mtl.rad_add[PARAM_BAND_SWIR1_INDEX], only1_d, radiance_swir1_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
   HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&mtl.rad_mult[PARAM_BAND_TERMAL_INDEX], band_termal_d, only1_d, (void *)&mtl.rad_add[PARAM_BAND_TERMAL_INDEX], only1_d, radiance_termal_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
   HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan, (void *)&mtl.rad_mult[PARAM_BAND_SWIR2_INDEX], band_swir2_d, only1_d, (void *)&mtl.rad_add[PARAM_BAND_SWIR2_INDEX], only1_d, radiance_swir2_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensor_max_binary.handle, tensor_max_binary.plan, (void *)&value1, radiance_blue_d, (void *)&value0, only1_d, radiance_blue_d, tensor_max_binary.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensor_max_binary.handle, tensor_max_binary.plan, (void *)&value1, radiance_green_d, (void *)&value0, only1_d, radiance_green_d, tensor_max_binary.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensor_max_binary.handle, tensor_max_binary.plan, (void *)&value1, radiance_red_d, (void *)&value0, only1_d, radiance_red_d, tensor_max_binary.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensor_max_binary.handle, tensor_max_binary.plan, (void *)&value1, radiance_nir_d, (void *)&value0, only1_d, radiance_nir_d, tensor_max_binary.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensor_max_binary.handle, tensor_max_binary.plan, (void *)&value1, radiance_swir1_d, (void *)&value0, only1_d, radiance_swir1_d, tensor_max_binary.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensor_max_binary.handle, tensor_max_binary.plan, (void *)&value1, radiance_termal_d, (void *)&value0, only1_d, radiance_termal_d, tensor_max_binary.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensor_max_binary.handle, tensor_max_binary.plan, (void *)&value1, radiance_swir2_d, (void *)&value0, only1_d, radiance_swir2_d, tensor_max_binary.stream));
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
@@ -282,12 +301,32 @@ string Products::radiance_function(MTL mtl)
   HANDLE_ERROR(cudaMemcpy(radiance_termal, radiance_termal_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(radiance_swir2, radiance_swir2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
+  std::cout << "blue" << std::endl;
+  printLinearPointer(radiance_blue, height_band, width_band);
+
+  // std::cout << "green" << std::endl;
+  // printLinearPointer(radiance_green, height_band, width_band);
+
+  // std::cout << "red" << std::endl;
+  // printLinearPointer(radiance_red, height_band, width_band);
+
+  // std::cout << "nir" << std::endl;
+  // printLinearPointer(radiance_nir, height_band, width_band);
+
+  // std::cout << "swir1" << std::endl;
+  // printLinearPointer(radiance_swir1, height_band, width_band);
+
+  // std::cout << "termal" << std::endl;
+  // printLinearPointer(radiance_termal, height_band, width_band);
+
+  // std::cout << "swir2" << std::endl;
+  // printLinearPointer(radiance_swir2, height_band, width_band);
+
   return "CUDACORE,RADIANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
 string Products::reflectance_function(MTL mtl)
 {
-  float alpha;
   const float sin_sun = 1 / sin(mtl.sun_elevation * PI / 180);
 
   system_clock::time_point begin, end;
@@ -297,13 +336,13 @@ string Products::reflectance_function(MTL mtl)
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   // reflectance_blue = CUTENSOR_OP_MUL(CUTENSOR_OP_ADD(mtl.ref_mult[PARAM_BAND_BLUE_INDEX] * band_blue, mtl.ref_add[PARAM_BAND_BLUE_INDEX] * only1), sin_sun * only1);
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensor_normal_trinity.handle, tensor_normal_trinity.plan, (void *)&mtl.ref_mult[PARAM_BAND_BLUE_INDEX], band_blue_d, (void *)&mtl.ref_add[PARAM_BAND_BLUE_INDEX], only1_d, (void *)&sin_sun, only1_d, reflectance_blue_d, tensor_normal_trinity.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensor_normal_trinity.handle, tensor_normal_trinity.plan, (void *)&mtl.ref_mult[PARAM_BAND_GREEN_INDEX], band_green_d, (void *)&mtl.ref_add[PARAM_BAND_GREEN_INDEX], only1_d, (void *)&sin_sun, only1_d, reflectance_green_d, tensor_normal_trinity.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensor_normal_trinity.handle, tensor_normal_trinity.plan, (void *)&mtl.ref_mult[PARAM_BAND_RED_INDEX], band_red_d, (void *)&mtl.ref_add[PARAM_BAND_RED_INDEX], only1_d, (void *)&sin_sun, only1_d, reflectance_red_d, tensor_normal_trinity.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensor_normal_trinity.handle, tensor_normal_trinity.plan, (void *)&mtl.ref_mult[PARAM_BAND_NIR_INDEX], band_nir_d, (void *)&mtl.ref_add[PARAM_BAND_NIR_INDEX], only1_d, (void *)&sin_sun, only1_d, reflectance_nir_d, tensor_normal_trinity.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensor_normal_trinity.handle, tensor_normal_trinity.plan, (void *)&mtl.ref_mult[PARAM_BAND_SWIR1_INDEX], band_swir1_d, (void *)&mtl.ref_add[PARAM_BAND_SWIR1_INDEX], only1_d, (void *)&sin_sun, only1_d, reflectance_swir1_d, tensor_normal_trinity.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensor_normal_trinity.handle, tensor_normal_trinity.plan, (void *)&mtl.ref_mult[PARAM_BAND_TERMAL_INDEX], band_termal_d, (void *)&mtl.ref_add[PARAM_BAND_TERMAL_INDEX], only1_d, (void *)&sin_sun, only1_d, reflectance_termal_d, tensor_normal_trinity.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensor_normal_trinity.handle, tensor_normal_trinity.plan, (void *)&mtl.ref_mult[PARAM_BAND_SWIR2_INDEX], band_swir2_d, (void *)&mtl.ref_add[PARAM_BAND_SWIR2_INDEX], only1_d, (void *)&sin_sun, only1_d, reflectance_swir2_d, tensor_normal_trinity.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensor_add_mult_trinity.handle, tensor_add_mult_trinity.plan, (void *)&mtl.ref_mult[PARAM_BAND_BLUE_INDEX], band_blue_d, (void *)&mtl.ref_add[PARAM_BAND_BLUE_INDEX], only1_d, (void *)&sin_sun, only1_d, reflectance_blue_d, tensor_add_mult_trinity.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensor_add_mult_trinity.handle, tensor_add_mult_trinity.plan, (void *)&mtl.ref_mult[PARAM_BAND_GREEN_INDEX], band_green_d, (void *)&mtl.ref_add[PARAM_BAND_GREEN_INDEX], only1_d, (void *)&sin_sun, only1_d, reflectance_green_d, tensor_add_mult_trinity.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensor_add_mult_trinity.handle, tensor_add_mult_trinity.plan, (void *)&mtl.ref_mult[PARAM_BAND_RED_INDEX], band_red_d, (void *)&mtl.ref_add[PARAM_BAND_RED_INDEX], only1_d, (void *)&sin_sun, only1_d, reflectance_red_d, tensor_add_mult_trinity.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensor_add_mult_trinity.handle, tensor_add_mult_trinity.plan, (void *)&mtl.ref_mult[PARAM_BAND_NIR_INDEX], band_nir_d, (void *)&mtl.ref_add[PARAM_BAND_NIR_INDEX], only1_d, (void *)&sin_sun, only1_d, reflectance_nir_d, tensor_add_mult_trinity.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensor_add_mult_trinity.handle, tensor_add_mult_trinity.plan, (void *)&mtl.ref_mult[PARAM_BAND_SWIR1_INDEX], band_swir1_d, (void *)&mtl.ref_add[PARAM_BAND_SWIR1_INDEX], only1_d, (void *)&sin_sun, only1_d, reflectance_swir1_d, tensor_add_mult_trinity.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensor_add_mult_trinity.handle, tensor_add_mult_trinity.plan, (void *)&mtl.ref_mult[PARAM_BAND_TERMAL_INDEX], band_termal_d, (void *)&mtl.ref_add[PARAM_BAND_TERMAL_INDEX], only1_d, (void *)&sin_sun, only1_d, reflectance_termal_d, tensor_add_mult_trinity.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensor_add_mult_trinity.handle, tensor_add_mult_trinity.plan, (void *)&mtl.ref_mult[PARAM_BAND_SWIR2_INDEX], band_swir2_d, (void *)&mtl.ref_add[PARAM_BAND_SWIR2_INDEX], only1_d, (void *)&sin_sun, only1_d, reflectance_swir2_d, tensor_add_mult_trinity.stream));
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
@@ -317,6 +356,27 @@ string Products::reflectance_function(MTL mtl)
   HANDLE_ERROR(cudaMemcpy(reflectance_termal, reflectance_termal_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(reflectance_swir2, reflectance_swir2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
+  // std::cout << "blue" << std::endl;
+  // printLinearPointer(reflectance_blue, height_band, width_band);
+
+  // std::cout << "green" << std::endl;
+  // printLinearPointer(reflectance_green, height_band, width_band);
+
+  // std::cout << "red" << std::endl;
+  // printLinearPointer(reflectance_red, height_band, width_band);
+
+  // std::cout << "nir" << std::endl;
+  // printLinearPointer(reflectance_nir, height_band, width_band);
+
+  // std::cout << "swir1" << std::endl;
+  // printLinearPointer(reflectance_swir1, height_band, width_band);
+
+  // std::cout << "termal" << std::endl;
+  // printLinearPointer(reflectance_termal, height_band, width_band);
+
+  // std::cout << "swir2" << std::endl;
+  // printLinearPointer(reflectance_swir2, height_band, width_band);
+
   return "CUDACORE,REFLECTANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
@@ -328,17 +388,48 @@ string Products::albedo_function(MTL mtl)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  albedo_kernel<<<this->blocks_num, this->threads_num>>>(reflectance_blue_d, reflectance_green_d, reflectance_red_d, reflectance_nir_d, reflectance_swir1_d, reflectance_swir2_d,
-                                                         tal_d, albedo_d, mtl.ref_w_coeff_d, width_band, height_band);
+  float alpha1 = 1;
+  float alpha03 = -0.03;
 
-  HANDLE_ERROR(cudaDeviceSynchronize());
-  HANDLE_ERROR(cudaGetLastError());
+  HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan,
+                                         (void *)&mtl.ref_w_coeff[PARAM_BAND_BLUE_INDEX], reflectance_blue_d, only1_d,
+                                         (void *)&mtl.ref_w_coeff[PARAM_BAND_GREEN_INDEX], reflectance_green_d,
+                                         albedo_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+
+  HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan,
+                                         (void *)&alpha1, albedo_d, only1_d,
+                                         (void *)&mtl.ref_w_coeff[PARAM_BAND_RED_INDEX], reflectance_red_d,
+                                         albedo_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+
+  HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan,
+                                         (void *)&alpha1, albedo_d, only1_d,
+                                         (void *)&mtl.ref_w_coeff[PARAM_BAND_NIR_INDEX], reflectance_nir_d,
+                                         albedo_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+
+  HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan,
+                                         (void *)&alpha1, albedo_d, only1_d,
+                                         (void *)&mtl.ref_w_coeff[PARAM_BAND_SWIR1_INDEX], reflectance_swir1_d,
+                                         albedo_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+
+  HANDLE_CUTENSOR_ERROR(cutensorContract(tensor_normal_contraction.handle, tensor_normal_contraction.plan,
+                                         (void *)&alpha1, albedo_d, only1_d,
+                                         (void *)&mtl.ref_w_coeff[PARAM_BAND_SWIR2_INDEX], reflectance_swir2_d,
+                                         albedo_d, tensor_normal_contraction.work, tensor_normal_contraction.actualWorkspaceSize, tensor_normal_contraction.stream));
+
+  // X = MULT(1 * RPC(tal), 1 * RPC(tal)) ~ Maybe this can be computed to landsat initialization
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensor_rpc_binary.handle, tensor_rpc_binary.plan, (void *)&alpha1, tal_d, (void *)&alpha1, tal_d, tal_d, tensor_rpc_binary.stream));
+
+  // X = MULT(ADD(1 * alb, 0.03 * only1), gamma * RCP(tal))
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensor_add_mult_trinity.handle, tensor_add_mult_trinity.plan, (void *)&alpha1, albedo_d, (void *)&alpha03, only1_d, (void *)&alpha1, tal_d, albedo_d, tensor_add_mult_trinity.stream));
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   HANDLE_ERROR(cudaMemcpy(albedo, albedo_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  std::cout << "albedo" << std::endl;
+  printLinearPointer(albedo, height_band, width_band);
 
   return "CUDACORE,ALBEDO," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }

@@ -45,5 +45,7 @@ struct Tensor
 
     void createNormalContraction(int height_band, int width_band);
 
-    void createNormalTrinity(int height_band, int width_band);
+    void createAddMulTrinity(int height_band, int width_band);
+
+    void createBinary(int height_band, int width_band, cutensorOperator_t OPA, cutensorOperator_t OPB, cutensorOperator_t OPAB);
 };

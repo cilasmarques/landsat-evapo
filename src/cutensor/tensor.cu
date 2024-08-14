@@ -1,5 +1,10 @@
 #include "tensor.cuh"
 
+// X = alpha * OP(A) * OP(B) + beta * OP(C)                     ~ contraction
+// X = alpha * OP(A)                                            ~ permutation
+// X = fABC(fAB(alpha * OP(A), beta * OP(B)), gamma * OP(C))    ~ trinity
+// X = fAB(alpha * OP(A), beta * OP(B))                         ~ binary
+
 Tensor::Tensor()
 {
   HANDLE_CUTENSOR_ERROR(cutensorCreate(&this->handle));
@@ -66,7 +71,7 @@ void Tensor::createNormalContraction(int height_band, int width_band)
   createPlanWork(descContraction);
 }
 
-void Tensor::createNormalTrinity(int height_band, int width_band)
+void Tensor::createAddMulTrinity(int height_band, int width_band)
 {
   int dim_num = 2;
   std::vector<int> axis{'m', 'n'};
@@ -92,5 +97,32 @@ void Tensor::createNormalTrinity(int height_band, int width_band)
                                                          descC, axis.data(), CUTENSOR_OP_IDENTITY,
                                                          descD, axis.data(),
                                                          CUTENSOR_OP_ADD, CUTENSOR_OP_MUL, descCompute));
+  createPlanWork(desc);
+}
+
+void Tensor::createBinary(int height_band, int width_band, cutensorOperator_t OPA, cutensorOperator_t OPB, cutensorOperator_t OPAB)
+{
+  int dim_num = 2;
+  std::vector<int> axis{'m', 'n'};
+  std::vector<int64_t> axis_dim = {height_band, width_band};
+
+  const uint32_t kAlignment = 128;
+
+  // Define descriptors
+  cutensorTensorDescriptor_t descA;
+  cutensorTensorDescriptor_t descB;
+  cutensorTensorDescriptor_t descC;
+  HANDLE_CUTENSOR_ERROR(cutensorCreateTensorDescriptor(this->handle, &descA, dim_num, axis_dim.data(), NULL, CUTENSOR_R_32F, kAlignment));
+  HANDLE_CUTENSOR_ERROR(cutensorCreateTensorDescriptor(this->handle, &descB, dim_num, axis_dim.data(), NULL, CUTENSOR_R_32F, kAlignment));
+  HANDLE_CUTENSOR_ERROR(cutensorCreateTensorDescriptor(this->handle, &descC, dim_num, axis_dim.data(), NULL, CUTENSOR_R_32F, kAlignment));
+
+  cutensorOperationDescriptor_t desc;
+  const cutensorComputeDescriptor_t descCompute = CUTENSOR_COMPUTE_DESC_32F;
+  HANDLE_CUTENSOR_ERROR(cutensorCreateElementwiseBinary(this->handle, &desc,
+                                                        descA, axis.data(), OPA,
+                                                        descB, axis.data(), OPB,
+                                                        descC, axis.data(),
+                                                        OPAB, descCompute));
+
   createPlanWork(desc);
 }
