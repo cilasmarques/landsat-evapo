@@ -46,7 +46,7 @@ build-nvcc:
 	$(NVCC) -I./include -g ./src/cuda/*.cu -o ./src/main $(CXXFLAGS) -rdc=true
 
 build-tensor:
-	$(NVCC) -I./include -g ./src/cutensor/*.cu -o ./src/main $(CXXFLAGS) -lcutensor
+	$(NVCC) -I./include -g ./src/cutensor/*.cu -o ./src/main $(CXXFLAGS) -lcutensor -rdc=true
 
 fix-permissions:
 	sudo chmod -R 755 $(INPUT_DATA_PATH)/*
