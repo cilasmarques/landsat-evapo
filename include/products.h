@@ -5,6 +5,10 @@
 #include "constants.h"
 #include "parameters.h"
 
+#ifdef __CUDACC__
+#include "tensor.cuh"
+#endif
+
 /**
  * @brief  Struct to manage the products calculation.
  */
@@ -30,7 +34,6 @@ struct Products
   float *band_termal;
   float *band_swir2;
   float *tal;
-  float *only1;
 
   float *radiance_blue;
   float *radiance_green;
@@ -84,11 +87,18 @@ struct Products
   float *radiance_blue_d, *radiance_green_d, *radiance_red_d, *radiance_nir_d, *radiance_swir1_d, *radiance_termal_d, *radiance_swir2_d;
   float *reflectance_blue_d, *reflectance_green_d, *reflectance_red_d, *reflectance_nir_d, *reflectance_swir1_d, *reflectance_termal_d, *reflectance_swir2_d;
 
-  float *only1_d;
-  float *tal_d, *albedo_d, *ndvi_d, *pai_d, *lai_d, *evi_d;
+  float *tal_d, *albedo_d, *ndvi_d, *pai_d, *savi_d, *lai_d, *evi_d;
   float *enb_d, *eo_d, *ea_d, *short_wave_radiation_d, *large_wave_radiation_surface_d, *large_wave_radiation_atmosphere_d;
   float *soil_heat_d, *surface_temperature_d, *net_radiation_d, *d0_d, *kb1_d, *zom_d, *ustar_d, *rah_d, *sensible_heat_flux_d;
   float *latent_heat_flux_d, *net_radiation_24h_d, *evapotranspiration_fraction_d, *sensible_heat_flux_24h_d, *latent_heat_flux_24h_d, *evapotranspiration_24h_d, *evapotranspiration_d;
+
+  // === Used in tensor implementation ===
+  #ifdef __CUDACC__
+    Tensor tensors;
+    float *only1, *only1_d;
+    float *tensor_aux1_d, *tensor_aux2_d;
+  #endif
+  // === Used in tensor implementation ===
 
   /**
    * @brief  Constructor.

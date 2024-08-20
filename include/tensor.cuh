@@ -32,20 +32,51 @@ static void HandleCuTensorError(cutensorStatus_t err, const char *file, int line
 
 struct Tensor
 {
-    cutensorHandle_t handle;
-    cudaStream_t stream;
+    int dim_num = 2;
+    std::vector<int> axis{'m', 'n'};
+    std::vector<int64_t> axis_dim;
 
-    void *work;
-    cutensorPlan_t plan;
-    uint64_t actualWorkspaceSize;
+    cudaStream_t stream;
+    cutensorHandle_t handle;
+    cutensorTensorDescriptor_t descA;
+    cutensorTensorDescriptor_t descB;
+    cutensorTensorDescriptor_t descC;
+    cutensorTensorDescriptor_t descD;
+
+    cutensorPlan_t tensor_plan_trinity_add_mult;
+    cutensorPlan_t tensor_plan_trinity_mult_add;
+    cutensorPlan_t tensor_plan_binary_max;
+    cutensorPlan_t tensor_plan_binary_min;
+    cutensorPlan_t tensor_plan_binary_rcp;
+    cutensorPlan_t tensor_plan_binary_add;
+    cutensorPlan_t tensor_plan_binary_div;
+    cutensorPlan_t tensor_plan_binary_mult;
+    cutensorPlan_t tensor_plan_binary_sqtr_add;
+    cutensorPlan_t tensor_plan_binary_log_mul;
+    cutensorPlan_t tensor_plan_binary_exp_mul;
+    cutensorPlan_t tensor_plan_permute_log;
 
     Tensor();
 
-    void createPlanWork(cutensorOperationDescriptor_t desc);
+    Tensor(int height_band, int width_band);
 
-    void createNormalContraction(int height_band, int width_band);
+    /**
+     * Perform this operation:
+     * - X = fABC(fAB(alpha * OP(A), beta * OP(B)), gamma * OP(C))
+     */
+    void createTrinary(cutensorPlan_t &plan, cutensorOperator_t OPA, cutensorOperator_t OPB, cutensorOperator_t OPC, cutensorOperator_t OPAB, cutensorOperator_t OPABC);
 
-    void createAddMulTrinity(int height_band, int width_band);
+    /**
+     * Perform this operation:
+     * - X = fAB(alpha * OP(A), beta * OP(B))
+     */
+    void createBinary(cutensorPlan_t &plan, cutensorOperator_t OPA, cutensorOperator_t OPB, cutensorOperator_t OPAB);
 
-    void createBinary(int height_band, int width_band, cutensorOperator_t OPA, cutensorOperator_t OPB, cutensorOperator_t OPAB);
+    /**
+     * Perform this operation:
+     * - X = alpha * OP(A)
+     */
+    void createPermutation(cutensorPlan_t &plan, cutensorOperator_t OPA);
+
+    void createPlan(cutensorPlan_t &plan, cutensorOperationDescriptor_t desc);
 };
