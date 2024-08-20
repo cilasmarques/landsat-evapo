@@ -672,3 +672,126 @@ __global__ void rah_correction_cycle_STEEP(float *surface_temperature_pointer, f
     H_pointer[pos] = sensibleHeatFlux;
   }
 }
+
+// Tensor corrections
+__global__ void invalid_lai_kernel(float *savi_d, float *lai_d, int width, int height)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width;
+  unsigned int col = idx % width;
+
+  if (idx < width * height)
+  {
+    unsigned int pos = row * width + col;
+
+    if (!isnan(savi_d[pos]) && savi_d[pos] < 0.1)
+      lai_d[pos] = 0;
+
+    if (lai_d[pos] < 0)
+      lai_d[pos] = 0;
+  }
+}
+
+__global__ void invalid_rad_kernel(float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d, float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d, int width, int height)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width;
+  unsigned int col = idx % width;
+
+  if (idx < width * height)
+  {
+    unsigned int pos = row * width + col;
+
+    if (radiance_blue_d[pos] <= 0)
+      radiance_blue_d[pos] = NAN;
+    if (radiance_green_d[pos] <= 0)
+      radiance_green_d[pos] = NAN;
+    if (radiance_red_d[pos] <= 0)
+      radiance_red_d[pos] = NAN;
+    if (radiance_nir_d[pos] <= 0)
+      radiance_nir_d[pos] = NAN;
+    if (radiance_swir1_d[pos] <= 0)
+      radiance_swir1_d[pos] = NAN;
+    if (radiance_termal_d[pos] <= 0)
+      radiance_termal_d[pos] = NAN;
+    if (radiance_swir2_d[pos] <= 0)
+      radiance_swir2_d[pos] = NAN;
+  }
+}
+
+__global__ void invalid_ref_kernel(float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d, int width, int height)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width;
+  unsigned int col = idx % width;
+
+  if (idx < width * height)
+  {
+    unsigned int pos = row * width + col;
+
+    if (reflectance_blue_d[pos] <= 0)
+      reflectance_blue_d[pos] = NAN;
+    if (reflectance_green_d[pos] <= 0)
+      reflectance_green_d[pos] = NAN;
+    if (reflectance_red_d[pos] <= 0)
+      reflectance_red_d[pos] = NAN;
+    if (reflectance_nir_d[pos] <= 0)
+      reflectance_nir_d[pos] = NAN;
+    if (reflectance_swir1_d[pos] <= 0)
+      reflectance_swir1_d[pos] = NAN;
+    if (reflectance_termal_d[pos] <= 0)
+      reflectance_termal_d[pos] = NAN;
+    if (reflectance_swir2_d[pos] <= 0)
+      reflectance_swir2_d[pos] = NAN;
+  }
+}
+
+__global__ void invalid_rad_ref_kernel(float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d, float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d, float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d, int width, int height)
+{
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width;
+  unsigned int col = idx % width;
+
+  if (idx < width * height)
+  {
+    unsigned int pos = row * width + col;
+
+    if (radiance_blue_d[pos] <= 0)
+      radiance_blue_d[pos] = NAN;
+    if (radiance_green_d[pos] <= 0)
+      radiance_green_d[pos] = NAN;
+    if (radiance_red_d[pos] <= 0)
+      radiance_red_d[pos] = NAN;
+    if (radiance_nir_d[pos] <= 0)
+      radiance_nir_d[pos] = NAN;
+    if (radiance_swir1_d[pos] <= 0)
+      radiance_swir1_d[pos] = NAN;
+    if (radiance_termal_d[pos] <= 0)
+      radiance_termal_d[pos] = NAN;
+    if (radiance_swir2_d[pos] <= 0)
+      radiance_swir2_d[pos] = NAN;
+
+    if (reflectance_blue_d[pos] <= 0)
+      reflectance_blue_d[pos] = NAN;
+    if (reflectance_green_d[pos] <= 0)
+      reflectance_green_d[pos] = NAN;
+    if (reflectance_red_d[pos] <= 0)
+      reflectance_red_d[pos] = NAN;
+    if (reflectance_nir_d[pos] <= 0)
+      reflectance_nir_d[pos] = NAN;
+    if (reflectance_swir1_d[pos] <= 0)
+      reflectance_swir1_d[pos] = NAN;
+    if (reflectance_termal_d[pos] <= 0)
+      reflectance_termal_d[pos] = NAN;
+    if (reflectance_swir2_d[pos] <= 0)
+      reflectance_swir2_d[pos] = NAN;
+  }
+}

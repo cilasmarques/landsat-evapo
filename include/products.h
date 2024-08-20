@@ -131,6 +131,8 @@ struct Products
    */
   string reflectance_function(MTL mtl);
 
+  string invalid_rad_ref_function();
+
   /**
    * @brief  The surface albedo is computed.
    * @param  sensor: Sensor struct.

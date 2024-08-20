@@ -111,6 +111,7 @@ string Landsat::compute_Rn_G(Station station)
 
   result += products.radiance_function(mtl);
   result += products.reflectance_function(mtl);
+  result += products.invalid_rad_ref_function();
   result += products.albedo_function(mtl);
 
   // Vegetation indices
