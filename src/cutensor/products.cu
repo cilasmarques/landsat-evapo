@@ -463,17 +463,15 @@ string Products::lai_function()
   float frc059 = 1 / 0.59;
   float frc091 = 1 / 0.91;
 
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, reflectance_nir_d, (void *)&neg1, reflectance_red_d, tensor_aux1_d, tensors.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, reflectance_nir_d, (void *)&pos1, reflectance_red_d, tensor_aux2_d, tensors.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, tensor_aux2_d, (void *)&pos05, only1_d, tensor_aux2_d, tensors.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos15, tensor_aux1_d, (void *)&pos1, tensor_aux2_d, savi_d, tensors.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_min, (void *)&pos1, savi_d, (void *)&pos6, only1_d, lai_d, tensors.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensors.handle, tensors.tensor_plan_trinity_mult_add, (void *)&pos069, only1_d, (void *)&neg1, lai_d, (void *)&frc059, only1_d, tensor_aux1_d, tensors.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_log_mul, (void *)&frc091, only1_d, (void *)&neg1, tensor_aux1_d, lai_d, tensors.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_max, (void *)&pos1, lai_d, (void *)&pos0, only1_d, lai_d, tensors.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, reflectance_nir_d, (void *)&neg1, reflectance_red_d, tensor_aux1_d, tensors.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, reflectance_nir_d, (void *)&pos1, reflectance_red_d, tensor_aux2_d, tensors.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, tensor_aux2_d, (void *)&pos05, only1_d, tensor_aux2_d, tensors.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos15, tensor_aux1_d, (void *)&pos1, tensor_aux2_d, savi_d, tensors.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_min, (void *)&pos1, savi_d, (void *)&pos6, only1_d, lai_d, tensors.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensors.handle, tensors.tensor_plan_trinity_mult_add, (void *)&pos069, only1_d, (void *)&neg1, lai_d, (void *)&frc059, only1_d, tensor_aux1_d, tensors.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_log_mul, (void *)&frc091, only1_d, (void *)&neg1, tensor_aux1_d, lai_d, tensors.stream));
 
-  invalid_lai_kernel<<<this->blocks_num, this->threads_num>>>(savi_d, lai_d, width_band, height_band);
-  // lai_kernel<<<this->blocks_num, this->threads_num>>>(reflectance_nir_d, reflectance_red_d, lai_d, width_band, height_band);
+  lai_kernel<<<this->blocks_num, this->threads_num>>>(reflectance_nir_d, reflectance_red_d, lai_d, width_band, height_band);
 
   HANDLE_ERROR(cudaDeviceSynchronize());
   HANDLE_ERROR(cudaGetLastError());
@@ -582,8 +580,8 @@ string Products::ea_emissivity_function()
   float pos085 = 0.85;
   float pos009 = 0.09;
   float neg1 = -1;
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_log_mul, (void *)&pos009, only1_d, (void *)&pos1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_log_mul, (void *)&pos1, only1_d, (void *)&neg1, tal_d, tensor_aux1_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_log_mul, (void *)&pos009, only1_d, (void *)&pos1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_exp_mul, (void *)&pos085, only1_d, (void *)&pos1, tensor_aux1_d, ea_d, tensors.stream));
 
   end = system_clock::now();
