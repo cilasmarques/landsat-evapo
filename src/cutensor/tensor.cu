@@ -38,6 +38,7 @@ Tensor::Tensor(int height_band, int width_band)
   createPermutation(this->tensor_plan_permute_id, CUTENSOR_OP_IDENTITY);
   createPermutation(this->tensor_plan_permute_exp, CUTENSOR_OP_EXP);
   createPermutation(this->tensor_plan_permute_log, CUTENSOR_OP_LOG);
+  createPermutation(this->tensor_plan_permute_sqtr, CUTENSOR_OP_SQRT);
 }
 
 void Tensor::createTrinary(cutensorPlan_t &plan, cutensorOperator_t OPA, cutensorOperator_t OPB, cutensorOperator_t OPC, cutensorOperator_t OPAB, cutensorOperator_t OPABC)

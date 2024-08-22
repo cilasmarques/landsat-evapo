@@ -453,15 +453,15 @@ string Products::lai_function()
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  float neg1 = -1;
-  float pos0 = 0;
-  float pos1 = 1;
-  float pos6 = 6;
-  float pos05 = 0.5; // L
-  float pos15 = 1.5; // 1 + L
-  float pos069 = 0.69;
-  float frc059 = 1 / 0.59;
-  float frc091 = 1 / 0.91;
+  // float neg1 = -1;
+  // float pos0 = 0;
+  // float pos1 = 1;
+  // float pos6 = 6;
+  // float pos05 = 0.5; // L
+  // float pos15 = 1.5; // 1 + L
+  // float pos069 = 0.69;
+  // float frc059 = 1 / 0.59;
+  // float frc091 = 1 / 0.91;
 
   // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, reflectance_nir_d, (void *)&neg1, reflectance_red_d, tensor_aux1_d, tensors.stream));
   // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, reflectance_nir_d, (void *)&pos1, reflectance_red_d, tensor_aux2_d, tensors.stream));
@@ -772,20 +772,22 @@ string Products::soil_heat_flux_function()
 
 string Products::d0_fuction()
 {
-  float CD1 = 20.6;
-  float HGHT = 4;
-
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
 
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
+  float CD1 = 20.6;
+  float HGHT = 4;
   float pos1 = 1;
   float neg1 = -1;
 
   // tensor_aux1_d = CD1 * this->pai[i]
-  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_id, (void *)&pos1, pai_d, tensor_aux1_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_id, (void *)&CD1, pai_d, tensor_aux1_d, tensors.stream));
+
+  // tensor_aux1_d = sqrt(CD1 * this->pai[i])
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_sqtr, (void *)&pos1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
 
   // tensor_aux2_d = exp(1.0)
   HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, only1_d, tensor_aux2_d, tensors.stream));
@@ -796,7 +798,7 @@ string Products::d0_fuction()
   // tensor_aux1_d = 1 / cd1_pai_root
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos1, only1_d, (void *)&pos1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
 
-  // ea_d  = (1 / cd1_pai_root) * exp(-cd1_pai_root * log(exp(1.0))) ~ pow(exp(1.0), -cd1_pai_root) / cd1_pai_root
+  // tensor_aux2_d  = (1 / cd1_pai_root) * exp(-cd1_pai_root * log(exp(1.0))) ~ pow(exp(1.0), -cd1_pai_root) / cd1_pai_root
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_exp_mul, (void *)&pos1, tensor_aux1_d, (void *)&pos1, tensor_aux2_d, tensor_aux2_d, tensors.stream));
 
   // tensor_aux1_d = 1 - (1 / cd1_pai_root)
@@ -841,7 +843,7 @@ string Products::zom_fuction(float A_ZOM, float B_ZOM)
   HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
 
   // if (gama < 3.3) gama = 3.3;
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_max, (void *)&pos33, tensor_aux1_d, (void *)&pos1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_max, (void *)&pos33, only1_d, (void *)&pos1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
 
   // tensor_aux1_d = (-VON_KARMAN * gama) + PSICORR
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&negVON, tensor_aux1_d, (void *)&PSICORR, only1_d, tensor_aux1_d, tensors.stream));
@@ -853,8 +855,8 @@ string Products::zom_fuction(float A_ZOM, float B_ZOM)
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&HGHT, only1_d, (void *)&neg1, d0_d, tensor_aux2_d, tensors.stream));
 
   // zom = tensor_aux1_d * tensor_aux2_d
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, tensor_aux1_d, (void *)&pos1, tensor_aux2_d, zom_d, tensors.stream));
-
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, tensor_aux2_d, (void *)&pos1, tensor_aux1_d, zom_d, tensors.stream));
+   
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();

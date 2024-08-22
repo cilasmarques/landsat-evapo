@@ -57,6 +57,7 @@ struct Tensor
     cutensorPlan_t tensor_plan_permute_id;
     cutensorPlan_t tensor_plan_permute_exp;
     cutensorPlan_t tensor_plan_permute_log;
+    cutensorPlan_t tensor_plan_permute_sqtr;
 
     Tensor();
 

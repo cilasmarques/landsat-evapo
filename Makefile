@@ -43,10 +43,10 @@ build-cpp:
 	$(GCC) -I./include -g ./src/cpp/*.cpp -o ./src/main $(CXXFLAGS)
 
 build-nvcc:
-	$(NVCC) -I./include -g ./src/cuda/*.cu -o ./src/main $(CXXFLAGS) -lcutensor -rdc=true
+	$(NVCC) -arch=sm_86 -I./include -g ./src/cuda/*.cu -o ./src/main $(CXXFLAGS) -lcutensor -rdc=true
 
 build-tensor:
-	$(NVCC) -I./include -g ./src/cutensor/*.cu -o ./src/main $(CXXFLAGS) -lcutensor -rdc=true
+	$(NVCC) -arch=sm_86 -I./include -g ./src/cutensor/*.cu -o ./src/main $(CXXFLAGS) -lcutensor -rdc=true
 
 fix-permissions:
 	sudo chmod -R 755 $(INPUT_DATA_PATH)/*
