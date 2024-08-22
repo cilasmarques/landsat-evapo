@@ -35,6 +35,8 @@ Tensor::Tensor(int height_band, int width_band)
   createBinary(this->tensor_plan_binary_exp_mul, CUTENSOR_OP_IDENTITY, CUTENSOR_OP_EXP, CUTENSOR_OP_MUL);
 
   // == Permutation
+  createPermutation(this->tensor_plan_permute_id, CUTENSOR_OP_IDENTITY);
+  createPermutation(this->tensor_plan_permute_exp, CUTENSOR_OP_EXP);
   createPermutation(this->tensor_plan_permute_log, CUTENSOR_OP_LOG);
 }
 

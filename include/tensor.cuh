@@ -54,6 +54,8 @@ struct Tensor
     cutensorPlan_t tensor_plan_binary_sqtr_add;
     cutensorPlan_t tensor_plan_binary_log_mul;
     cutensorPlan_t tensor_plan_binary_exp_mul;
+    cutensorPlan_t tensor_plan_permute_id;
+    cutensorPlan_t tensor_plan_permute_exp;
     cutensorPlan_t tensor_plan_permute_log;
 
     Tensor();

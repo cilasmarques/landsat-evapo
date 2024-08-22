@@ -357,7 +357,7 @@ string Products::invalid_rad_ref_function()
   HANDLE_ERROR(cudaMemcpy(radiance_swir1, radiance_swir1_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(radiance_termal, radiance_termal_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(radiance_swir2, radiance_swir2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
-  
+
   HANDLE_ERROR(cudaMemcpy(reflectance_blue, reflectance_blue_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(reflectance_green, reflectance_green_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(reflectance_red, reflectance_red_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
@@ -781,10 +781,29 @@ string Products::d0_fuction()
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  d0_kernel<<<this->blocks_num, this->threads_num>>>(pai_d, d0_d, CD1, HGHT, width_band, height_band);
+  float pos1 = 1;
+  float neg1 = -1;
 
-  HANDLE_ERROR(cudaDeviceSynchronize());
-  HANDLE_ERROR(cudaGetLastError());
+  // tensor_aux1_d = CD1 * this->pai[i]
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_id, (void *)&pos1, pai_d, tensor_aux1_d, tensors.stream));
+
+  // tensor_aux2_d = exp(1.0)
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, only1_d, tensor_aux2_d, tensors.stream));
+
+  // tensor_aux2_d = -(CD1 * this->pai[i]) * log(exp(1.0))
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_log_mul, (void *)&neg1, tensor_aux1_d, (void *)&pos1, tensor_aux2_d, tensor_aux2_d, tensors.stream));
+
+  // tensor_aux1_d = 1 / cd1_pai_root
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos1, only1_d, (void *)&pos1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
+
+  // ea_d  = (1 / cd1_pai_root) * exp(-cd1_pai_root * log(exp(1.0))) ~ pow(exp(1.0), -cd1_pai_root) / cd1_pai_root
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_exp_mul, (void *)&pos1, tensor_aux1_d, (void *)&pos1, tensor_aux2_d, tensor_aux2_d, tensors.stream));
+
+  // tensor_aux1_d = 1 - (1 / cd1_pai_root)
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, only1_d, (void *)&neg1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
+
+  // d0_d = HGHT * ((1 - (1 / cd1_pai_root)) + (pow(exp(1.0), -cd1_pai_root) / cd1_pai_root))
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&HGHT, tensor_aux1_d, (void *)&pos1, tensor_aux2_d, d0_d, tensors.stream));
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
@@ -803,10 +822,38 @@ string Products::zom_fuction(float A_ZOM, float B_ZOM)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  zom_kernel<<<this->blocks_num, this->threads_num>>>(d0_d, pai_d, zom_d, A_ZOM, B_ZOM, width_band, height_band);
+  float HGHT = 4;
+  float CD = 0.01;
+  float CR = 0.35;
+  float PSICORR = 0.2;
+  float CR2 = CR * 2;
+  float neg05 = -0.5;
+  float pos1 = 1;
+  float pos33 = 3.3;
+  float negVON = -VON_KARMAN;
+  float neg1 = -1;
 
-  HANDLE_ERROR(cudaDeviceSynchronize());
-  HANDLE_ERROR(cudaGetLastError());
+  // tensor_aux1_d = (CD + CR2 * this->pai_vector[line][col])
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&CD, only1_d, (void *)&CR2, pai_d, tensor_aux1_d, tensors.stream));
+
+  // tensor_aux1_d = pow(tensor_aux1_d, -0.5); ~ exp(−0.5⋅log(tensor_aux1_d))
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_log_mul, (void *)&neg05, only1_d, (void *)&pos1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
+
+  // if (gama < 3.3) gama = 3.3;
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_max, (void *)&pos33, tensor_aux1_d, (void *)&pos1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
+
+  // tensor_aux1_d = (-VON_KARMAN * gama) + PSICORR
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&negVON, tensor_aux1_d, (void *)&PSICORR, only1_d, tensor_aux1_d, tensors.stream));
+
+  // tensor_aux1_d = pow(exp(1.0), tensor_aux1_d) ~ exp(tensor_aux1_d)
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
+
+  // tensor_aux2_d = HGHT - this->d0_pointer[pos]
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&HGHT, only1_d, (void *)&neg1, d0_d, tensor_aux2_d, tensors.stream));
+
+  // zom = tensor_aux1_d * tensor_aux2_d
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, tensor_aux1_d, (void *)&pos1, tensor_aux2_d, zom_d, tensors.stream));
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
