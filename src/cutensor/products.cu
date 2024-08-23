@@ -874,10 +874,22 @@ string Products::ustar_fuction(float u10)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  ustar_kernel<<<this->blocks_num, this->threads_num>>>(zom_d, d0_d, ustar_d, u10, width_band, height_band);
+  float zu = 10;
+  float pos1 = 1;
+  float neg1 = -1;
+  float uVON = u10 * VON_KARMAN;
 
-  HANDLE_ERROR(cudaDeviceSynchronize());
-  HANDLE_ERROR(cudaGetLastError());
+  // tensor_aux1_d = (zu - DISP)
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&zu, only1_d, (void *)&neg1, d0_d, tensor_aux1_d, tensors.stream));
+
+  // tensor_aux1_d = (zu - DISP) / zom
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos1, tensor_aux1_d, (void *)&pos1, zom_d, tensor_aux1_d, tensors.stream));
+
+  // tensor_aux1_d = log((zu - DISP) / zom)
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&pos1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
+
+  // ustar[i] = (u10 * VON_KARMAN) / log((zu - DISP) / zom);
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&uVON, only1_d, (void *)&pos1, tensor_aux1_d, ustar_d, tensors.stream));
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
@@ -940,10 +952,30 @@ string Products::sensible_heat_flux_function(float a, float b)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  sensible_heat_flux_kernel<<<this->blocks_num, this->threads_num>>>(surface_temperature_d, rah_d, net_radiation_d, soil_heat_d, sensible_heat_flux_d, a, b, width_band, height_band);
+  float pos1 = 1;
+  float neg1 = -1;
+  float neg27315 = -273.15;
+  float RHO_AIR = RHO * SPECIFIC_HEAT_AIR;
 
-  HANDLE_ERROR(cudaDeviceSynchronize());
-  HANDLE_ERROR(cudaGetLastError());
+  // tensor_aux1_d = this->surface_temperature[i] - 273.15
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add,
+                                                         (void *)&pos1, surface_temperature_d, (void *)&neg27315, only1_d, tensor_aux1_d, tensors.stream));
+
+  // tensor_aux1_d = a + b * (this->surface_temperature[i] - 273.15))
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add,
+                                                         (void *)&a, only1_d, (void *)&b, tensor_aux1_d, tensor_aux1_d, tensors.stream));
+
+  // sensible_heat_flux[i] = RHO * SPECIFIC_HEAT_AIR * (a + b * (this->surface_temperature[i] - 273.15)) / this->aerodynamic_resistance[i];
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div,
+                                                         (void *)&RHO_AIR, tensor_aux1_d, (void *)&pos1, rah_d, sensible_heat_flux_d, tensors.stream));
+
+  // tensor_aux2_d = this->net_radiation[i] - this->soil_heat[i]
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add,
+                                                         (void *)&pos1, net_radiation_d, (void *)&neg1, soil_heat_d, tensor_aux2_d, tensors.stream));
+
+  // if (sensible_heat_flux[i] > (this->net_radiation[i] - this->soil_heat[i])) sensible_heat_flux[i] = this->net_radiation[i] - this->soil_heat[i];
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_min,
+                                                         (void *)&pos1, sensible_heat_flux_d, (void *)&pos1, tensor_aux2_d, sensible_heat_flux_d, tensors.stream));
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
@@ -962,10 +994,12 @@ string Products::latent_heat_flux_function()
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  latent_heat_flux_kernel<<<this->blocks_num, this->threads_num>>>(net_radiation_d, soil_heat_d, sensible_heat_flux_d, latent_heat_flux_d, width_band, height_band);
+  float pos1 = 1;
+  float neg1 = -1;
 
-  HANDLE_ERROR(cudaDeviceSynchronize());
-  HANDLE_ERROR(cudaGetLastError());
+  // this->latent_heat_flux[i] = this->net_radiation[i] - this->soil_heat[i] - this->sensible_heat_flux[i];
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, net_radiation_d, (void *)&neg1, soil_heat_d, tensor_aux1_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, tensor_aux1_d, (void *)&neg1, sensible_heat_flux_d, latent_heat_flux_d, tensors.stream));
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
@@ -984,10 +1018,14 @@ string Products::net_radiation_24h_function(float Ra24h, float Rs24h)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  net_radiation_24h_kernel<<<this->blocks_num, this->threads_num>>>(albedo_d, Rs24h, Ra24h, net_radiation_24h_d, width_band, height_band);
+  int FL = 110;
+  float pos1 = 1;
+  float neg1 = -1;
+  float negFLRsRa = -(FL * Rs24h / Ra24h);
 
-  HANDLE_ERROR(cudaDeviceSynchronize());
-  HANDLE_ERROR(cudaGetLastError());
+  // this->net_radiation_24h[i] = (1 - this->albedo[i]) * Rs24h - FL * Rs24h / Ra24h;
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, only1_d, (void *)&neg1, albedo_d, tensor_aux1_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&Rs24h, tensor_aux1_d, (void *)&negFLRsRa, only1_d, net_radiation_24h_d, tensors.stream));
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
@@ -1006,10 +1044,12 @@ string Products::evapotranspiration_fraction_fuction()
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  evapotranspiration_fraction_kernel<<<this->blocks_num, this->threads_num>>>(net_radiation_d, soil_heat_d, latent_heat_flux_d, evapotranspiration_fraction_d, width_band, height_band);
+  float pos1 = 1;
+  float neg1 = -1;
 
-  HANDLE_ERROR(cudaDeviceSynchronize());
-  HANDLE_ERROR(cudaGetLastError());
+  // this->evapotranspiration_fraction[i] = this->latent_heat_flux[i] / (this->net_radiation[i] - this->soil_heat[i]);
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, net_radiation_d, (void *)&neg1, soil_heat_d, tensor_aux1_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos1, latent_heat_flux_d, (void *)&pos1, tensor_aux1_d, evapotranspiration_fraction_d, tensors.stream));
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
@@ -1028,10 +1068,12 @@ string Products::sensible_heat_flux_24h_fuction()
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  sensible_heat_flux_24h_kernel<<<this->blocks_num, this->threads_num>>>(net_radiation_24h_d, evapotranspiration_fraction_d, sensible_heat_flux_24h_d, width_band, height_band);
+  float pos1 = 1;
+  float neg1 = -1;
 
-  HANDLE_ERROR(cudaDeviceSynchronize());
-  HANDLE_ERROR(cudaGetLastError());
+  // this->sensible_heat_flux_24h[i] = (1 - this->evapotranspiration_fraction[i]) * this->net_radiation_24h[i];
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, only1_d, (void *)&neg1, evapotranspiration_fraction_d, tensor_aux1_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, tensor_aux1_d, (void *)&pos1, net_radiation_24h_d, sensible_heat_flux_24h_d, tensors.stream));
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
@@ -1050,10 +1092,10 @@ string Products::latent_heat_flux_24h_function()
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  latent_heat_flux_24h_kernel<<<this->blocks_num, this->threads_num>>>(net_radiation_24h_d, evapotranspiration_fraction_d, latent_heat_flux_24h_d, width_band, height_band);
+  float pos1 = 1;
 
-  HANDLE_ERROR(cudaDeviceSynchronize());
-  HANDLE_ERROR(cudaGetLastError());
+  // this->latent_heat_flux_24h[i] = this->evapotranspiration_fraction[i] * this->net_radiation_24h[i];
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, evapotranspiration_fraction_d, (void *)&pos1, net_radiation_24h_d, latent_heat_flux_24h_d, tensors.stream));
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
@@ -1072,10 +1114,11 @@ string Products::evapotranspiration_24h_function(Station station)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  evapotranspiration_24h_kernel<<<this->blocks_num, this->threads_num>>>(latent_heat_flux_24h_d, evapotranspiration_24h_d, station.v7_max, station.v7_min, width_band, height_band);
+  float pos86400 = 86400;
+  float div = ((2.501 - 0.00236 * (station.v7_max + station.v7_min) / 2) * 1e+6);
 
-  HANDLE_ERROR(cudaDeviceSynchronize());
-  HANDLE_ERROR(cudaGetLastError());
+  // this->evapotranspiration_24h[i] = (this->latent_heat_flux_24h[i] * 86400) / ((2.501 - 0.00236 * (station.v7_max + station.v7_min) / 2) * 1e+6);
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos86400, latent_heat_flux_24h_d, (void *)&div, only1_d, evapotranspiration_24h_d, tensors.stream));
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
@@ -1094,10 +1137,11 @@ string Products::evapotranspiration_function()
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  evapotranspiration_kernel<<<this->blocks_num, this->threads_num>>>(net_radiation_24h_d, evapotranspiration_fraction_d, evapotranspiration_d, width_band, height_band);
+  float pos1 = 1;
+  float pos0035 = 0.035;
 
-  HANDLE_ERROR(cudaDeviceSynchronize());
-  HANDLE_ERROR(cudaGetLastError());
+  // this->evapotranspiration[i] = this->net_radiation_24h[i] * this->evapotranspiration_fraction[i] * 0.035;
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos1, net_radiation_24h_d, (void *)&pos0035, evapotranspiration_fraction_d, evapotranspiration_d, tensors.stream));
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
