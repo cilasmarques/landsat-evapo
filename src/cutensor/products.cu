@@ -331,6 +331,33 @@ string Products::reflectance_function(MTL mtl)
   return "CUDACORE,REFLECTANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
+string Products::albedo_function(MTL mtl)
+{
+  system_clock::time_point begin, end;
+  int64_t general_time, initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+  float pos1 = 1;
+  float neg003 = -0.03;
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_rcp, (void *)&pos1, tal_d, (void *)&pos1, tal_d, tensor_aux1_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&mtl.ref_w_coeff[PARAM_BAND_BLUE_INDEX], reflectance_blue_d, (void *)&mtl.ref_w_coeff[PARAM_BAND_GREEN_INDEX], reflectance_green_d, albedo_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, albedo_d, (void *)&mtl.ref_w_coeff[PARAM_BAND_RED_INDEX], reflectance_red_d, albedo_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, albedo_d, (void *)&mtl.ref_w_coeff[PARAM_BAND_NIR_INDEX], reflectance_nir_d, albedo_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, albedo_d, (void *)&mtl.ref_w_coeff[PARAM_BAND_SWIR1_INDEX], reflectance_swir1_d, albedo_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, albedo_d, (void *)&mtl.ref_w_coeff[PARAM_BAND_SWIR2_INDEX], reflectance_swir2_d, albedo_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensors.handle, tensors.tensor_plan_trinity_add_mult, (void *)&pos1, albedo_d, (void *)&neg003, only1_d, (void *)&pos1, tensor_aux1_d, albedo_d, tensors.stream));
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+  HANDLE_ERROR(cudaMemcpy(albedo, albedo_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  return "CUDACORE,ALBEDO," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+}
+
 string Products::invalid_rad_ref_function()
 {
   system_clock::time_point begin, end;
@@ -339,7 +366,7 @@ string Products::invalid_rad_ref_function()
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  invalid_rad_ref_kernel<<<this->blocks_num, this->threads_num>>>(radiance_blue_d, radiance_green_d, radiance_red_d, radiance_nir_d, radiance_swir1_d, radiance_termal_d, radiance_swir2_d,
+  invalid_rad_ref_kernel<<<this->blocks_num, this->threads_num>>>(albedo_d, radiance_blue_d, radiance_green_d, radiance_red_d, radiance_nir_d, radiance_swir1_d, radiance_termal_d, radiance_swir2_d,
                                                                   reflectance_blue_d, reflectance_green_d, reflectance_red_d, reflectance_nir_d, reflectance_swir1_d, reflectance_termal_d, reflectance_swir2_d,
                                                                   this->width_band, this->height_band);
 
@@ -366,34 +393,9 @@ string Products::invalid_rad_ref_function()
   HANDLE_ERROR(cudaMemcpy(reflectance_termal, reflectance_termal_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(reflectance_swir2, reflectance_swir2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,RAD_REF," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
-}
-
-string Products::albedo_function(MTL mtl)
-{
-  system_clock::time_point begin, end;
-  int64_t general_time, initial_time, final_time;
-
-  begin = system_clock::now();
-  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-  float pos1 = 1;
-  float neg003 = -0.03;
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_rcp, (void *)&pos1, tal_d, (void *)&pos1, tal_d, tensor_aux1_d, tensors.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&mtl.ref_w_coeff[PARAM_BAND_BLUE_INDEX], reflectance_blue_d, (void *)&mtl.ref_w_coeff[PARAM_BAND_GREEN_INDEX], reflectance_green_d, albedo_d, tensors.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, albedo_d, (void *)&mtl.ref_w_coeff[PARAM_BAND_RED_INDEX], reflectance_red_d, albedo_d, tensors.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, albedo_d, (void *)&mtl.ref_w_coeff[PARAM_BAND_NIR_INDEX], reflectance_nir_d, albedo_d, tensors.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, albedo_d, (void *)&mtl.ref_w_coeff[PARAM_BAND_SWIR1_INDEX], reflectance_swir1_d, albedo_d, tensors.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, albedo_d, (void *)&mtl.ref_w_coeff[PARAM_BAND_SWIR2_INDEX], reflectance_swir2_d, albedo_d, tensors.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensors.handle, tensors.tensor_plan_trinity_add_mult, (void *)&pos1, albedo_d, (void *)&neg003, only1_d, (void *)&pos1, tensor_aux1_d, albedo_d, tensors.stream));
-
-  end = system_clock::now();
-  general_time = duration_cast<nanoseconds>(end - begin).count();
-  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
   HANDLE_ERROR(cudaMemcpy(albedo, albedo_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,ALBEDO," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUDACORE,RAD_REF," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
 string Products::ndvi_function()

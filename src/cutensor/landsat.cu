@@ -111,8 +111,8 @@ string Landsat::compute_Rn_G(Station station)
 
   result += products.radiance_function(mtl);
   result += products.reflectance_function(mtl);
-  result += products.invalid_rad_ref_function();
   result += products.albedo_function(mtl);
+  result += products.invalid_rad_ref_function();
 
   // Vegetation indices
   result += products.ndvi_function();
@@ -270,6 +270,9 @@ string Landsat::save_products(string output_path)
   saveTiff(output_path + "/soil_heat_flux.tif", products.soil_heat, height_band, width_band);
   saveTiff(output_path + "/d0.tif", products.d0, height_band, width_band);
   saveTiff(output_path + "/zom.tif", products.zom, height_band, width_band);
+  saveTiff(output_path + "/ustar.tif", products.ustar, height_band, width_band);
+  saveTiff(output_path + "/kb.tif", products.kb1, height_band, width_band);
+  saveTiff(output_path + "/rah.tif", products.aerodynamic_resistance, height_band, width_band);
   saveTiff(output_path + "/sensible_heat_flux.tif", products.sensible_heat_flux, height_band, width_band);
   saveTiff(output_path + "/latent_heat_flux.tif", products.latent_heat_flux, height_band, width_band);
   saveTiff(output_path + "/net_radiation_24h.tif", products.net_radiation_24h, height_band, width_band);

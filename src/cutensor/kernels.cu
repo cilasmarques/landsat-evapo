@@ -752,7 +752,7 @@ __global__ void invalid_ref_kernel(float *reflectance_blue_d, float *reflectance
   }
 }
 
-__global__ void invalid_rad_ref_kernel(float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d, float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d, float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d, int width, int height)
+__global__ void invalid_rad_ref_kernel(float* albedo, float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d, float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d, float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d, int width, int height)
 {
   unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -793,5 +793,8 @@ __global__ void invalid_rad_ref_kernel(float *radiance_blue_d, float *radiance_g
       reflectance_termal_d[pos] = NAN;
     if (reflectance_swir2_d[pos] <= 0)
       reflectance_swir2_d[pos] = NAN;
+
+    if (albedo[pos] <= 0)
+      albedo[pos] = NAN;
   }
 }
