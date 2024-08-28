@@ -287,7 +287,7 @@ string Products::radiance_function(MTL mtl)
   HANDLE_ERROR(cudaMemcpy(radiance_termal, radiance_termal_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(radiance_swir2, radiance_swir2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,RADIANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,RADIANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
 string Products::reflectance_function(MTL mtl)
@@ -328,7 +328,7 @@ string Products::reflectance_function(MTL mtl)
   HANDLE_ERROR(cudaMemcpy(reflectance_termal, reflectance_termal_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   HANDLE_ERROR(cudaMemcpy(reflectance_swir2, reflectance_swir2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,REFLECTANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,REFLECTANCE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
 string Products::albedo_function(MTL mtl)
@@ -355,7 +355,7 @@ string Products::albedo_function(MTL mtl)
 
   HANDLE_ERROR(cudaMemcpy(albedo, albedo_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,ALBEDO," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,ALBEDO," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
 string Products::invalid_rad_ref_function()
@@ -418,7 +418,7 @@ string Products::ndvi_function()
 
   HANDLE_ERROR(cudaMemcpy(ndvi, ndvi_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,NDVI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,NDVI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::pai_function()
@@ -444,7 +444,7 @@ string Products::pai_function()
 
   HANDLE_ERROR(cudaMemcpy(pai, pai_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,PAI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,PAI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::lai_function()
@@ -514,7 +514,7 @@ string Products::evi_function()
 
   HANDLE_ERROR(cudaMemcpy(evi, evi_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,EVI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,EVI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::enb_emissivity_function()
@@ -592,7 +592,7 @@ string Products::ea_emissivity_function()
 
   HANDLE_ERROR(cudaMemcpy(ea_emissivity, ea_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,EA_EMISSIVITY," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,EA_EMISSIVITY," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::surface_temperature_function(MTL mtl)
@@ -640,7 +640,7 @@ string Products::surface_temperature_function(MTL mtl)
 
   HANDLE_ERROR(cudaMemcpy(surface_temperature, surface_temperature_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,SURFACE_TEMPERATURE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,SURFACE_TEMPERATURE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::short_wave_radiation_function(MTL mtl)
@@ -663,7 +663,7 @@ string Products::short_wave_radiation_function(MTL mtl)
 
   HANDLE_ERROR(cudaMemcpy(short_wave_radiation, short_wave_radiation_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,SHORT_WAVE_RADIATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,SHORT_WAVE_RADIATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::large_wave_radiation_surface_function()
@@ -687,7 +687,7 @@ string Products::large_wave_radiation_surface_function()
 
   HANDLE_ERROR(cudaMemcpy(large_wave_radiation_surface, large_wave_radiation_surface_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,LARGE_WAVE_RADIATION_SURFACE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,LARGE_WAVE_RADIATION_SURFACE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::large_wave_radiation_atmosphere_function(float temperature)
@@ -709,7 +709,7 @@ string Products::large_wave_radiation_atmosphere_function(float temperature)
 
   HANDLE_ERROR(cudaMemcpy(large_wave_radiation_atmosphere, large_wave_radiation_atmosphere_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,LARGE_WAVE_RADIATION_ATMOSPHERE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,LARGE_WAVE_RADIATION_ATMOSPHERE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::net_radiation_function()
@@ -736,7 +736,7 @@ string Products::net_radiation_function()
 
   HANDLE_ERROR(cudaMemcpy(net_radiation, net_radiation_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,NET_RADIATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,NET_RADIATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::soil_heat_flux_function()
@@ -769,7 +769,7 @@ string Products::soil_heat_flux_function()
 
   HANDLE_ERROR(cudaMemcpy(soil_heat, soil_heat_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,SOIL_HEAT_FLUX," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,SOIL_HEAT_FLUX," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::d0_fuction()
@@ -815,7 +815,7 @@ string Products::d0_fuction()
 
   HANDLE_ERROR(cudaMemcpy(d0, d0_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,D0," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,D0," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::zom_fuction(float A_ZOM, float B_ZOM)
@@ -858,14 +858,14 @@ string Products::zom_fuction(float A_ZOM, float B_ZOM)
 
   // zom = tensor_aux1_d * tensor_aux2_d
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, tensor_aux2_d, (void *)&pos1, tensor_aux1_d, zom_d, tensors.stream));
-   
+
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   HANDLE_ERROR(cudaMemcpy(zom, zom_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,ZOM," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,ZOM," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::ustar_fuction(float u10)
@@ -899,7 +899,7 @@ string Products::ustar_fuction(float u10)
 
   HANDLE_ERROR(cudaMemcpy(ustar, ustar_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,USTAR," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,USTAR," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::kb_function(float ndvi_max, float ndvi_min)
@@ -985,7 +985,7 @@ string Products::sensible_heat_flux_function(float a, float b)
 
   HANDLE_ERROR(cudaMemcpy(sensible_heat_flux, sensible_heat_flux_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,SENSIBLE_HEAT_FLUX," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,SENSIBLE_HEAT_FLUX," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::latent_heat_flux_function()
@@ -1009,7 +1009,7 @@ string Products::latent_heat_flux_function()
 
   HANDLE_ERROR(cudaMemcpy(latent_heat_flux, latent_heat_flux_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,LATENT_HEAT_FLUX," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,LATENT_HEAT_FLUX," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::net_radiation_24h_function(float Ra24h, float Rs24h)
@@ -1035,7 +1035,7 @@ string Products::net_radiation_24h_function(float Ra24h, float Rs24h)
 
   HANDLE_ERROR(cudaMemcpy(net_radiation_24h, net_radiation_24h_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,NET_RADIATION_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,NET_RADIATION_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::evapotranspiration_fraction_fuction()
@@ -1059,7 +1059,7 @@ string Products::evapotranspiration_fraction_fuction()
 
   HANDLE_ERROR(cudaMemcpy(evapotranspiration_fraction, evapotranspiration_fraction_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,EVAPOTRANSPIRATION_FRACTION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,EVAPOTRANSPIRATION_FRACTION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::sensible_heat_flux_24h_fuction()
@@ -1083,7 +1083,7 @@ string Products::sensible_heat_flux_24h_fuction()
 
   HANDLE_ERROR(cudaMemcpy(sensible_heat_flux_24h, sensible_heat_flux_24h_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,SENSIBLE_HEAT_FLUX_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,SENSIBLE_HEAT_FLUX_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::latent_heat_flux_24h_function()
@@ -1105,7 +1105,7 @@ string Products::latent_heat_flux_24h_function()
 
   HANDLE_ERROR(cudaMemcpy(latent_heat_flux_24h, latent_heat_flux_24h_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,LATENT_HEAT_FLUX_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,LATENT_HEAT_FLUX_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::evapotranspiration_24h_function(Station station)
@@ -1117,10 +1117,10 @@ string Products::evapotranspiration_24h_function(Station station)
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   float pos86400 = 86400;
-  float div = ((2.501 - 0.00236 * (station.v7_max + station.v7_min) / 2) * 1e+6);
+  float div = 1 / ((2.501 - 0.00236 * (station.v7_max + station.v7_min) / 2) * 1e+6);
 
   // this->evapotranspiration_24h[i] = (this->latent_heat_flux_24h[i] * 86400) / ((2.501 - 0.00236 * (station.v7_max + station.v7_min) / 2) * 1e+6);
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos86400, latent_heat_flux_24h_d, (void *)&div, only1_d, evapotranspiration_24h_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos86400, latent_heat_flux_24h_d, (void *)&div, only1_d, evapotranspiration_24h_d, tensors.stream));
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
@@ -1128,7 +1128,7 @@ string Products::evapotranspiration_24h_function(Station station)
 
   HANDLE_ERROR(cudaMemcpy(evapotranspiration_24h, evapotranspiration_24h_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,EVAPOTRANSPIRATION_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,EVAPOTRANSPIRATION_24H," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::evapotranspiration_function()
@@ -1143,7 +1143,7 @@ string Products::evapotranspiration_function()
   float pos0035 = 0.035;
 
   // this->evapotranspiration[i] = this->net_radiation_24h[i] * this->evapotranspiration_fraction[i] * 0.035;
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos1, net_radiation_24h_d, (void *)&pos0035, evapotranspiration_fraction_d, evapotranspiration_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, net_radiation_24h_d, (void *)&pos0035, evapotranspiration_fraction_d, evapotranspiration_d, tensors.stream));
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
@@ -1151,7 +1151,7 @@ string Products::evapotranspiration_function()
 
   HANDLE_ERROR(cudaMemcpy(evapotranspiration, evapotranspiration_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
-  return "CUDACORE,EVAPOTRANSPIRATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "CUTENSOR,EVAPOTRANSPIRATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::rah_correction_function_blocks(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
