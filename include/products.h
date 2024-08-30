@@ -97,6 +97,17 @@ struct Products
     Tensor tensors;
     float *only1, *only1_d;
     float *tensor_aux1_d, *tensor_aux2_d;
+    float *Re_star_d;
+    float *Ct_star_d;
+    float *beta_d;
+    float *nec_terra_d;
+    float *kb1_fst_part_d;
+    float *kb1_sec_part_d;
+    float *kb1s_d;
+    float *fc_d;
+    float *fs_d;
+    float *fspow_d;
+    float *fcpow_d;
   #endif
   // === Used in tensor implementation ===
 

@@ -133,6 +133,17 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   HANDLE_ERROR(cudaMalloc((void **)&this->only1_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->tensor_aux1_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->tensor_aux2_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->Re_star_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->Ct_star_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->beta_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->nec_terra_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->kb1_fst_part_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->kb1_sec_part_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->kb1s_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->fc_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->fs_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->fspow_d, nBytes_band));
+  HANDLE_ERROR(cudaMalloc((void **)&this->fcpow_d, nBytes_band));
   // === Used in tensor implementation ===
 };
 
@@ -904,16 +915,164 @@ string Products::ustar_fuction(float u10)
 
 string Products::kb_function(float ndvi_max, float ndvi_min)
 {
+  float HGHT = 4;
+
+  float visc = 0.00001461;
+  float pr = 0.71;
+  float c1 = 0.320;
+  float c2 = 0.264;
+  float c3 = 15.1;
+  float cd = 0.2;
+  float ct = 0.01;
+  float sf_c = 0.3;
+  float sf_d = 2.5;
+  float sf_e = 4.0;
+
+  float pos1 = 1;
+  float pos2 = 2;
+  float pos025 = 0.25;
+  float pos246 = 2.46;
+  float pos009 = 0.009;
+  float pos4631 = 0.4631;
+  float neg05 = -0.5;
+  float neg1 = -1;
+  float neg2 = -2;
+
+  float ct4= 4 * ct;
+  float cdc3 = cd * -c3;
+  float divHGHT = 1 / HGHT;
+  float div_visc = 1 / visc;
+  float cdVON = cd * VON_KARMAN;
+  float pow_pr = pow(pr, -0.667);
+  float neg_ndvi_max = -ndvi_max;
+  float soil_moisture_day_rel = 0.33;
+  float div_ndvi_min_max = 1 / (ndvi_min - ndvi_max);
+  float SF = sf_c + (1 / (1 + pow(exp(1.0), (sf_d - (sf_e * soil_moisture_day_rel)))));
+
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
 
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  kb_kernel<<<this->blocks_num, this->threads_num>>>(zom_d, ustar_d, pai_d, kb1_d, ndvi_d, width_band, height_band, ndvi_max, ndvi_min);
+  // float Re_star = (this->ustar[i] * 0.009) / visc;
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult,
+                                                         (void *)&pos009, ustar_d,
+                                                         (void *)&div_visc, only1_d,
+                                                         Re_star_d, tensors.stream));
 
-  HANDLE_ERROR(cudaDeviceSynchronize());
-  HANDLE_ERROR(cudaGetLastError());
+  // float Ct_star = pow(pr, -0.667) * pow(Re_star, -0.5); ~ pow_pr * exp(-0.5 * log(Re_star)); // 0.02%
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&neg05, Re_star_d, Ct_star_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_exp_mul,
+                                                         (void *)&pow_pr, only1_d,
+                                                         (void *)&pos1, Ct_star_d,
+                                                         Ct_star_d, tensors.stream));
+
+  // float beta = c1 - c2 * (exp(cdc3 * this->pai[i])); // OK
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_id, (void *)&cdc3, pai_d, beta_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&c2, beta_d, beta_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add,
+                                                         (void *)&c1, only1_d,
+                                                         (void *)&neg1, beta_d,
+                                                         beta_d, tensors.stream));
+
+  // float nec_terra = (cd * this->pai[i]) / (beta * beta * 2);  // OK
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult,
+                                                         (void *)&pos2, beta_d,
+                                                         (void *)&pos1, beta_d,
+                                                         nec_terra_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div,
+                                                         (void *)&cd, pai_d,
+                                                         (void *)&pos1, nec_terra_d,
+                                                         nec_terra_d, tensors.stream));
+
+  // float kb1_fst_part = (cd * VON_KARMAN) / (4 * ct * beta * (1 - exp(nec_terra * -0.5)));
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_id, (void *)&neg05, nec_terra_d, kb1_fst_part_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, kb1_fst_part_d, kb1_fst_part_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add,
+                                                         (void *)&pos1, only1_d,
+                                                         (void *)&neg1, kb1_fst_part_d,
+                                                         kb1_fst_part_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult,
+                                                         (void *)&ct4, beta_d,
+                                                         (void *)&pos1, kb1_fst_part_d,
+                                                         kb1_fst_part_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div,
+                                                         (void *)&cdVON, only1_d,
+                                                         (void *)&pos1, kb1_fst_part_d,
+                                                         kb1_fst_part_d, tensors.stream));
+
+  // float kb1_sec_part = (beta * VON_KARMAN * (this->zom[i] / HGHT)) / Ct_star;
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult,
+                                                         (void *)&divHGHT, only1_d,
+                                                         (void *)&pos1, zom_d,
+                                                         kb1_sec_part_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult,
+                                                         (void *)&VON_KARMAN, beta_d,
+                                                         (void *)&pos1, kb1_sec_part_d,
+                                                         kb1_sec_part_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div,
+                                                         (void *)&pos1, kb1_sec_part_d,
+                                                         (void *)&pos1, Ct_star_d,
+                                                         kb1_sec_part_d, tensors.stream));
+
+  // float kb1s = (pow(Re_star, 0.25) * 2.46) - 2) ~ 2.46 * exp(0.25 * log(Re_star));
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&pos025, Re_star_d, kb1s_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos246, kb1s_d, kb1s_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add,
+                                                         (void *)&pos1, kb1s_d,
+                                                         (void *)&neg2, only1_d,
+                                                         kb1s_d, tensors.stream));
+
+  // float fc = 1 - pow((this->ndvi[i] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add,
+                                                         (void *)&pos1, ndvi_d,
+                                                         (void *)&neg_ndvi_max, only1_d,
+                                                         fc_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_id, (void *)&div_ndvi_min_max, fc_d, fc_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&pos4631, fc_d, fc_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, fc_d, fc_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add,
+                                                         (void *)&pos1, only1_d,
+                                                         (void *)&neg1, fc_d,
+                                                         fc_d, tensors.stream));
+
+  // float fs = 1 - fc;
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add,
+                                                         (void *)&pos1, only1_d,
+                                                         (void *)&neg1, fc_d,
+                                                         fs_d, tensors.stream));
+
+  // this->kb1[i] = ((kb1_fst_part * pow(fc, 2)) + (kb1_sec_part * pow(fc, 2) * pow(fs, 2)) + (pow(fs, 2) * kb1s)) * SF;
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&pos2, fc_d, fcpow_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, fcpow_d, fcpow_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&pos2, fs_d, fspow_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, fspow_d, fspow_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult,
+                                                         (void *)&pos1, kb1_fst_part_d,
+                                                         (void *)&pos1, fcpow_d,
+                                                         tensor_aux1_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult,
+                                                         (void *)&pos1, fcpow_d,
+                                                         (void *)&pos1, fspow_d,
+                                                         tensor_aux2_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult,
+                                                         (void *)&pos1, kb1_sec_part_d,
+                                                         (void *)&pos1, tensor_aux2_d,
+                                                         tensor_aux2_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult,
+                                                         (void *)&pos1, kb1s_d,
+                                                         (void *)&pos1, fspow_d,
+                                                         kb1_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add,
+                                                         (void *)&pos1, kb1_d,
+                                                         (void *)&pos1, tensor_aux2_d,
+                                                         kb1_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add,
+                                                         (void *)&pos1, kb1_d,
+                                                         (void *)&pos1, tensor_aux1_d,
+                                                         kb1_d, tensors.stream));
+  HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_id, (void *)&SF, kb1_d, kb1_d, tensors.stream));
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
