@@ -96,7 +96,8 @@ struct Products
   #ifdef __CUDACC__
     Tensor tensors;
     float *only1, *only1_d;
-    float *tensor_aux1_d, *tensor_aux2_d;
+    float *tensor_aux1_d, *tensor_aux2_d, *tensor_aux3_d, *tensor_aux4_d;
+    float *L_d, *psi2_d, *psi200_d;
     float *Re_star_d;
     float *Ct_star_d;
     float *beta_d;
