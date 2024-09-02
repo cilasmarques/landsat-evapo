@@ -35,7 +35,7 @@ void get_quartiles(float *target, float *v_quartile, int height_band, int width_
  *
  * @retval void
  */
-void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int width_band, float first_interval, float middle_interval, float last_interval,int blocks_num, int threads_num)
+void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int width_band, float first_interval, float middle_interval, float last_interval,int blocks_num, int threads_num);
 
 /**
  * @brief Get the hot pixel based on the STEPP algorithm. CPU version.
