@@ -9,8 +9,6 @@ CUDA_HOSTDEV Candidate::Candidate()
   this->ho = 0;
   this->line = 0;
   this->col = 0;
-  this->negative_neighbour = 0;
-  this->coefficient_variation = 0;
   this->zom = 0;
   this->ustar = 0;
 }
@@ -24,8 +22,6 @@ CUDA_HOSTDEV Candidate::Candidate(float ndvi, float temperature, float net_radia
   this->ho = ho;
   this->line = line;
   this->col = col;
-  this->negative_neighbour = 0;
-  this->coefficient_variation = 0;
   this->zom = 0;
   this->ustar = 0;
 }
