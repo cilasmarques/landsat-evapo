@@ -94,21 +94,17 @@ struct Products
 
   // === Used in tensor implementation ===
   #ifdef __CUDACC__
-    Tensor tensors;
-    float *only1, *only1_d;
-    float *tensor_aux1_d, *tensor_aux2_d, *tensor_aux3_d, *tensor_aux4_d;
-    float *L_d, *psi2_d, *psi200_d;
-    float *Re_star_d;
-    float *Ct_star_d;
-    float *beta_d;
-    float *nec_terra_d;
-    float *kb1_fst_part_d;
-    float *kb1_sec_part_d;
-    float *kb1s_d;
-    float *fc_d;
-    float *fs_d;
-    float *fspow_d;
-    float *fcpow_d;
+  Tensor tensors;
+
+  // general aux pointers
+  float *only1, *only1_d;
+  float *tensor_aux1_d, *tensor_aux2_d, *tensor_aux3_d, *tensor_aux4_d;
+
+  // kb1 aux pointers
+  float *beta_d, *nec_terra_d, *kb1_fst_part_d, *kb1_sec_part_d, *kb1s_d, *fc_d, *fs_d, *fspow_d, *fcpow_d;
+
+  // rah aux pointers
+  float *L_d, *psi2_d, *psi200_d;
   #endif
   // === Used in tensor implementation ===
 

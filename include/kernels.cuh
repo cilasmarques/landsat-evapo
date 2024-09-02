@@ -86,7 +86,8 @@ __global__ void rah_correction_cycle_STEEP(float *surface_temperature_pointer, f
                                            int width);
 
 // Tensor corrections
-__global__ void invalid_lai_kernel(float *savi_d, float *lai_d, int width, int height);
-__global__ void invalid_rad_kernel(float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d, float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d, int width, int height);
-__global__ void invalid_ref_kernel(float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d, int width, int height);
 __global__ void invalid_rad_ref_kernel(float *albedo_d, float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d, float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d, float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d, int width, int height);
+// __global__ void invalid_rad_kernel(float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d, float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d, int width, int height);
+// __global__ void invalid_ref_kernel(float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d, int width, int height);
+// __global__ void invalid_lai_kernel(float *savi_d, float *lai_d, int width, int height);
+// __global__ void psi_kernel(float *d0, float *zom, float *kb1, float *L, float *ustar, float *rah, int height, int width);
