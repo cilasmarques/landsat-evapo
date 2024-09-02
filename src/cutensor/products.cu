@@ -283,14 +283,6 @@ string Products::radiance_function(MTL mtl)
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&mtl.rad_mult[PARAM_BAND_TERMAL_INDEX], band_termal_d, (void *)&mtl.rad_add[PARAM_BAND_TERMAL_INDEX], only1_d, radiance_termal_d, tensors.stream));
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&mtl.rad_mult[PARAM_BAND_SWIR2_INDEX], band_swir2_d, (void *)&mtl.rad_add[PARAM_BAND_SWIR2_INDEX], only1_d, radiance_swir2_d, tensors.stream));
 
-  // invalid_rad_kernel<<<this->blocks_num, this->threads_num>>>(radiance_blue_d, radiance_green_d, radiance_red_d, radiance_nir_d, radiance_swir1_d, radiance_termal_d, radiance_swir2_d, this->width_band, this->height_band);
-  // rad_kernel<<<this->blocks_num, this->threads_num>>>(band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d,
-  //                                                     radiance_blue_d, radiance_green_d, radiance_red_d, radiance_nir_d, radiance_swir1_d, radiance_termal_d, radiance_swir2_d,
-  //                                                     mtl.rad_add_d, mtl.rad_mult_d, width_band, height_band);
-
-  // HANDLE_ERROR(cudaDeviceSynchronize());
-  // HANDLE_ERROR(cudaGetLastError());
-
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
@@ -323,14 +315,6 @@ string Products::reflectance_function(MTL mtl)
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensors.handle, tensors.tensor_plan_trinity_add_mult, (void *)&mtl.ref_mult[PARAM_BAND_SWIR1_INDEX], band_swir1_d, (void *)&mtl.ref_add[PARAM_BAND_SWIR1_INDEX], only1_d, (void *)&sin_sun, only1_d, reflectance_swir1_d, tensors.stream));
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensors.handle, tensors.tensor_plan_trinity_add_mult, (void *)&mtl.ref_mult[PARAM_BAND_TERMAL_INDEX], band_termal_d, (void *)&mtl.ref_add[PARAM_BAND_TERMAL_INDEX], only1_d, (void *)&sin_sun, only1_d, reflectance_termal_d, tensors.stream));
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensors.handle, tensors.tensor_plan_trinity_add_mult, (void *)&mtl.ref_mult[PARAM_BAND_SWIR2_INDEX], band_swir2_d, (void *)&mtl.ref_add[PARAM_BAND_SWIR2_INDEX], only1_d, (void *)&sin_sun, only1_d, reflectance_swir2_d, tensors.stream));
-
-  // invalid_ref_kernel<<<this->blocks_num, this->threads_num>>>(reflectance_blue_d, reflectance_green_d, reflectance_red_d, reflectance_nir_d, reflectance_swir1_d, reflectance_termal_d, reflectance_swir2_d, this->width_band, this->height_band);
-  // ref_kernel<<<this->blocks_num, this->threads_num>>>(band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d,
-  //                                                   reflectance_blue_d, reflectance_green_d, reflectance_red_d, reflectance_nir_d, reflectance_swir1_d, reflectance_termal_d, reflectance_swir2_d,
-  //                                                   mtl.ref_add_d, mtl.ref_mult_d, sin_sun, width_band, height_band);
-
-  // HANDLE_ERROR(cudaDeviceSynchronize());
-  // HANDLE_ERROR(cudaGetLastError());
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
@@ -424,6 +408,8 @@ string Products::ndvi_function()
 
   float pos1 = 1;
   float neg1 = -1;
+
+  // this->ndvi[i] = (this->reflectance_nir[i] - this->reflectance_red[i]) / (this->reflectance_nir[i] + this->reflectance_red[i]);
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, reflectance_nir_d, (void *)&neg1, reflectance_red_d, tensor_aux1_d, tensors.stream));
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, reflectance_nir_d, (void *)&pos1, reflectance_red_d, tensor_aux2_d, tensors.stream));
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos1, tensor_aux1_d, (void *)&pos1, tensor_aux2_d, ndvi_d, tensors.stream));
@@ -450,6 +436,8 @@ string Products::pai_function()
   float pos31 = 3.1;
   float pos101 = 10.1;
   float neg1 = -1;
+
+  // float pai_value = 10.1 * (this->reflectance_nir[i] - sqrt(this->reflectance_red[i])) + 3.1;
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_sqtr_add, (void *)&pos1, reflectance_nir_d, (void *)&neg1, reflectance_red_d, tensor_aux1_d, tensors.stream));
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos101, tensor_aux1_d, (void *)&pos31, only1_d, pai_d, tensors.stream));
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_max, (void *)&pos1, pai_d, (void *)&pos0, only1_d, pai_d, tensors.stream));
@@ -471,24 +459,6 @@ string Products::lai_function()
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  // float neg1 = -1;
-  // float pos0 = 0;
-  // float pos1 = 1;
-  // float pos6 = 6;
-  // float pos05 = 0.5; // L
-  // float pos15 = 1.5; // 1 + L
-  // float pos069 = 0.69;
-  // float frc059 = 1 / 0.59;
-  // float frc091 = 1 / 0.91;
-
-  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, reflectance_nir_d, (void *)&neg1, reflectance_red_d, tensor_aux1_d, tensors.stream));
-  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, reflectance_nir_d, (void *)&pos1, reflectance_red_d, tensor_aux2_d, tensors.stream));
-  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, tensor_aux2_d, (void *)&pos05, only1_d, tensor_aux2_d, tensors.stream));
-  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos15, tensor_aux1_d, (void *)&pos1, tensor_aux2_d, savi_d, tensors.stream));
-  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_min, (void *)&pos1, savi_d, (void *)&pos6, only1_d, lai_d, tensors.stream));
-  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensors.handle, tensors.tensor_plan_trinity_mult_add, (void *)&pos069, only1_d, (void *)&neg1, lai_d, (void *)&frc059, only1_d, tensor_aux1_d, tensors.stream));
-  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_log_mul, (void *)&frc091, only1_d, (void *)&neg1, tensor_aux1_d, lai_d, tensors.stream));
-
   lai_kernel<<<this->blocks_num, this->threads_num>>>(reflectance_nir_d, reflectance_red_d, lai_d, width_band, height_band);
 
   HANDLE_ERROR(cudaDeviceSynchronize());
@@ -501,6 +471,14 @@ string Products::lai_function()
   HANDLE_ERROR(cudaMemcpy(lai, lai_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
   return "CUDACORE,LAI," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, reflectance_nir_d, (void *)&neg1, reflectance_red_d, tensor_aux1_d, tensors.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, reflectance_nir_d, (void *)&pos1, reflectance_red_d, tensor_aux2_d, tensors.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, tensor_aux2_d, (void *)&pos05, only1_d, tensor_aux2_d, tensors.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos15, tensor_aux1_d, (void *)&pos1, tensor_aux2_d, savi_d, tensors.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_min, (void *)&pos1, savi_d, (void *)&pos6, only1_d, lai_d, tensors.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensors.handle, tensors.tensor_plan_trinity_mult_add, (void *)&pos069, only1_d, (void *)&neg1, lai_d, (void *)&frc059, only1_d, tensor_aux1_d, tensors.stream));
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_log_mul, (void *)&frc091, only1_d, (void *)&neg1, tensor_aux1_d, lai_d, tensors.stream));
 };
 
 string Products::evi_function()
@@ -517,11 +495,19 @@ string Products::evi_function()
   float pos6 = 6;
   float neg1 = -1;
   float neg75 = -7.5;
+
+  // tensor_aux1_d = 2.5 * ((this->reflectance_nir[i] - this->reflectance_red[i]) 
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, reflectance_nir_d, (void *)&neg1, reflectance_red_d, tensor_aux1_d, tensors.stream));
+
+  // tensor_aux2_d = (this->reflectance_nir[i] + (6 * this->reflectance_red[i]) - (7.5 * this->reflectance_blue[i]) + 1)); 
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos6, reflectance_red_d, (void *)&neg75, reflectance_blue_d, tensor_aux2_d, tensors.stream));
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, reflectance_nir_d, (void *)&pos1, tensor_aux2_d, tensor_aux2_d, tensors.stream));
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, only1_d, (void *)&pos1, tensor_aux2_d, tensor_aux2_d, tensors.stream));
+
+  // evi_value = 2.5 * ((this->reflectance_nir[i] - this->reflectance_red[i]) / (this->reflectance_nir[i] + (6 * this->reflectance_red[i]) - (7.5 * this->reflectance_blue[i]) + 1));
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos25, tensor_aux1_d, (void *)&pos1, tensor_aux2_d, evi_d, tensors.stream));
+
+  // if (evi_value < 0) evi_value = 0;
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_max, (void *)&pos1, evi_d, (void *)&pos0, only1_d, evi_d, tensors.stream));
 
   end = system_clock::now();
@@ -541,11 +527,6 @@ string Products::enb_emissivity_function()
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  // float pos097 = 0.97;
-  // float pos0033 = 0.0033;
-  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos097, only1_d, (void *)&pos0033, lai_d, enb_d, tensors.stream));
-  // TODO: treat the values -> lai = 0 and (ndvi < 0 and lai > 2.99)
-
   enb_kernel<<<this->blocks_num, this->threads_num>>>(lai_d, ndvi_d, enb_d, width_band, height_band);
 
   HANDLE_ERROR(cudaDeviceSynchronize());
@@ -558,6 +539,8 @@ string Products::enb_emissivity_function()
   HANDLE_ERROR(cudaMemcpy(enb_emissivity, enb_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
   return "CUDACORE,ENB_EMISSIVITY," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos097, only1_d, (void *)&pos0033, lai_d, enb_d, tensors.stream));
 };
 
 string Products::eo_emissivity_function()
@@ -567,10 +550,6 @@ string Products::eo_emissivity_function()
 
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-  // float pos095 = 0.95;
-  // float pos001 = 0.01;
-  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos095, only1_d, (void *)&pos001, lai_d, eo_d, tensors.stream));
 
   eo_kernel<<<this->blocks_num, this->threads_num>>>(lai_d, ndvi_d, eo_d, width_band, height_band);
 
@@ -584,6 +563,8 @@ string Products::eo_emissivity_function()
   HANDLE_ERROR(cudaMemcpy(eo_emissivity, eo_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
   return "CUDACORE,EO_EMISSIVITY," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+
+  // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos095, only1_d, (void *)&pos001, lai_d, eo_d, tensors.stream));
 };
 
 string Products::ea_emissivity_function()
@@ -598,6 +579,8 @@ string Products::ea_emissivity_function()
   float pos085 = 0.85;
   float pos009 = 0.09;
   float neg1 = -1;
+
+  // this->ea_emissivity[i] = 0.85 * pow((-1 * log(this->tal[i])), 0.09);
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_log_mul, (void *)&pos1, only1_d, (void *)&neg1, tal_d, tensor_aux1_d, tensors.stream));
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_log_mul, (void *)&pos009, only1_d, (void *)&pos1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_exp_mul, (void *)&pos085, only1_d, (void *)&pos1, tensor_aux1_d, ea_d, tensors.stream));
@@ -644,6 +627,8 @@ string Products::surface_temperature_function(MTL mtl)
 
   float pos0 = 0;
   float pos1 = 1;
+
+  // surface_temperature_value = k2 / (log((this->enb_emissivity[i] * k1 / this->radiance_termal[i]) + 1));
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&k1, enb_d, (void *)&pos1, radiance_termal_d, tensor_aux1_d, tensors.stream));
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, tensor_aux1_d, (void *)&pos1, only1_d, tensor_aux1_d, tensors.stream));
   HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&pos1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
@@ -671,6 +656,7 @@ string Products::short_wave_radiation_function(MTL mtl)
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
+  // short_wave_radiation[i] = (1367 * costheta * this->tal[i]) / (mtl.distance_earth_sun * mtl.distance_earth_sun);
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&cos1367, tal_d, (void *)&divmtl2, only1_d, short_wave_radiation_d, tensors.stream));
 
   end = system_clock::now();
@@ -690,6 +676,7 @@ string Products::large_wave_radiation_surface_function()
   float pos1 = 1;
   float pos567 = 5.67;
   float pos1e8 = 1e-8;
+
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
@@ -717,6 +704,8 @@ string Products::large_wave_radiation_atmosphere_function(float temperature)
   float pos567_1e8 = 5.67 * 1e-8;
   float temperature_kelvin = temperature + 273.15;
   float temperature_kelvin_pow_4 = temperature_kelvin * temperature_kelvin * temperature_kelvin * temperature_kelvin;
+
+  // large_wave_radiation_surface[i] = this->eo_emissivity[i] * 5.67 * 1e-8 * surface_temperature_pow_4;
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos567_1e8, ea_d, (void *)&temperature_kelvin_pow_4, only1_d, large_wave_radiation_atmosphere_d, tensors.stream));
 
   end = system_clock::now();
@@ -736,14 +725,26 @@ string Products::net_radiation_function()
   float pos0 = 0;
   float pos1 = 1;
   float neg1 = -1;
+
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
+  // tensor_aux1_d = this->short_wave_radiation[i] - (this->short_wave_radiation[i] * this->albedo[i]) +
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensors.handle, tensors.tensor_plan_trinity_mult_add, (void *)&neg1, short_wave_radiation_d, (void *)&pos1, albedo_d, (void *)&pos1, short_wave_radiation_d, tensor_aux1_d, tensors.stream));
+
+  // tensor_aux1_d = this->short_wave_radiation[i] - (this->short_wave_radiation[i] * this->albedo[i]) + this->large_wave_radiation_atmosphere[i] 
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, tensor_aux1_d, (void *)&pos1, large_wave_radiation_atmosphere_d, tensor_aux1_d, tensors.stream));
+
+  // tensor_aux1_d = this->short_wave_radiation[i] - (this->short_wave_radiation[i] * this->albedo[i]) + this->large_wave_radiation_atmosphere[i] - this->large_wave_radiation_surface[i] -
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, tensor_aux1_d, (void *)&neg1, large_wave_radiation_surface_d, tensor_aux1_d, tensors.stream));
+
+  // tensor_aux2_d = (1 - this->eo_emissivity[i]) * this->large_wave_radiation_atmosphere[i];
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensors.handle, tensors.tensor_plan_trinity_add_mult, (void *)&pos1, only1_d, (void *)&neg1, eo_d, (void *)&pos1, large_wave_radiation_atmosphere_d, tensor_aux2_d, tensors.stream));
+
+  // net_radiation[i] = this->short_wave_radiation[i] - (this->short_wave_radiation[i] * this->albedo[i]) + this->large_wave_radiation_atmosphere[i] - this->large_wave_radiation_surface[i] - (1 - this->eo_emissivity[i]) * this->large_wave_radiation_atmosphere[i];
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, tensor_aux1_d, (void *)&neg1, tensor_aux2_d, net_radiation_d, tensors.stream));
+
+  // if (net_radiation[i] < 0) net_radiation[i] = 0;
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_max, (void *)&pos1, net_radiation_d, (void *)&pos0, only1_d, net_radiation_d, tensors.stream));
 
   end = system_clock::now();
@@ -769,15 +770,28 @@ string Products::soil_heat_flux_function()
   float post0038 = 0.0038;
   float neg27315 = -273.15;
   float neg098 = -0.98;
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&post0038, only1_d, (void *)&pos0074, albedo_d, tensor_aux1_d, tensors.stream));
-  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensors.handle, tensors.tensor_plan_trinity_add_mult, (void *)&pos1, surface_temperature_d, (void *)&neg27315, only1_d, (void *)&pos1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
+
+  // tensor_aux2_d = this->ndvi[i] * this->ndvi[i] * this->ndvi[i] * this->ndvi[i];
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, ndvi_d, (void *)&pos1, ndvi_d, tensor_aux2_d, tensors.stream));
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, tensor_aux2_d, (void *)&pos1, tensor_aux2_d, tensor_aux2_d, tensors.stream));
+
+  // tensor_aux2_d = (1 - 0.98 * ndvi_pixel_pow_4);
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, only1_d, (void *)&neg098, tensor_aux2_d, tensor_aux2_d, tensors.stream));
+
+  // tensor_aux1_d = (0.0038 + 0.0074 * this->albedo[i])
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&post0038, only1_d, (void *)&pos0074, albedo_d, tensor_aux1_d, tensors.stream));
+
+  // tensor_aux1_d =  (this->surface_temperature[i] - 273.15) * (0.0038 + 0.0074 * this->albedo[i])
+  HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensors.handle, tensors.tensor_plan_trinity_add_mult, (void *)&pos1, surface_temperature_d, (void *)&neg27315, only1_d, (void *)&pos1, tensor_aux1_d, tensor_aux1_d, tensors.stream));
+  
+  // this->soil_heat[i] = (this->surface_temperature[i] - 273.15) * (0.0038 + 0.0074 * this->albedo[i]) * (1 - 0.98 * ndvi_pixel_pow_4);
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, tensor_aux1_d, (void *)&pos1, tensor_aux2_d, tensor_aux1_d, tensors.stream));
+
+  // this->soil_heat[i] = (this->surface_temperature[i] - 273.15) * (0.0038 + 0.0074 * this->albedo[i]) * (1 - 0.98 * ndvi_pixel_pow_4) * this->net_radiation[i];
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, tensor_aux1_d, (void *)&pos1, net_radiation_d, soil_heat_d, tensors.stream));
+
+  // if (this->soil_heat[i] < 0) this->soil_heat[i] = 0;
   HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_max, (void *)&pos1, soil_heat_d, (void *)&pos0, only1_d, soil_heat_d, tensors.stream));
-  // TODO: treat the values -> soil_heat < 0 and ndvi == 0
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
