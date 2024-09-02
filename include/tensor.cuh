@@ -81,5 +81,11 @@ struct Tensor
      */
     void createPermutation(cutensorPlan_t &plan, cutensorOperator_t OPA);
 
+    /**
+     * Create a cuTENSOR plan.
+     *
+     * @param plan: The cuTENSOR plan.
+     * @param desc: The operation descriptor.
+     */
     void createPlan(cutensorPlan_t &plan, cutensorOperationDescriptor_t desc);
 };
