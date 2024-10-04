@@ -54,7 +54,10 @@ struct Tensor
     cutensorPlan_t tensor_plan_binary_sqtr_add;
     cutensorPlan_t tensor_plan_binary_log_mul;
     cutensorPlan_t tensor_plan_binary_exp_mul;
+    cutensorPlan_t tensor_plan_permute_id;
+    cutensorPlan_t tensor_plan_permute_exp;
     cutensorPlan_t tensor_plan_permute_log;
+    cutensorPlan_t tensor_plan_permute_sqtr;
 
     Tensor();
 
@@ -78,5 +81,11 @@ struct Tensor
      */
     void createPermutation(cutensorPlan_t &plan, cutensorOperator_t OPA);
 
+    /**
+     * Create a cuTENSOR plan.
+     *
+     * @param plan: The cuTENSOR plan.
+     * @param desc: The operation descriptor.
+     */
     void createPlan(cutensorPlan_t &plan, cutensorOperationDescriptor_t desc);
 };

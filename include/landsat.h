@@ -33,15 +33,50 @@ struct Landsat
    */
   Landsat(string bands_paths[], MTL mtl, int threads_num);
 
-  string select_endmembers(int method);
+  /**
+   * @brief  Destructor.
+   */
+  void close();
 
-  string converge_rah_cycle(Station station, int method);
-
+  /**
+   * @brief Compute the initial products.
+   * 
+   * @param  station: Station struct.
+   * @return string with the time spent.
+   */
   string compute_Rn_G(Station station);
 
+  /**
+   * @brief Select the cold and hot endmembers
+   * 
+   * @param  method: Method to select the endmembers.
+   * @return string with the time spent.
+   */
+  string select_endmembers(int method);
+
+  /**
+   * @brief make the rah cycle converge
+   * 
+   * @param  station: Station struct.
+   * @param  method: Method to converge the rah cycle.
+   * 
+   * @return string with the time spent.
+   */
+  string converge_rah_cycle(Station station, int method);
+
+  /**
+   * @brief Compute the final products.
+   * 
+   * @param  station: Station struct.
+   * @return string with the time spent.
+   */
   string compute_H_ET(Station station);
 
+  /**
+   * @brief Save the products.
+   * 
+   * @param  output_path: Path to save the products.
+   * @return string with the time spent.
+   */
   string save_products(string output_path);
-
-  void close();
 };

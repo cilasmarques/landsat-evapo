@@ -584,16 +584,8 @@ string Products::d0_fuction()
 
   for (int i = 0; i < this->height_band * this->width_band; i++)
   {
-    float pai = this->pai[i];
-    float cd1_pai_root = sqrt(CD1 * pai);
-
-    float DISP = HGHT * ((1 - (1 / cd1_pai_root)) + (pow(exp(1.0), -cd1_pai_root) / cd1_pai_root));
-    if (pai < 0)
-    {
-      DISP = 0;
-    }
-
-    this->d0[i] = DISP;
+    float cd1_pai_root = sqrt(CD1 * this->pai[i]);
+    this->d0[i] = HGHT * ((1 - (1 / cd1_pai_root)) + (pow(exp(1.0), -cd1_pai_root) / cd1_pai_root));
   }
 
   end = system_clock::now();

@@ -242,7 +242,7 @@ string Landsat::save_products(string output_path)
   int64_t general_time, initial_time, final_time;
 
   begin = system_clock::now();
-  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();  
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   saveTiff(output_path + "/albedo.tif", products.albedo, height_band, width_band);
   saveTiff(output_path + "/ndvi.tif", products.ndvi, height_band, width_band);
@@ -255,6 +255,11 @@ string Landsat::save_products(string output_path)
   saveTiff(output_path + "/surface_temperature.tif", products.surface_temperature, height_band, width_band);
   saveTiff(output_path + "/net_radiation.tif", products.net_radiation, height_band, width_band);
   saveTiff(output_path + "/soil_heat_flux.tif", products.soil_heat, height_band, width_band);
+  saveTiff(output_path + "/d0.tif", products.d0, height_band, width_band);
+  saveTiff(output_path + "/zom.tif", products.zom, height_band, width_band);
+  saveTiff(output_path + "/ustar.tif", products.ustar, height_band, width_band);
+  saveTiff(output_path + "/kb.tif", products.kb1, height_band, width_band);
+  saveTiff(output_path + "/rah.tif", products.aerodynamic_resistance, height_band, width_band);
   saveTiff(output_path + "/sensible_heat_flux.tif", products.sensible_heat_flux, height_band, width_band);
   saveTiff(output_path + "/latent_heat_flux.tif", products.latent_heat_flux, height_band, width_band);
   saveTiff(output_path + "/net_radiation_24h.tif", products.net_radiation_24h, height_band, width_band);
@@ -267,7 +272,7 @@ string Landsat::save_products(string output_path)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  
+
   return "SERIAL,P5_SAVE_PRODS," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 

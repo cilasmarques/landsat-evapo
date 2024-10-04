@@ -14,8 +14,6 @@
 struct Candidate
 {
   int line, col;
-  int negative_neighbour;
-  float coefficient_variation;
   float aerodynamic_resistance;
   float ndvi, temperature, ustar;
   float net_radiation, soil_heat_flux, ho, zom;
