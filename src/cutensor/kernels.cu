@@ -167,6 +167,52 @@ __global__ void rah_correction_cycle_STEEP(float *surface_temperature_pointer, f
   }
 }
 
+__global__ void rah_correction_cycle_ASEBAL(float *surface_temperature_pointer, float *kb1_pointer, float *zom_pointer, float *ustar_pointer, 
+                                            float *rah_pointer, float *H_pointer, float a, float b, float u200, int height, int width)
+{
+  // Identify 1D position
+  unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Map 1D position to 2D grid
+  unsigned int row = idx / width;
+  unsigned int col = idx % width;
+
+  if (idx < width * height)
+  {
+    unsigned int pos = row * width + col;
+
+    float dT_ini_terra = a + b * (surface_temperature_pointer[pos] - 273.15);
+
+    float sensibleHeatFlux = RHO * SPECIFIC_HEAT_AIR * (dT_ini_terra) / rah_pointer[pos];
+    float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_pointer[pos], 3) * surface_temperature_pointer[pos]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
+
+    float y1 = pow((1 - (16 * 0.1) / L), 0.25);
+    float y2 = pow((1 - (16 * 2) / L), 0.25);
+    float x200 = pow((1 - (16 * 200) / L), 0.25);
+
+    float psi1, psi2, psi200;
+    if (!isnan(L) && L > 0)
+    {
+      psi1 = -5 * (0.1 / L);
+      psi2 = -5 * (2 / L);
+      psi200 = -5 * (2 / L);
+    }
+    else
+    {
+      psi1 = 2 * log((1 + y1 * y1) / 2);
+      psi2 = 2 * log((1 + y2 * y2) / 2);
+      psi200 = 2 * log((1 + x200) / 2) + log((1 + x200 * x200) / 2) - 2 * atan(x200) + 0.5 * M_PI;
+    }
+
+    float ust = (VON_KARMAN * u200) / (log(200 / zom_pointer[pos]) - psi200);
+    float rah = (log(2 / 0.1) - psi2 + psi1) / (ustar_pointer[pos] * VON_KARMAN);
+
+    ustar_pointer[pos] = ust;
+    rah_pointer[pos] = rah;
+    H_pointer[pos] = sensibleHeatFlux;
+  }
+}
+
 // __global__ void invalid_rad_kernel(float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d, float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d, int width, int height)
 // {
 //   unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
