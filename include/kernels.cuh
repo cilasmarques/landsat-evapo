@@ -404,6 +404,23 @@ __global__ void evapotranspiration_kernel(float *net_radiation_24h_d, float *eva
  */
 __global__ void rah_correction_cycle_STEEP(float *surface_temperature_pointer, float *d0_pointer, float *kb1_pointer, float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer, float a, float b, int height, int width);
 
+/**
+ * @brief  Compute the rah correction cycle. (STEEP algorithm)
+ *
+ * @param surface_temperature_pointer  Surface temperature
+ * @param kb1_pointer  KB-1 stability parameter
+ * @param zom_pointer  Roughness length for momentum
+ * @param ustar_pointer  Ustar pointer
+ * @param rah_pointer  Rah pointer
+ * @param H_pointer  Sensible heat flux
+ * @param a  Coefficient a
+ * @param b  Coefficient b
+ * @param u200 U200
+ * @param height  Height of the input data
+ * @param width  Width of the input data
+ */
+__global__ void rah_correction_cycle_ASEBAL(float *surface_temperature_pointer, float *kb1_pointer, float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer, float a, float b, float u200, int height, int width);
+
 // ==============================================
 // Tensor 
 // ==============================================
@@ -430,3 +447,4 @@ __global__ void rah_correction_cycle_STEEP(float *surface_temperature_pointer, f
  * @param height The height of the arrays.
  */
 __global__ void invalid_rad_ref_kernel(float *albedo_d, float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d, float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d, float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d, int width, int height);
+

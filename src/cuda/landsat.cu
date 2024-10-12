@@ -181,6 +181,7 @@ string Landsat::converge_rah_cycle(Station station, int method)
 
   float ustar_station = (VON_KARMAN * station.v6) / (log(station.WIND_SPEED / station.SURFACE_ROUGHNESS));
   float u10 = (ustar_station / VON_KARMAN) * log(10 / station.SURFACE_ROUGHNESS);
+  float u200 = (ustar_station / VON_KARMAN) * log(200 / station.SURFACE_ROUGHNESS);
   float ndvi_min = 1.0;
   float ndvi_max = -1.0;
 
@@ -194,11 +195,19 @@ string Landsat::converge_rah_cycle(Station station, int method)
 
   result += products.d0_fuction();
   result += products.zom_fuction(station.A_ZOM, station.B_ZOM);
-  result += products.ustar_fuction(u10);
+
+  if (method == 0)  // STEEP
+    result += products.ustar_fuction(u10);
+  else              // ASEBAL
+    result += products.ustar_fuction(u200);
+
   result += products.kb_function(ndvi_max, ndvi_min);
   result += products.aerodynamic_resistance_fuction();
 
-  result += products.rah_correction_function_blocks(ndvi_min, ndvi_max, hot_pixel, cold_pixel);
+  if (method == 0)  // STEEP
+    result += products.rah_correction_function_blocks_STEEP(ndvi_min, ndvi_max, hot_pixel, cold_pixel);
+  else              // ASEBAL
+    result += products.rah_correction_function_blocks_ASEBAL(ndvi_min, ndvi_max, hot_pixel, cold_pixel, u200);
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
