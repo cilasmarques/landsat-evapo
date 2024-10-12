@@ -29,8 +29,10 @@ sudo apt-get install libtiff5-dev
     * Build the cuda code
 * exec-landsat*: 
     * Executes the script while generating an Nsight Systems (nsys) report.
-* ncu-landsat*: 
-    * Executes the script with an NVIDIA Compute Profiler (ncu) report.
+* nsys-landsat*:
+    * Executes the script with a NVIDIA System Profiler (nsys) report.
+* ncu-landsat*:
+    * Executes the script with a NVIDIA Compute Profiler (ncu) report.
 * analysis-landsat*: 
     * Performs multiple executions of the script, each time generating an Nsight Systems (nsys) report.
 

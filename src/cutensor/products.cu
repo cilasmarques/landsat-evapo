@@ -1416,11 +1416,6 @@ string Products::rah_correction_function_blocks_STEEP(float ndvi_min, float ndvi
 
     float rah_cold = this->aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
     cold_pixel.setAerodynamicResistance(rah_cold);
-
-    std::cout << "Old rah" << hot_pixel_aerodynamic << std::endl;
-    std::cout << "New rah" << hot_pixel.aerodynamic_resistance << std::endl;
-    std::cout << "Difference" << fabs(1 - hot_pixel.aerodynamic_resistance / hot_pixel_aerodynamic) << std::endl;
-
   }
 
   return "CUDACORE,RAH_CYCLE," + std::to_string(general_time_core) + "," + std::to_string(initial_time_core) + "," + std::to_string(final_time_core) + "\n";
@@ -1492,12 +1487,8 @@ string Products::rah_correction_function_blocks_ASEBAL(float ndvi_min, float ndv
 
     if (i > 0 && fabs(1 - rah_ini_pq_terra / rah_hot) < 0.05)
       break;
-    else {
+    else 
       i++;
-      std::cout << "Old rah" << hot_pixel_aerodynamic << std::endl;
-      std::cout << "New rah" << hot_pixel.aerodynamic_resistance << std::endl;
-      std::cout << "Difference" << fabs(1 - hot_pixel.aerodynamic_resistance / hot_pixel_aerodynamic) << std::endl;
-    }
   }
 
   return "CUDACORE,RAH_CYCLE," + std::to_string(general_time_core) + "," + std::to_string(initial_time_core) + "," + std::to_string(final_time_core) + "\n";

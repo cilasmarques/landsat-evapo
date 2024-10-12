@@ -6,10 +6,10 @@
 #include "constants.h"
 #include "parameters.h"
 
-/** 
+/**
  * @brief Main function
  * This function is responsible for reading the input parameters and calling the Landsat class to process the products.
- * 
+ *
  * @param argc Number of input parameters
  * @param argv Input parameters
  *              - INPUT_BAND_BLUE_INDEX         = 1;
@@ -25,46 +25,48 @@
  *              - INPUT_LAND_COVER_INDEX        = 11;
  *              - OUTPUT_FOLDER                 = 12;
  * @return int
-*/
+ */
 int main(int argc, char *argv[])
 {
-  int INPUT_BAND_ELEV_INDEX    = 8;
-  int INPUT_MTL_DATA_INDEX     = 9;
+  int INPUT_BAND_ELEV_INDEX = 8;
+  int INPUT_MTL_DATA_INDEX = 9;
   int INPUT_STATION_DATA_INDEX = 10;
-  int OUTPUT_FOLDER            = 11;
-  int METHOD_INDEX             = 12;
-  int THREADS_INDEX            = 13;
+  int OUTPUT_FOLDER = 11;
+  int METHOD_INDEX = 12;
+  int THREADS_INDEX = 13;
 
+  // Load the meteorologic stations data
   string path_meta_file = argv[INPUT_MTL_DATA_INDEX];
   string station_data_path = argv[INPUT_STATION_DATA_INDEX];
 
-  // load bands paths
+  // Load the landsat images bands
   string bands_paths[INPUT_BAND_ELEV_INDEX];
-  for (int i = 0; i < INPUT_BAND_ELEV_INDEX; i++) {
-    bands_paths[i] = argv[i+1];
+  for (int i = 0; i < INPUT_BAND_ELEV_INDEX; i++)
+  {
+    bands_paths[i] = argv[i + 1];
   }
 
-  // load selected method 
+  // Load the SEB model (SEBAL or STEEP)
   int method = 0;
-  if(argc >= METHOD_INDEX){
+  if (argc >= METHOD_INDEX)
+  {
     string flag = argv[METHOD_INDEX];
-    if(flag.substr(0, 6) == "-meth=")
+    if (flag.substr(0, 6) == "-meth=")
       method = flag[6] - '0';
   }
 
-  // load threads number
-  int threads_num = 1;
-  if(argc >= THREADS_INDEX){
+  // Load the number of threads for each block
+  int threads_num = 1024;
+  if (argc >= THREADS_INDEX)
+  {
     string threads_flag = argv[THREADS_INDEX];
-    if(threads_flag.substr(0,9) == "-threads=")
+    if (threads_flag.substr(0, 9) == "-threads=")
       threads_num = atof(threads_flag.substr(9, threads_flag.size()).c_str());
   }
 
-  // load output folder
+  // Save output paths
   string output_folder = argv[OUTPUT_FOLDER];
-  string output_time = output_folder + "/time.csv";  
-  string output_metadata = output_folder + "/metadata.txt";
-  string output_products = output_folder + "/products.txt";
+  string output_time = output_folder + "/time.csv";
 
   // =====  START + TIME OUTPUT =====
   MTL mtl = MTL(path_meta_file);
@@ -86,6 +88,7 @@ int main(int argc, char *argv[])
   time_output << landsat.converge_rah_cycle(station, method);
   time_output << landsat.compute_H_ET(station);
   time_output << landsat.save_products(output_folder);
+  // time_output << landsat.print_products(output_folder);
 
   end = system_clock::now();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();

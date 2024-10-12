@@ -913,7 +913,7 @@ string Products::rah_correction_function_serial_ASEBAL(float ndvi_min, float ndv
     begin_core = system_clock::now();
     initial_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    rah_correction_cycle_ASEBAL(0, height_band, width_band, a, b, surface_temperature,
+    rah_correction_kernel_ASEBAL(0, height_band, width_band, a, b, surface_temperature,
                                zom, kb1, sensible_heat_flux, ustar, u200,
                                aerodynamic_resistance);
 
@@ -977,7 +977,7 @@ string Products::rah_correction_function_serial_STEEP(float ndvi_min, float ndvi
     begin_core = system_clock::now();
     initial_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    rah_correction_cycle_STEEP(0, height_band, width_band, a, b, surface_temperature,
+    rah_correction_kernel_STEEP(0, height_band, width_band, a, b, surface_temperature,
                                d0, zom, kb1, sensible_heat_flux, ustar,
                                aerodynamic_resistance);
 

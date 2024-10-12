@@ -1,7 +1,6 @@
-## ==== Dependencies
-GCC=g++
-NVCC=nvcc
+## -arch=sm_86 ==== Dependencies
 CXXFLAGS=-std=c++14 -ltiff
+NVCCFLAGS=-lcutensor -rdc=true 
 
 ## ==== Download and preprocessing
 DOCKER_OUTPUT_PATH=/home/saps/output
@@ -30,23 +29,17 @@ clean:
 clean-all:
 	rm -rf $(OUTPUT_DATA_PATH)/*
 
-clean-nvidia:
-	rm -rf $(OUTPUT_DATA_PATH)/nvidia/*
-
-clean-analysis:
-	rm -rf $(OUTPUT_DATA_PATH)/analysis/*
-
 clean-images:
 	rm -rf $(IMAGES_DIR)/*
 
 build-cpp:
-	$(GCC) -I./include -g ./src/cpp/*.cpp -o ./src/main $(CXXFLAGS)
+	g++ -I./include -g ./src/cpp/*.cpp -o ./src/main $(CXXFLAGS)
 
-build-nvcc:
-	$(NVCC) -arch=sm_86 -I./include -g ./src/cuda/*.cu -o ./src/main $(CXXFLAGS) -lcutensor -rdc=true
+build-cores:
+	nvcc -arch=sm_86 -I./include -g ./src/cores/*.cu -o ./src/main $(CXXFLAGS) $(NVCCFLAGS)
 
 build-tensor:
-	$(NVCC) -arch=sm_86 -I./include -g ./src/cutensor/*.cu -o ./src/main $(CXXFLAGS) -lcutensor -rdc=true
+	nvcc -arch=sm_86 -I./include -g ./src/cutensor/*.cu -o ./src/main $(CXXFLAGS) $(NVCCFLAGS)
 
 fix-permissions:
 	sudo chmod -R 755 $(INPUT_DATA_PATH)/*
