@@ -877,10 +877,75 @@ string Products::evapotranspiration_function()
   return "SERIAL,EVAPOTRANSPIRATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::rah_correction_function_serial(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
+string Products::rah_correction_function_serial_ASEBAL(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel, float u200)
 {
   system_clock::time_point begin_core, end_core;
   int64_t general_time_core, initial_time_core, final_time_core;
+
+  float hot_pixel_aerodynamic = aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
+  hot_pixel.setAerodynamicResistance(hot_pixel_aerodynamic);
+
+  float cold_pixel_aerodynamic = aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
+  cold_pixel.setAerodynamicResistance(cold_pixel_aerodynamic);
+
+  float fc_hot = 1 - pow((ndvi[hot_pixel.line * width_band + hot_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+  float fc_cold = 1 - pow((ndvi[cold_pixel.line * width_band + cold_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+
+  int i = 0;
+  while (true) 
+  {      
+    this->rah_ini_pq_terra = hot_pixel.aerodynamic_resistance;
+    this->rah_ini_pf_terra = cold_pixel.aerodynamic_resistance;
+
+    float LEc_terra = 0.55 * fc_hot * (hot_pixel.net_radiation - hot_pixel.soil_heat_flux) * 0.78;
+    float LEc_terra_pf = 1.75 * fc_cold * (cold_pixel.net_radiation - cold_pixel.soil_heat_flux) * 0.78;
+
+    this->H_pf_terra = cold_pixel.net_radiation - cold_pixel.soil_heat_flux - LEc_terra_pf;
+    float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
+
+    this->H_pq_terra = hot_pixel.net_radiation - hot_pixel.soil_heat_flux - LEc_terra;
+    float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
+
+    float b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
+    float a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
+
+    // ==== Paralelization core
+    begin_core = system_clock::now();
+    initial_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+    rah_correction_cycle_ASEBAL(0, height_band, width_band, a, b, surface_temperature,
+                               zom, kb1, sensible_heat_flux, ustar, u200,
+                               aerodynamic_resistance);
+
+    end_core = system_clock::now();
+    general_time_core = duration_cast<nanoseconds>(end_core - begin_core).count();
+    final_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    // ==== Paralelization core
+
+    float rah_hot = this->aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
+    hot_pixel.setAerodynamicResistance(rah_hot);
+
+    float rah_cold = this->aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
+    cold_pixel.setAerodynamicResistance(rah_cold);
+
+    if (i > 0 && fabs(1 - rah_ini_pq_terra / rah_hot) < 0.05)
+      break;
+    else 
+      i++;
+  }
+
+  return "SERIAL,RAH_CYCLE," + std::to_string(general_time_core) + "," + std::to_string(initial_time_core) + "," + std::to_string(final_time_core) + "\n";
+}
+
+string Products::rah_correction_function_serial_STEEP(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
+{
+  system_clock::time_point begin_core, end_core;
+  int64_t general_time_core, initial_time_core, final_time_core;
+
+  // ==== Threads setup
+  int lines_per_thread = height_band / threads_num;
+  thread threads[threads_num];
+  // ==== Threads setup
 
   float hot_pixel_aerodynamic = aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
   hot_pixel.setAerodynamicResistance(hot_pixel_aerodynamic);
@@ -929,72 +994,4 @@ string Products::rah_correction_function_serial(float ndvi_min, float ndvi_max, 
   }
 
   return "SERIAL,RAH_CYCLE," + std::to_string(general_time_core) + "," + std::to_string(initial_time_core) + "," + std::to_string(final_time_core) + "\n";
-}
-
-string Products::rah_correction_function_threads(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
-{
-  system_clock::time_point begin_core, end_core;
-  int64_t general_time_core, initial_time_core, final_time_core;
-
-  // ==== Threads setup
-  int lines_per_thread = height_band / threads_num;
-  thread threads[threads_num];
-  // ==== Threads setup
-
-  float hot_pixel_aerodynamic = aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
-  hot_pixel.setAerodynamicResistance(hot_pixel_aerodynamic);
-
-  float cold_pixel_aerodynamic = aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
-  cold_pixel.setAerodynamicResistance(cold_pixel_aerodynamic);
-
-  float fc_hot = 1 - pow((ndvi[hot_pixel.line * width_band + hot_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
-  float fc_cold = 1 - pow((ndvi[cold_pixel.line * width_band + cold_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
-
-  for (int i = 0; i < 2; i++)
-  {
-    this->rah_ini_pq_terra = hot_pixel.aerodynamic_resistance;
-    this->rah_ini_pf_terra = cold_pixel.aerodynamic_resistance;
-
-    float LEc_terra = 0.55 * fc_hot * (hot_pixel.net_radiation - hot_pixel.soil_heat_flux) * 0.78;
-    float LEc_terra_pf = 1.75 * fc_cold * (cold_pixel.net_radiation - cold_pixel.soil_heat_flux) * 0.78;
-
-    this->H_pf_terra = cold_pixel.net_radiation - cold_pixel.soil_heat_flux - LEc_terra_pf;
-    float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
-
-    this->H_pq_terra = hot_pixel.net_radiation - hot_pixel.soil_heat_flux - LEc_terra;
-    float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
-
-    float b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
-    float a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
-
-    // ==== Paralelization core
-    begin_core = system_clock::now();
-    initial_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-    for (int j = 0; j < threads_num; j++)
-    {
-      int start_line = j * lines_per_thread;
-      int end_line = (j == threads_num - 1) ? height_band : (j + 1) * lines_per_thread;
-      threads[j] = thread(rah_correction_cycle_STEEP, start_line, end_line,
-                          width_band, a, b, surface_temperature,
-                          d0, zom, kb1, sensible_heat_flux, ustar,
-                          aerodynamic_resistance);
-    }
-
-    for (int j = 0; j < threads_num; j++)
-      threads[j].join();
-
-    end_core = system_clock::now();
-    general_time_core = duration_cast<nanoseconds>(end_core - begin_core).count();
-    final_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-    // ==== Paralelization core
-
-    float rah_hot = this->aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
-    hot_pixel.setAerodynamicResistance(rah_hot);
-
-    float rah_cold = this->aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
-    cold_pixel.setAerodynamicResistance(rah_cold);
-  }
-
-  return "THREADS,RAH_CYCLE," + std::to_string(general_time_core) + "," + std::to_string(initial_time_core) + "," + std::to_string(final_time_core) + "\n";
 }

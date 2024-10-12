@@ -278,7 +278,18 @@ struct Products
    * @param  cold_pixel: Cold pixel.
    * @return  string: Time message.
    */
-  string rah_correction_function_serial(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
+  string rah_correction_function_serial_STEEP(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
+
+  /**
+   * @brief  The  aerodynamic resistance convergence is computed.
+   * @param  ndvi_min: Minimum NDVI.
+   * @param  ndvi_max: Maximum NDVI.
+   * @param  hot_pixel: Hot pixel.
+   * @param  cold_pixel: Cold pixel.
+   * @param  u200: U200 parameter.
+   * @return  string: Time message.
+   */
+  string rah_correction_function_serial_ASEBAL(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel, float u200);
 
   /**
    * @brief  The  aerodynamic resistance convergence is computed.
@@ -288,7 +299,8 @@ struct Products
    * @param  cold_pixel: Cold pixel.
    * @return  string: Time message.
    */
-  string rah_correction_function_threads(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
+  string rah_correction_function_blocks_STEEP(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
+
 
   /**
    * @brief  The  aerodynamic resistance convergence is computed.
@@ -296,9 +308,10 @@ struct Products
    * @param  ndvi_max: Maximum NDVI.
    * @param  hot_pixel: Hot pixel.
    * @param  cold_pixel: Cold pixel.
+   * @param  u200: U200 parameter.
    * @return  string: Time message.
    */
-  string rah_correction_function_blocks(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
+  string rah_correction_function_blocks_ASEBAL(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel, float u200);
 
   // ==============================================
   // Tensor

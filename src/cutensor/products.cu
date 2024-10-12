@@ -1354,7 +1354,7 @@ string Products::evapotranspiration_function()
   return "CUTENSOR,EVAPOTRANSPIRATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::rah_correction_function_blocks(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
+string Products::rah_correction_function_blocks_STEEP(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
 {
   system_clock::time_point begin_core, end_core;
   int64_t general_time_core, initial_time_core, final_time_core;
@@ -1416,6 +1416,88 @@ string Products::rah_correction_function_blocks(float ndvi_min, float ndvi_max, 
 
     float rah_cold = this->aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
     cold_pixel.setAerodynamicResistance(rah_cold);
+
+    std::cout << "Old rah" << hot_pixel_aerodynamic << std::endl;
+    std::cout << "New rah" << hot_pixel.aerodynamic_resistance << std::endl;
+    std::cout << "Difference" << fabs(1 - hot_pixel.aerodynamic_resistance / hot_pixel_aerodynamic) << std::endl;
+
+  }
+
+  return "CUDACORE,RAH_CYCLE," + std::to_string(general_time_core) + "," + std::to_string(initial_time_core) + "," + std::to_string(final_time_core) + "\n";
+}
+
+string Products::rah_correction_function_blocks_ASEBAL(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel, float u200)
+{
+  system_clock::time_point begin_core, end_core;
+  int64_t general_time_core, initial_time_core, final_time_core;
+
+  // ========= CUDA Setup
+  int dev = 0;
+  cudaDeviceProp deviceProp;
+  HANDLE_ERROR(cudaGetDeviceProperties(&deviceProp, dev));
+  HANDLE_ERROR(cudaSetDevice(dev));
+
+  int threads_per_block = threads_num;
+  int num_blocks = ceil(width_band * height_band / threads_per_block);
+
+  float hot_pixel_aerodynamic = aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
+  hot_pixel.setAerodynamicResistance(hot_pixel_aerodynamic);
+
+  float cold_pixel_aerodynamic = aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
+  cold_pixel.setAerodynamicResistance(cold_pixel_aerodynamic);
+
+  float fc_hot = 1 - pow((ndvi[hot_pixel.line * width_band + hot_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+  float fc_cold = 1 - pow((ndvi[cold_pixel.line * width_band + cold_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+
+  int i = 0;
+  while (true)
+  {
+    this->rah_ini_pq_terra = hot_pixel.aerodynamic_resistance;
+    this->rah_ini_pf_terra = cold_pixel.aerodynamic_resistance;
+
+    float LEc_terra = 0.55 * fc_hot * (hot_pixel.net_radiation - hot_pixel.soil_heat_flux) * 0.78;
+    float LEc_terra_pf = 1.75 * fc_cold * (cold_pixel.net_radiation - cold_pixel.soil_heat_flux) * 0.78;
+
+    this->H_pf_terra = cold_pixel.net_radiation - cold_pixel.soil_heat_flux - LEc_terra_pf;
+    float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
+
+    this->H_pq_terra = hot_pixel.net_radiation - hot_pixel.soil_heat_flux - LEc_terra;
+    float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
+
+    float b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
+    float a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
+
+    // ==== Paralelization core
+    begin_core = system_clock::now();
+    initial_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+    rah_correction_cycle_ASEBAL<<<num_blocks, threads_per_block>>>(surface_temperature_d, kb1_d, zom_d, ustar_d, rah_d, sensible_heat_flux_d, a, b, u200, height_band, width_band);
+    HANDLE_ERROR(cudaDeviceSynchronize());
+    HANDLE_ERROR(cudaGetLastError());
+
+    end_core = system_clock::now();
+    general_time_core = duration_cast<nanoseconds>(end_core - begin_core).count();
+    final_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    // ====
+
+    HANDLE_ERROR(cudaMemcpy(ustar, ustar_d, nBytes_band, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(aerodynamic_resistance, rah_d, nBytes_band, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(sensible_heat_flux, sensible_heat_flux_d, nBytes_band, cudaMemcpyDeviceToHost));
+
+    float rah_hot = this->aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
+    hot_pixel.setAerodynamicResistance(rah_hot);
+
+    float rah_cold = this->aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
+    cold_pixel.setAerodynamicResistance(rah_cold);
+
+    if (i > 0 && fabs(1 - rah_ini_pq_terra / rah_hot) < 0.05)
+      break;
+    else {
+      i++;
+      std::cout << "Old rah" << hot_pixel_aerodynamic << std::endl;
+      std::cout << "New rah" << hot_pixel.aerodynamic_resistance << std::endl;
+      std::cout << "Difference" << fabs(1 - hot_pixel.aerodynamic_resistance / hot_pixel_aerodynamic) << std::endl;
+    }
   }
 
   return "CUDACORE,RAH_CYCLE," + std::to_string(general_time_core) + "," + std::to_string(initial_time_core) + "," + std::to_string(final_time_core) + "\n";
