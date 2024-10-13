@@ -420,31 +420,3 @@ __global__ void rah_correction_cycle_STEEP(float *surface_temperature_pointer, f
  * @param width  Width of the input data
  */
 __global__ void rah_correction_cycle_ASEBAL(float *surface_temperature_pointer, float *kb1_pointer, float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer, float a, float b, float u200, int height, int width);
-
-// ==============================================
-// Tensor 
-// ==============================================
-
-/**
- * @brief Set the invalid values of the radiance, reflectance and albedo to NaN.
- *
- * @param albedo_d The albedo array.
- * @param radiance_blue_d The blue radiance array.
- * @param radiance_green_d The green radiance array.
- * @param radiance_red_d The red radiance array.
- * @param radiance_nir_d The NIR radiance array.
- * @param radiance_swir1_d The SWIR1 radiance array.
- * @param radiance_termal_d The termal radiance array.
- * @param radiance_swir2_d The SWIR2 radiance array.
- * @param reflectance_blue_d The blue reflectance array.
- * @param reflectance_green_d The green reflectance array.
- * @param reflectance_red_d The red reflectance array.
- * @param reflectance_nir_d The NIR reflectance array.
- * @param reflectance_swir1_d The SWIR1 reflectance array.
- * @param reflectance_termal_d The termal reflectance array.
- * @param reflectance_swir2_d The SWIR2 reflectance array.
- * @param width The width of the arrays.
- * @param height The height of the arrays.
- */
-__global__ void invalid_rad_ref_kernel(float *albedo_d, float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d, float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d, float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d, int width, int height);
-

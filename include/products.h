@@ -5,10 +5,6 @@
 #include "constants.h"
 #include "parameters.h"
 
-#ifdef __CUDACC__
-#include "tensor.cuh"
-#endif
-
 /**
  * @brief  Struct to manage the products calculation.
  */
@@ -278,29 +274,7 @@ struct Products
    * @param  cold_pixel: Cold pixel.
    * @return  string: Time message.
    */
-  string rah_correction_function_serial_STEEP(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
-
-  /**
-   * @brief  The  aerodynamic resistance convergence is computed.
-   * @param  ndvi_min: Minimum NDVI.
-   * @param  ndvi_max: Maximum NDVI.
-   * @param  hot_pixel: Hot pixel.
-   * @param  cold_pixel: Cold pixel.
-   * @param  u200: U200 parameter.
-   * @return  string: Time message.
-   */
-  string rah_correction_function_serial_ASEBAL(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel, float u200);
-
-  /**
-   * @brief  The  aerodynamic resistance convergence is computed.
-   * @param  ndvi_min: Minimum NDVI.
-   * @param  ndvi_max: Maximum NDVI.
-   * @param  hot_pixel: Hot pixel.
-   * @param  cold_pixel: Cold pixel.
-   * @return  string: Time message.
-   */
   string rah_correction_function_blocks_STEEP(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
-
 
   /**
    * @brief  The  aerodynamic resistance convergence is computed.
@@ -312,26 +286,4 @@ struct Products
    * @return  string: Time message.
    */
   string rah_correction_function_blocks_ASEBAL(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel, float u200);
-
-  // ==============================================
-  // Tensor
-  // ==============================================
-#ifdef __CUDACC__
-  Tensor tensors;
-
-  // general aux pointers
-  float *only1, *only1_d;
-  float *tensor_aux1_d, *tensor_aux2_d, *tensor_aux3_d, *tensor_aux4_d;
-
-  // kb1 aux pointers
-  float *beta_d, *nec_terra_d, *kb1_fst_part_d, *kb1_sec_part_d, *kb1s_d, *fc_d, *fs_d, *fspow_d, *fcpow_d;
-
-  // rah aux pointers
-  float *L_d, *psi2_d, *psi200_d;
-
-  /**
-   * @brief Set the invalid values of the radiance, reflectance and albedo to NaN.
-   */
-  string invalid_rad_ref_function();
-#endif
 };

@@ -23,15 +23,13 @@ sudo apt-get install libtiff5-dev
     * Preprocesses the Landsat image to ensure it's in the correct format for script input.
 * fix-permissions: 
     * Adjusts the access permissions of Landsat images to ensure they are readable by the program.
-* build-cpp:
-    * Build the cpp code
-* build-nvcc:
+* build-cores:
     * Build the cuda code
 * exec-landsat*: 
     * Executes the script while generating an Nsight Systems (nsys) report.
 * nsys-landsat*:
     * Executes the script with a NVIDIA System Profiler (nsys) report.
-* ncu-landsat*:
+* ncu-landsat*: 
     * Executes the script with a NVIDIA Compute Profiler (ncu) report.
 * analysis-landsat*: 
     * Performs multiple executions of the script, each time generating an Nsight Systems (nsys) report.

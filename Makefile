@@ -1,7 +1,3 @@
-## -arch=sm_86 ==== Dependencies
-CXXFLAGS=-std=c++14 -ltiff
-NVCCFLAGS=-lcutensor -rdc=true 
-
 ## ==== Download and preprocessing
 DOCKER_OUTPUT_PATH=/home/saps/output
 IMAGES_DIR=./input
@@ -21,7 +17,7 @@ IMAGE_DATE="2017-05-11"
 METHOD=0
 THREADS=1024
 OUTPUT_DATA_PATH=./output
-INPUT_DATA_PATH=$(IMAGES_DIR)/$(IMAGE_LANDSAT)_$(IMAGE_PATHROW)_$(IMAGE_DATE)/small
+INPUT_DATA_PATH=$(IMAGES_DIR)/$(IMAGE_LANDSAT)_$(IMAGE_PATHROW)_$(IMAGE_DATE)/120x120
 
 clean:
 	rm $(OUTPUT_DATA_PATH)/*
@@ -29,17 +25,8 @@ clean:
 clean-all:
 	rm -rf $(OUTPUT_DATA_PATH)/*
 
-clean-images:
-	rm -rf $(IMAGES_DIR)/*
-
-build-cpp:
-	g++ -I./include -g ./src/cpp/*.cpp -o ./src/main $(CXXFLAGS)
-
 build-cores:
-	nvcc -arch=sm_86 -I./include -g ./src/cores/*.cu -o ./src/main $(CXXFLAGS) $(NVCCFLAGS)
-
-build-tensor:
-	nvcc -arch=sm_86 -I./include -g ./src/cutensor/*.cu -o ./src/main $(CXXFLAGS) $(NVCCFLAGS)
+	nvcc -arch=sm_86 -I ./include -g ./src/*.cu -o ./main -std=c++14 -ltiff -lcutensor -rdc=true
 
 fix-permissions:
 	sudo chmod -R 755 $(INPUT_DATA_PATH)/*

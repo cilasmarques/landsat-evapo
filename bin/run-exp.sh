@@ -6,7 +6,7 @@ cd -P -- "$parent_dir"
 
 OUTPUT_DATA_PATH=./output
 
-./src/main "$@" &
+./main "$@" &
 
 PID=$!
 
