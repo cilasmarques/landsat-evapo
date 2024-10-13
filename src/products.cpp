@@ -877,7 +877,7 @@ string Products::evapotranspiration_function()
   return "SERIAL,EVAPOTRANSPIRATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::rah_correction_function_serial_ASEBAL(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel, float u200)
+string Products::rah_correction_function_ASEBAL(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel, float u200)
 {
   system_clock::time_point begin_core, end_core;
   int64_t general_time_core, initial_time_core, final_time_core;
@@ -937,7 +937,7 @@ string Products::rah_correction_function_serial_ASEBAL(float ndvi_min, float ndv
   return "SERIAL,RAH_CYCLE," + std::to_string(general_time_core) + "," + std::to_string(initial_time_core) + "," + std::to_string(final_time_core) + "\n";
 }
 
-string Products::rah_correction_function_serial_STEEP(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
+string Products::rah_correction_function_STEEP(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
 {
   system_clock::time_point begin_core, end_core;
   int64_t general_time_core, initial_time_core, final_time_core;

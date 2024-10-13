@@ -83,15 +83,6 @@ struct Products
   float *evapotranspiration_24h;
   float *evapotranspiration;
 
-  float *band_blue_d, *band_green_d, *band_red_d, *band_nir_d, *band_swir1_d, *band_termal_d, *band_swir2_d;
-  float *radiance_blue_d, *radiance_green_d, *radiance_red_d, *radiance_nir_d, *radiance_swir1_d, *radiance_termal_d, *radiance_swir2_d;
-  float *reflectance_blue_d, *reflectance_green_d, *reflectance_red_d, *reflectance_nir_d, *reflectance_swir1_d, *reflectance_termal_d, *reflectance_swir2_d;
-
-  float *tal_d, *albedo_d, *ndvi_d, *pai_d, *savi_d, *lai_d, *evi_d;
-  float *enb_d, *eo_d, *ea_d, *short_wave_radiation_d, *large_wave_radiation_surface_d, *large_wave_radiation_atmosphere_d;
-  float *soil_heat_d, *surface_temperature_d, *net_radiation_d, *d0_d, *kb1_d, *zom_d, *ustar_d, *rah_d, *sensible_heat_flux_d;
-  float *latent_heat_flux_d, *net_radiation_24h_d, *evapotranspiration_fraction_d, *sensible_heat_flux_24h_d, *latent_heat_flux_24h_d, *evapotranspiration_24h_d, *evapotranspiration_d;
-
   /**
    * @brief  Constructor.
    */
@@ -278,7 +269,7 @@ struct Products
    * @param  cold_pixel: Cold pixel.
    * @return  string: Time message.
    */
-  string rah_correction_function_serial_STEEP(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
+  string rah_correction_function_STEEP(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
 
   /**
    * @brief  The  aerodynamic resistance convergence is computed.
@@ -289,49 +280,5 @@ struct Products
    * @param  u200: U200 parameter.
    * @return  string: Time message.
    */
-  string rah_correction_function_serial_ASEBAL(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel, float u200);
-
-  /**
-   * @brief  The  aerodynamic resistance convergence is computed.
-   * @param  ndvi_min: Minimum NDVI.
-   * @param  ndvi_max: Maximum NDVI.
-   * @param  hot_pixel: Hot pixel.
-   * @param  cold_pixel: Cold pixel.
-   * @return  string: Time message.
-   */
-  string rah_correction_function_blocks_STEEP(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
-
-
-  /**
-   * @brief  The  aerodynamic resistance convergence is computed.
-   * @param  ndvi_min: Minimum NDVI.
-   * @param  ndvi_max: Maximum NDVI.
-   * @param  hot_pixel: Hot pixel.
-   * @param  cold_pixel: Cold pixel.
-   * @param  u200: U200 parameter.
-   * @return  string: Time message.
-   */
-  string rah_correction_function_blocks_ASEBAL(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel, float u200);
-
-  // ==============================================
-  // Tensor
-  // ==============================================
-#ifdef __CUDACC__
-  Tensor tensors;
-
-  // general aux pointers
-  float *only1, *only1_d;
-  float *tensor_aux1_d, *tensor_aux2_d, *tensor_aux3_d, *tensor_aux4_d;
-
-  // kb1 aux pointers
-  float *beta_d, *nec_terra_d, *kb1_fst_part_d, *kb1_sec_part_d, *kb1s_d, *fc_d, *fs_d, *fspow_d, *fcpow_d;
-
-  // rah aux pointers
-  float *L_d, *psi2_d, *psi200_d;
-
-  /**
-   * @brief Set the invalid values of the radiance, reflectance and albedo to NaN.
-   */
-  string invalid_rad_ref_function();
-#endif
+  string rah_correction_function_ASEBAL(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel, float u200);
 };

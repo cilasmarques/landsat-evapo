@@ -2,11 +2,6 @@
 
 #include "utils.h"
 
-#ifdef __CUDACC__
-#define CUDA_HOSTDEV __host__ __device__
-#else
-#define CUDA_HOSTDEV
-#endif
 
 /**
  * @brief  Struct representing a hot or cold pixel candidate.
@@ -21,7 +16,7 @@ struct Candidate
   /**
    * @brief  Empty constructor, all attributes are initialized with 0.
    */
-  CUDA_HOSTDEV Candidate();
+  Candidate();
 
   /**
    * @brief  Constructor with initialization values to attributes.
@@ -33,7 +28,7 @@ struct Candidate
    * @param  line: Pixel's line on TIFF.
    * @param  col: Pixel's column on TIFF.
    */
-  CUDA_HOSTDEV Candidate(float ndvi, float temperature, float net_radiation, float soil_heat_flux, float ho, int line, int col);
+  Candidate(float ndvi, float temperature, float net_radiation, float soil_heat_flux, float ho, int line, int col);
 
   /**
    * @brief  Update Pixel's aerodynamic resistance for a new value.

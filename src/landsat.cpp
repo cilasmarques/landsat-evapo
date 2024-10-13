@@ -1,5 +1,4 @@
 #include "landsat.h"
-#include "cuda_utils.h"
 
 Landsat::Landsat(string bands_paths[], MTL mtl, int threads_num)
 {
@@ -87,15 +86,6 @@ Landsat::Landsat(string bands_paths[], MTL mtl, int threads_num)
     }
     _TIFFfree(band_line_buff);
   }
-
-  HANDLE_ERROR(cudaMemcpy(this->products.band_blue_d, this->products.band_blue, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
-  HANDLE_ERROR(cudaMemcpy(this->products.band_green_d, this->products.band_green, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
-  HANDLE_ERROR(cudaMemcpy(this->products.band_red_d, this->products.band_red, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
-  HANDLE_ERROR(cudaMemcpy(this->products.band_nir_d, this->products.band_nir, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
-  HANDLE_ERROR(cudaMemcpy(this->products.band_swir1_d, this->products.band_swir1, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
-  HANDLE_ERROR(cudaMemcpy(this->products.band_termal_d, this->products.band_termal, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
-  HANDLE_ERROR(cudaMemcpy(this->products.band_swir2_d, this->products.band_swir2, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
-  HANDLE_ERROR(cudaMemcpy(this->products.tal_d, this->products.tal, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
 };
 
 string Landsat::compute_Rn_G(Station station)
@@ -135,7 +125,7 @@ string Landsat::compute_Rn_G(Station station)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  result += "GPU_CORES,P1_INITIAL_PROD," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  result += "SERIAL,P1_INITIAL_PROD," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   return result;
 }
 
@@ -149,19 +139,13 @@ string Landsat::select_endmembers(int method)
 
   if (method == 0)
   { // STEEP
-    pair<Candidate, Candidate> pixels = getEndmembersSTEPP(products.ndvi, products.ndvi_d, products.surface_temperature, products.surface_temperature_d,
-                                                           products.albedo, products.albedo_d, products.net_radiation, products.net_radiation_d,
-                                                           products.soil_heat, products.soil_heat_d, products.blocks_num, products.threads_num,
-                                                           height_band, width_band);
+    pair<Candidate, Candidate> pixels = getEndmembersSTEPP(products.ndvi, products.surface_temperature, products.albedo, products.net_radiation, products.soil_heat, height_band, width_band);
     hot_pixel = pixels.first;
     cold_pixel = pixels.second;
   }
   else if (method == 1)
   { // ASEBAL
-    pair<Candidate, Candidate> pixels = getEndmembersASEBAL(products.ndvi, products.ndvi_d, products.surface_temperature, products.surface_temperature_d,
-                                                           products.albedo, products.albedo_d, products.net_radiation, products.net_radiation_d,
-                                                           products.soil_heat, products.soil_heat_d, products.blocks_num, products.threads_num,
-                                                           height_band, width_band);
+    pair<Candidate, Candidate> pixels = getEndmembersASEBAL(products.ndvi, products.surface_temperature, products.albedo, products.net_radiation, products.soil_heat, height_band, width_band);
     hot_pixel = pixels.first;
     cold_pixel = pixels.second;
   }
@@ -170,7 +154,7 @@ string Landsat::select_endmembers(int method)
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  return "GPU_CORES,P2_PIXEL_SEL," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "SERIAL,P2_PIXEL_SEL," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
 string Landsat::converge_rah_cycle(Station station, int method)
@@ -208,15 +192,15 @@ string Landsat::converge_rah_cycle(Station station, int method)
   result += products.aerodynamic_resistance_fuction();
 
   if (method == 0)  // STEEP
-    result += products.rah_correction_function_blocks_STEEP(ndvi_min, ndvi_max, hot_pixel, cold_pixel);
+    result += products.rah_correction_function_STEEP(ndvi_min, ndvi_max, hot_pixel, cold_pixel);
   else              // ASEBAL
-    result += products.rah_correction_function_blocks_ASEBAL(ndvi_min, ndvi_max, hot_pixel, cold_pixel, u200);
+    result += products.rah_correction_function_ASEBAL(ndvi_min, ndvi_max, hot_pixel, cold_pixel, u200);
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  result += "GPU_CORES,P3_RAH," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  result += "SERIAL,P3_RAH," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   return result;
 };
 
@@ -254,7 +238,7 @@ string Landsat::compute_H_ET(Station station)
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  result += "GPU_CORES,P4_FINAL_PROD," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  result += "SERIAL,P4_FINAL_PROD," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   return result;
 };
 
@@ -393,7 +377,7 @@ string Landsat::print_products(string output_path)
 
 void Landsat::close()
 {
-  for (int i = 1; i < 8; i++)
+  for (int i = 0; i < 8; i++)
   {
     TIFFClose(this->bands_resampled[i]);
   }
