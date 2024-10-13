@@ -6,7 +6,7 @@ cd -P -- "$parent_dir"
 
 OUTPUT_DATA_PATH=./output
 
-sudo ncu --target-processes all --set full -o ./$OUTPUT_DATA_PATH/ncu ./src/main "$@" &
+sudo ncu --target-processes all --set full -o ./$OUTPUT_DATA_PATH/ncu ./main "$@" &
 
 PID=$!
 
