@@ -40,7 +40,7 @@ struct Landsat
 
   /**
    * @brief Compute the initial products.
-   * 
+   *
    * @param  station: Station struct.
    * @return string with the time spent.
    */
@@ -48,7 +48,7 @@ struct Landsat
 
   /**
    * @brief Select the cold and hot endmembers
-   * 
+   *
    * @param  method: Method to select the endmembers.
    * @return string with the time spent.
    */
@@ -56,17 +56,17 @@ struct Landsat
 
   /**
    * @brief make the rah cycle converge
-   * 
+   *
    * @param  station: Station struct.
    * @param  method: Method to converge the rah cycle.
-   * 
+   *
    * @return string with the time spent.
    */
   string converge_rah_cycle(Station station, int method);
 
   /**
    * @brief Compute the final products.
-   * 
+   *
    * @param  station: Station struct.
    * @return string with the time spent.
    */
@@ -74,9 +74,17 @@ struct Landsat
 
   /**
    * @brief Save the products.
-   * 
+   *
    * @param  output_path: Path to save the products.
    * @return string with the time spent.
    */
   string save_products(string output_path);
+
+  /**
+   * @brief Print the products.
+   *
+   * @param  output_path: Path to save the products.
+   * @return string with the time spent.
+   */
+  string print_products(string output_path);
 };

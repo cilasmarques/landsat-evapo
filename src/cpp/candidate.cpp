@@ -1,6 +1,6 @@
 #include "candidate.h"
 
-CUDA_HOSTDEV Candidate::Candidate()
+Candidate::Candidate()
 {
   this->ndvi = 0;
   this->temperature = 0;
@@ -13,7 +13,7 @@ CUDA_HOSTDEV Candidate::Candidate()
   this->ustar = 0;
 }
 
-CUDA_HOSTDEV Candidate::Candidate(float ndvi, float temperature, float net_radiation, float soil_heat_flux, float ho, int line, int col)
+Candidate::Candidate(float ndvi, float temperature, float net_radiation, float soil_heat_flux, float ho, int line, int col)
 {
   this->ndvi = ndvi;
   this->temperature = temperature;
