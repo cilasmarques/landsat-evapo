@@ -6,31 +6,45 @@ cd -P -- "$parent_dir"
 
 OUTPUT_DATA_PATH=./output
 
-for i in $(seq -f "%02g" 1 30); do
+for i in $(seq -f "%02g" 1 10); do
   ./main "$@" &
 
   PID=$!
 
   sh ./scripts/collect-cpu-usage.sh $PID > $OUTPUT_DATA_PATH/cpu.csv &
   sh ./scripts/collect-memory-usage.sh $PID > $OUTPUT_DATA_PATH/mem.csv &
-  sh ./scripts/collect-disk-usage.sh $PID > $OUTPUT_DATA_PATH/disk.csv &
   sh ./scripts/collect-gpu-usage.sh $PID > $OUTPUT_DATA_PATH/gpu.csv &
   sh ./scripts/collect-gpu-memory-usage.sh $PID > $OUTPUT_DATA_PATH/mem-gpu.csv &
 
   wait $PID
 
-  kill $(pidof -s collect-cpu-usage.sh)
-  kill $(pidof -s collect-memory-usage.sh)
-  kill $(pidof -s collect-disk-usage.sh)
-  kill $(pidof -s collect-gpu-usage.sh)
-  kill $(pidof -s collect-gpu-memory-usage.sh)
+  # Kill the collect-cpu-usage.sh script if it is running
+  if pid=$(pidof -s collect-cpu-usage.sh); then
+      kill "$pid"
+  fi
+
+  # Kill the collect-memory-usage.sh script if it is running
+  if pid=$(pidof -s collect-memory-usage.sh); then
+      kill "$pid"
+  fi
+
+  # Kill the collect-gpu-usage.sh script if it is running
+  if pid=$(pidof -s collect-gpu-usage.sh); then
+      kill "$pid"
+  fi
+
+  # Kill the collect-gpu-memory-usage.sh script if it is running
+  if pid=$(pidof -s collect-gpu-memory-usage.sh); then
+      kill "$pid"
+  fi
 
   THREADS_NUM=`echo "$@" | grep -oP '(?<=-threads=)[0-9]+'`
   ANALYSIS_OUTPUT_PATH=$OUTPUT_DATA_PATH/analysis-$THREADS_NUM
-  
+
+  echo "experiment${i}"
+
   mkdir -p $ANALYSIS_OUTPUT_PATH/experiment${i}
   mv $OUTPUT_DATA_PATH/*.csv $ANALYSIS_OUTPUT_PATH/experiment${i}
-  mv $OUTPUT_DATA_PATH/*.txt $ANALYSIS_OUTPUT_PATH/experiment${i}
 
   sleep 1
 done

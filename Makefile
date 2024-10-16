@@ -52,7 +52,7 @@ docker-landsat-preprocess:
 exec-landsat8:
 	./bin/run-exp.sh \
 		$(INPUT_DATA_PATH)/B2.TIF $(INPUT_DATA_PATH)/B3.TIF $(INPUT_DATA_PATH)/B4.TIF \
-		$(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF $(INPUT_DATA_PATH)/B10.TIF \
+		$(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF $(INPUT_DATA_PATH)/B.TIF \
 		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
 		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
 		-meth=$(METHOD) -threads=$(THREADS) & 
