@@ -36,7 +36,12 @@ __global__ void filter_valid_values(const float *target, float *filtered, int he
  * @param height_band The height of the target arrays.
  * @param width_band The width of the target arrays.
  */
-__global__ void process_pixels(Candidate *hotCandidates, Candidate *coldCandidates, int *d_indexes,
+__global__ void process_pixels_STEEP(Candidate *hotCandidates, Candidate *coldCandidates, int *d_indexes,
                                float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, float *ho,
                                float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh,
                                float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh, int height_band, int width_band);
+
+__global__ void process_pixels_ASEBAL(Candidate *hotCandidates, Candidate *coldCandidates, int *d_indexes,
+                               float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, float *ho,
+                               float ndvi1stQuartile, float ndvi4stQuartile, float ts1stQuartile, float ts3stQuartile,
+                               float albedo2ndQuartile, float albedo3rdQuartile, int height_band, int width_band);

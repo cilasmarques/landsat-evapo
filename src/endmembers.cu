@@ -77,7 +77,7 @@ pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float 
   get_quartiles_cuda(d_albedo, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
   get_quartiles_cuda(d_surface_temperature, tsQuartile.data(), height_band, width_band, 0.20, 0.85, 0.97, blocks_num, threads_num);
 
-  process_pixels<<<blocks_num, threads_num>>>(d_hotCandidates, d_coldCandidates, d_indexes,
+  process_pixels_STEEP<<<blocks_num, threads_num>>>(d_hotCandidates, d_coldCandidates, d_indexes,
                                               d_ndvi, d_surface_temperature, d_albedo, d_net_radiation, d_soil_heat, d_ho,
                                               ndviQuartile[0], ndviQuartile[1], tsQuartile[0], tsQuartile[1], tsQuartile[2],
                                               albedoQuartile[0], albedoQuartile[1], albedoQuartile[2], height_band, width_band);
@@ -135,14 +135,14 @@ pair<Candidate, Candidate> getEndmembersASEBAL(float *ndvi, float *d_ndvi, float
   vector<float> tsQuartile(3);
   vector<float> ndviQuartile(3);
   vector<float> albedoQuartile(3);
-  get_quartiles_cuda(d_ndvi, ndviQuartile.data(), height_band, width_band, 0.25, 0.75, 0.75, blocks_num, threads_num);
+  get_quartiles_cuda(d_ndvi, ndviQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
   get_quartiles_cuda(d_albedo, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
-  get_quartiles_cuda(d_surface_temperature, tsQuartile.data(), height_band, width_band, 0.25, 0.75, 0.75, blocks_num, threads_num);
+  get_quartiles_cuda(d_surface_temperature, tsQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
 
-  process_pixels<<<blocks_num, threads_num>>>(d_hotCandidates, d_coldCandidates, d_indexes,
+  process_pixels_ASEBAL<<<blocks_num, threads_num>>>(d_hotCandidates, d_coldCandidates, d_indexes,
                                               d_ndvi, d_surface_temperature, d_albedo, d_net_radiation, d_soil_heat, d_ho,
-                                              ndviQuartile[0], ndviQuartile[1], tsQuartile[0], tsQuartile[1], tsQuartile[2],
-                                              albedoQuartile[0], albedoQuartile[1], albedoQuartile[2], height_band, width_band);
+                                              ndviQuartile[0], ndviQuartile[2], tsQuartile[1], tsQuartile[0],
+                                              albedoQuartile[1], albedoQuartile[1], height_band, width_band);
 
   HANDLE_ERROR(cudaDeviceSynchronize());
   HANDLE_ERROR(cudaGetLastError());
