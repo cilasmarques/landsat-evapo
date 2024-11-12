@@ -6,7 +6,7 @@ cd -P -- "$parent_dir"
 
 OUTPUT_DATA_PATH=./output
 
-for i in $(seq -f "%02g" 1 10); do
+for i in $(seq -f "%02g" 1 110); do
   ./main "$@" &
 
   PID=$!

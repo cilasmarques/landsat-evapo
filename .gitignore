@@ -1,6 +1,9 @@
 #io data
 nvidia/*
 output/*
+output-cpp/*
+output-cores/*
+output-cutensor/*
 input/*
 analysis/*
 __untrack__/*
