@@ -143,7 +143,6 @@ pair<Candidate, Candidate> getEndmembersASEBAL(float *ndvi, float *d_ndvi, float
                                               d_ndvi, d_surface_temperature, d_albedo, d_net_radiation, d_soil_heat, d_ho,
                                               ndviQuartile[0], ndviQuartile[2], tsQuartile[1], tsQuartile[0],
                                               albedoQuartile[1], albedoQuartile[1], height_band, width_band);
-
   HANDLE_ERROR(cudaDeviceSynchronize());
   HANDLE_ERROR(cudaGetLastError());
 
