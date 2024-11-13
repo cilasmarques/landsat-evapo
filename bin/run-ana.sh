@@ -6,7 +6,7 @@ cd -P -- "$parent_dir"
 
 OUTPUT_DATA_PATH=./output
 
-for i in $(seq -f "%02g" 1 110); do
+for i in $(seq -f "%02g" 1 30); do
   ./main "$@" &
 
   PID=$!
@@ -40,11 +40,10 @@ for i in $(seq -f "%02g" 1 110); do
 
   THREADS_NUM=`echo "$@" | grep -oP '(?<=-threads=)[0-9]+'`
   ANALYSIS_OUTPUT_PATH=$OUTPUT_DATA_PATH/analysis-$THREADS_NUM
-
-  echo "experiment${i}"
-
+  
   mkdir -p $ANALYSIS_OUTPUT_PATH/experiment${i}
   mv $OUTPUT_DATA_PATH/*.csv $ANALYSIS_OUTPUT_PATH/experiment${i}
+  mv $OUTPUT_DATA_PATH/*.txt $ANALYSIS_OUTPUT_PATH/experiment${i}
 
   sleep 1
 done
