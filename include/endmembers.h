@@ -37,14 +37,16 @@ void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int
  * @param d_soil_heat: Soil heat flux vector in device.
  * @param blocks_num: Number of blocks.
  * @param threads_num: Number of threads.
+ * @param hot_pixel: Hot pixel pointer.
+ * @param cold_pixel: Cold pixel pointer.
  * @param height_band: Band height.
  * @param width_band: Band width.
  *
  * @retval Candidate
  */
-pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float *surface_temperature, float *d_surface_temperature, float *albedo, float *d_albedo,
-                                              float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat,
-                                              int blocks_num, int threads_num, int height_band, int width_band);
+string getEndmembersSTEEP(float *ndvi, float *d_ndvi, float *surface_temperature, float *d_surface_temperature, float *albedo, float *d_albedo,
+                           float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat, int blocks_num, int threads_num,
+                           Candidate &hot_pixel, Candidate &cold_pixel, int height_band, int width_band);
 
 /**
  * @brief Get the hot pixel based on the STEPP algorithm. GPU version.
@@ -61,11 +63,13 @@ pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float 
  * @param d_soil_heat: Soil heat flux vector in device.
  * @param blocks_num: Number of blocks.
  * @param threads_num: Number of threads.
+ * @param hot_pixel: Hot pixel pointer.
+ * @param cold_pixel: Cold pixel pointer.
  * @param height_band: Band height.
  * @param width_band: Band width.
  *
  * @retval Candidate
  */
-pair<Candidate, Candidate> getEndmembersASEBAL(float *ndvi, float *d_ndvi, float *surface_temperature, float *d_surface_temperature, float *albedo, float *d_albedo,
-                                              float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat,
-                                              int blocks_num, int threads_num, int height_band, int width_band);
+string getEndmembersASEBAL(float *ndvi, float *d_ndvi, float *surface_temperature, float *d_surface_temperature, float *albedo, float *d_albedo,
+                           float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat, int blocks_num, int threads_num,
+                           Candidate &hot_pixel, Candidate &cold_pixel, int height_band, int width_band);

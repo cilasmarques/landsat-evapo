@@ -36,20 +36,16 @@ void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int
   cudaFree(d_indexes);
 }
 
-pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float *surface_temperature, float *d_surface_temperature, float *albedo, float *d_albedo,
-                                              float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat,
-                                              int blocks_num, int threads_num, int height_band, int width_band)
+string getEndmembersSTEEP(float *ndvi, float *d_ndvi, float *surface_temperature, float *d_surface_temperature, float *albedo, float *d_albedo,
+                          float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat, int blocks_num, int threads_num,
+                          Candidate &hot_pixel, Candidate &cold_pixel, int height_band, int width_band)
 {
-  const size_t MAXC = sizeof(Candidate) * height_band * width_band;
+  string result = "";
+  system_clock::time_point begin, end;
+  float general_time, initial_time, final_time;
 
-  float *d_ho;
-  int *d_indexes;
   Candidate *d_hotCandidates, *d_coldCandidates;
-  cudaMalloc((void **)&d_ho, sizeof(float) * height_band * width_band);
-
-  int indexes[2] = {0, 0};
-  cudaMalloc((void **)&d_indexes, sizeof(int) * 2);
-  cudaMemcpy(d_indexes, indexes, sizeof(int) * 2, cudaMemcpyHostToDevice);
+  const size_t MAXC = sizeof(Candidate) * height_band * width_band;
 
   cudaError_t err;
   err = cudaMalloc((void **)&d_hotCandidates, MAXC);
@@ -66,6 +62,14 @@ pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float 
     // Handle the error appropriately
   }
 
+  float *d_ho;
+  cudaMalloc((void **)&d_ho, sizeof(float) * height_band * width_band);
+
+  int *d_indexes;
+  int indexes[2] = {0, 0};
+  cudaMalloc((void **)&d_indexes, sizeof(int) * 2);
+  cudaMemcpy(d_indexes, indexes, sizeof(int) * 2, cudaMemcpyHostToDevice);
+
   Candidate *hotCandidates, *coldCandidates;
   hotCandidates = (Candidate *)malloc(MAXC);
   coldCandidates = (Candidate *)malloc(MAXC);
@@ -73,45 +77,61 @@ pair<Candidate, Candidate> getEndmembersSTEPP(float *ndvi, float *d_ndvi, float 
   vector<float> tsQuartile(3);
   vector<float> ndviQuartile(3);
   vector<float> albedoQuartile(3);
-  get_quartiles_cuda(d_ndvi, ndviQuartile.data(), height_band, width_band, 0.15, 0.97, 0.97, blocks_num, threads_num);
-  get_quartiles_cuda(d_albedo, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
-  get_quartiles_cuda(d_surface_temperature, tsQuartile.data(), height_band, width_band, 0.20, 0.85, 0.97, blocks_num, threads_num);
 
-  process_pixels_STEEP<<<blocks_num, threads_num>>>(d_hotCandidates, d_coldCandidates, d_indexes,
-                                              d_ndvi, d_surface_temperature, d_albedo, d_net_radiation, d_soil_heat, d_ho,
-                                              ndviQuartile[0], ndviQuartile[1], tsQuartile[0], tsQuartile[1], tsQuartile[2],
-                                              albedoQuartile[0], albedoQuartile[1], albedoQuartile[2], height_band, width_band);
+  try
+  {
+    begin = system_clock::now();
+    initial_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 
-  HANDLE_ERROR(cudaDeviceSynchronize());
-  HANDLE_ERROR(cudaGetLastError());
+    get_quartiles_cuda(d_ndvi, ndviQuartile.data(), height_band, width_band, 0.15, 0.97, 0.97, blocks_num, threads_num);
+    get_quartiles_cuda(d_albedo, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
+    get_quartiles_cuda(d_surface_temperature, tsQuartile.data(), height_band, width_band, 0.20, 0.85, 0.97, blocks_num, threads_num);
 
-  cudaMemcpy(&indexes, d_indexes, sizeof(int) * 2, cudaMemcpyDeviceToHost);
-  cudaMemcpy(hotCandidates, d_hotCandidates, sizeof(Candidate) * indexes[0], cudaMemcpyDeviceToHost);
-  cudaMemcpy(coldCandidates, d_coldCandidates, sizeof(Candidate) * indexes[1], cudaMemcpyDeviceToHost);
+    process_pixels_STEEP<<<blocks_num, threads_num>>>(d_hotCandidates, d_coldCandidates, d_indexes,
+                                                      d_ndvi, d_surface_temperature, d_albedo, d_net_radiation, d_soil_heat, d_ho,
+                                                      ndviQuartile[0], ndviQuartile[1], tsQuartile[0], tsQuartile[1], tsQuartile[2],
+                                                      albedoQuartile[0], albedoQuartile[1], albedoQuartile[2], height_band, width_band);
 
-  std::sort(hotCandidates, hotCandidates + indexes[0], compare_candidate_temperature);
-  std::sort(coldCandidates, coldCandidates + indexes[1], compare_candidate_temperature);
+    HANDLE_ERROR(cudaDeviceSynchronize());
+    HANDLE_ERROR(cudaGetLastError());
 
-  unsigned int hotPos = static_cast<unsigned int>(std::floor(indexes[0] * 0.5));
-  unsigned int coldPos = static_cast<unsigned int>(std::floor(indexes[1] * 0.5));
+    end = system_clock::now();
+    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
+    final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    result += "KERNELS,PIXEL_FILTER," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  return {hotCandidates[hotPos], coldCandidates[coldPos]};
+    cudaMemcpy(&indexes, d_indexes, sizeof(int) * 2, cudaMemcpyDeviceToHost);
+    cudaMemcpy(hotCandidates, d_hotCandidates, sizeof(Candidate) * indexes[0], cudaMemcpyDeviceToHost);
+    cudaMemcpy(coldCandidates, d_coldCandidates, sizeof(Candidate) * indexes[1], cudaMemcpyDeviceToHost);
+
+    std::sort(hotCandidates, hotCandidates + indexes[0], compare_candidate_temperature);
+    std::sort(coldCandidates, coldCandidates + indexes[1], compare_candidate_temperature);
+
+    unsigned int hotPos = static_cast<unsigned int>(std::floor(indexes[0] * 0.5));
+    unsigned int coldPos = static_cast<unsigned int>(std::floor(indexes[1] * 0.5));
+
+    hot_pixel = hotCandidates[hotPos];
+    cold_pixel = coldCandidates[coldPos];
+  }
+  catch (const std::exception &e)
+  {
+    cerr << "Pixel filtering error: " << e.what() << endl;
+    exit(15);
+  }
+
+  return result;
 }
 
-pair<Candidate, Candidate> getEndmembersASEBAL(float *ndvi, float *d_ndvi, float *surface_temperature, float *d_surface_temperature, float *albedo, float *d_albedo,
-                                              float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat,
-                                              int blocks_num, int threads_num, int height_band, int width_band)
+string getEndmembersASEBAL(float *ndvi, float *d_ndvi, float *surface_temperature, float *d_surface_temperature, float *albedo, float *d_albedo,
+                           float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat, int blocks_num, int threads_num,
+                           Candidate &hot_pixel, Candidate &cold_pixel, int height_band, int width_band)
 {
-  const size_t MAXC = sizeof(Candidate) * height_band * width_band;
+  string result = "";
+  system_clock::time_point begin, end;
+  float general_time, initial_time, final_time;
 
-  float *d_ho;
-  int *d_indexes;
   Candidate *d_hotCandidates, *d_coldCandidates;
-  cudaMalloc((void **)&d_ho, sizeof(float) * height_band * width_band);
-
-  int indexes[2] = {0, 0};
-  cudaMalloc((void **)&d_indexes, sizeof(int) * 2);
-  cudaMemcpy(d_indexes, indexes, sizeof(int) * 2, cudaMemcpyHostToDevice);
+  const size_t MAXC = sizeof(Candidate) * height_band * width_band;
 
   cudaError_t err;
   err = cudaMalloc((void **)&d_hotCandidates, MAXC);
@@ -128,6 +148,14 @@ pair<Candidate, Candidate> getEndmembersASEBAL(float *ndvi, float *d_ndvi, float
     // Handle the error appropriately
   }
 
+  float *d_ho;
+  cudaMalloc((void **)&d_ho, sizeof(float) * height_band * width_band);
+
+  int *d_indexes;
+  int indexes[2] = {0, 0};
+  cudaMalloc((void **)&d_indexes, sizeof(int) * 2);
+  cudaMemcpy(d_indexes, indexes, sizeof(int) * 2, cudaMemcpyHostToDevice);
+
   Candidate *hotCandidates, *coldCandidates;
   hotCandidates = (Candidate *)malloc(MAXC);
   coldCandidates = (Candidate *)malloc(MAXC);
@@ -135,26 +163,46 @@ pair<Candidate, Candidate> getEndmembersASEBAL(float *ndvi, float *d_ndvi, float
   vector<float> tsQuartile(3);
   vector<float> ndviQuartile(3);
   vector<float> albedoQuartile(3);
-  get_quartiles_cuda(d_ndvi, ndviQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
-  get_quartiles_cuda(d_albedo, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
-  get_quartiles_cuda(d_surface_temperature, tsQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
 
-  process_pixels_ASEBAL<<<blocks_num, threads_num>>>(d_hotCandidates, d_coldCandidates, d_indexes,
-                                              d_ndvi, d_surface_temperature, d_albedo, d_net_radiation, d_soil_heat, d_ho,
-                                              ndviQuartile[0], ndviQuartile[2], tsQuartile[1], tsQuartile[0],
-                                              albedoQuartile[1], albedoQuartile[1], height_band, width_band);
-  HANDLE_ERROR(cudaDeviceSynchronize());
-  HANDLE_ERROR(cudaGetLastError());
+  try
+  {
+    begin = system_clock::now();
+    initial_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 
-  cudaMemcpy(&indexes, d_indexes, sizeof(int) * 2, cudaMemcpyDeviceToHost);
-  cudaMemcpy(hotCandidates, d_hotCandidates, sizeof(Candidate) * indexes[0], cudaMemcpyDeviceToHost);
-  cudaMemcpy(coldCandidates, d_coldCandidates, sizeof(Candidate) * indexes[1], cudaMemcpyDeviceToHost);
+    get_quartiles_cuda(d_ndvi, ndviQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
+    get_quartiles_cuda(d_albedo, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
+    get_quartiles_cuda(d_surface_temperature, tsQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
 
-  std::sort(hotCandidates, hotCandidates + indexes[0], compare_candidate_temperature);
-  std::sort(coldCandidates, coldCandidates + indexes[1], compare_candidate_temperature);
+    process_pixels_ASEBAL<<<blocks_num, threads_num>>>(d_hotCandidates, d_coldCandidates, d_indexes,
+                                                       d_ndvi, d_surface_temperature, d_albedo, d_net_radiation, d_soil_heat, d_ho,
+                                                       ndviQuartile[0], ndviQuartile[2], tsQuartile[1], tsQuartile[0],
+                                                       albedoQuartile[1], albedoQuartile[1], height_band, width_band);
+    HANDLE_ERROR(cudaDeviceSynchronize());
+    HANDLE_ERROR(cudaGetLastError());
 
-  unsigned int hotPos = static_cast<unsigned int>(std::floor(indexes[0] * 0.5));
-  unsigned int coldPos = static_cast<unsigned int>(std::floor(indexes[1] * 0.5));
+    end = system_clock::now();
+    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
+    final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    result += "KERNELS,PIXEL_FILTER," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  return {hotCandidates[hotPos], coldCandidates[coldPos]};
+    cudaMemcpy(&indexes, d_indexes, sizeof(int) * 2, cudaMemcpyDeviceToHost);
+    cudaMemcpy(hotCandidates, d_hotCandidates, sizeof(Candidate) * indexes[0], cudaMemcpyDeviceToHost);
+    cudaMemcpy(coldCandidates, d_coldCandidates, sizeof(Candidate) * indexes[1], cudaMemcpyDeviceToHost);
+
+    std::sort(hotCandidates, hotCandidates + indexes[0], compare_candidate_temperature);
+    std::sort(coldCandidates, coldCandidates + indexes[1], compare_candidate_temperature);
+
+    unsigned int hotPos = static_cast<unsigned int>(std::floor(indexes[0] * 0.5));
+    unsigned int coldPos = static_cast<unsigned int>(std::floor(indexes[1] * 0.5));
+
+    hot_pixel = hotCandidates[hotPos];
+    cold_pixel = coldCandidates[coldPos];
+  }
+  catch (const std::exception &e)
+  {
+    cerr << "Pixel filtering error: " << e.what() << endl;
+    exit(15);
+  }
+
+  return result;
 }

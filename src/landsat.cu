@@ -141,6 +141,7 @@ string Landsat::compute_Rn_G(Station station)
 
 string Landsat::select_endmembers(int method)
 {
+  string result = "";
   system_clock::time_point begin, end;
   int64_t general_time, initial_time, final_time;
 
@@ -149,28 +150,25 @@ string Landsat::select_endmembers(int method)
 
   if (method == 0)
   { // STEEP
-    pair<Candidate, Candidate> pixels = getEndmembersSTEPP(products.ndvi, products.ndvi_d, products.surface_temperature, products.surface_temperature_d,
+    result += getEndmembersSTEEP(products.ndvi, products.ndvi_d, products.surface_temperature, products.surface_temperature_d,
                                                            products.albedo, products.albedo_d, products.net_radiation, products.net_radiation_d,
                                                            products.soil_heat, products.soil_heat_d, products.blocks_num, products.threads_num,
-                                                           height_band, width_band);
-    hot_pixel = pixels.first;
-    cold_pixel = pixels.second;
+                                                           hot_pixel, cold_pixel, height_band, width_band);
   }
   else if (method == 1)
   { // ASEBAL
-    pair<Candidate, Candidate> pixels = getEndmembersASEBAL(products.ndvi, products.ndvi_d, products.surface_temperature, products.surface_temperature_d,
+    result += getEndmembersASEBAL(products.ndvi, products.ndvi_d, products.surface_temperature, products.surface_temperature_d,
                                                            products.albedo, products.albedo_d, products.net_radiation, products.net_radiation_d,
                                                            products.soil_heat, products.soil_heat_d, products.blocks_num, products.threads_num,
-                                                           height_band, width_band);
-    hot_pixel = pixels.first;
-    cold_pixel = pixels.second;
+                                                           hot_pixel, cold_pixel, height_band, width_band);
   }
 
   end = system_clock::now();
   general_time = duration_cast<nanoseconds>(end - begin).count();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  result += "GPU_CORES,P2_PIXEL_SEL," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-  return "GPU_CORES,P2_PIXEL_SEL," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return result;
 }
 
 string Landsat::converge_rah_cycle(Station station, int method)
