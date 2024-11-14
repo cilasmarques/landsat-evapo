@@ -102,7 +102,8 @@ string Landsat::compute_Rn_G(Station station)
 {
   string result = "";
   system_clock::time_point begin, end;
-  int64_t general_time, initial_time, final_time;
+  float general_time;
+  int64_t initial_time, final_time;
 
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
@@ -133,9 +134,9 @@ string Landsat::compute_Rn_G(Station station)
   result += products.soil_heat_flux_function();
 
   end = system_clock::now();
-  general_time = duration_cast<nanoseconds>(end - begin).count();
+  general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  result += "GPU_CORES,P1_INITIAL_PROD," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  result += "KERNELS,P1_INITIAL_PROD," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   return result;
 }
 
@@ -143,7 +144,8 @@ string Landsat::select_endmembers(int method)
 {
   string result = "";
   system_clock::time_point begin, end;
-  int64_t general_time, initial_time, final_time;
+  float general_time;
+  int64_t initial_time, final_time;
 
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
@@ -151,22 +153,22 @@ string Landsat::select_endmembers(int method)
   if (method == 0)
   { // STEEP
     result += getEndmembersSTEEP(products.ndvi, products.ndvi_d, products.surface_temperature, products.surface_temperature_d,
-                                                           products.albedo, products.albedo_d, products.net_radiation, products.net_radiation_d,
-                                                           products.soil_heat, products.soil_heat_d, products.blocks_num, products.threads_num,
-                                                           hot_pixel, cold_pixel, height_band, width_band);
+                                 products.albedo, products.albedo_d, products.net_radiation, products.net_radiation_d,
+                                 products.soil_heat, products.soil_heat_d, products.blocks_num, products.threads_num,
+                                 hot_pixel, cold_pixel, height_band, width_band);
   }
   else if (method == 1)
   { // ASEBAL
     result += getEndmembersASEBAL(products.ndvi, products.ndvi_d, products.surface_temperature, products.surface_temperature_d,
-                                                           products.albedo, products.albedo_d, products.net_radiation, products.net_radiation_d,
-                                                           products.soil_heat, products.soil_heat_d, products.blocks_num, products.threads_num,
-                                                           hot_pixel, cold_pixel, height_band, width_band);
+                                  products.albedo, products.albedo_d, products.net_radiation, products.net_radiation_d,
+                                  products.soil_heat, products.soil_heat_d, products.blocks_num, products.threads_num,
+                                  hot_pixel, cold_pixel, height_band, width_band);
   }
 
   end = system_clock::now();
-  general_time = duration_cast<nanoseconds>(end - begin).count();
+  general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  result += "GPU_CORES,P2_PIXEL_SEL," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  result += "KERNELS,P2_PIXEL_SEL," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
   return result;
 }
@@ -175,7 +177,8 @@ string Landsat::converge_rah_cycle(Station station, int method)
 {
   string result = "";
   system_clock::time_point begin, end;
-  int64_t general_time, initial_time, final_time;
+  float general_time;
+  int64_t initial_time, final_time;
 
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
@@ -197,24 +200,24 @@ string Landsat::converge_rah_cycle(Station station, int method)
   result += products.d0_fuction();
   result += products.zom_fuction(station.A_ZOM, station.B_ZOM);
 
-  if (method == 0)  // STEEP
+  if (method == 0) // STEEP
     result += products.ustar_fuction(u10);
-  else              // ASEBAL
+  else // ASEBAL
     result += products.ustar_fuction(u200);
 
   result += products.kb_function(ndvi_max, ndvi_min);
   result += products.aerodynamic_resistance_fuction();
 
-  if (method == 0)  // STEEP
+  if (method == 0) // STEEP
     result += products.rah_correction_function_blocks_STEEP(ndvi_min, ndvi_max, hot_pixel, cold_pixel);
-  else              // ASEBAL
+  else // ASEBAL
     result += products.rah_correction_function_blocks_ASEBAL(ndvi_min, ndvi_max, hot_pixel, cold_pixel, u200);
 
   end = system_clock::now();
-  general_time = duration_cast<nanoseconds>(end - begin).count();
+  general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  result += "GPU_CORES,P3_RAH," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  result += "KERNELS,P3_RAH," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   return result;
 };
 
@@ -222,7 +225,8 @@ string Landsat::compute_H_ET(Station station)
 {
   string result = "";
   system_clock::time_point begin, end;
-  int64_t general_time, initial_time, final_time;
+  float general_time;
+  int64_t initial_time, final_time;
 
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
@@ -250,16 +254,17 @@ string Landsat::compute_H_ET(Station station)
   result += products.evapotranspiration_function();
 
   end = system_clock::now();
-  general_time = duration_cast<nanoseconds>(end - begin).count();
+  general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  result += "GPU_CORES,P4_FINAL_PROD," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  result += "KERNELS,P4_FINAL_PROD," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   return result;
 };
 
 string Landsat::save_products(string output_path)
 {
   system_clock::time_point begin, end;
-  int64_t general_time, initial_time, final_time;
+  float general_time;
+  int64_t initial_time, final_time;
 
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
@@ -290,7 +295,7 @@ string Landsat::save_products(string output_path)
   saveTiff(output_path + "/evapotranspiration.tif", products.evapotranspiration, height_band, width_band);
 
   end = system_clock::now();
-  general_time = duration_cast<nanoseconds>(end - begin).count();
+  general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "SERIAL,P5_SAVE_PRODS," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
@@ -299,16 +304,17 @@ string Landsat::save_products(string output_path)
 string Landsat::print_products(string output_path)
 {
   system_clock::time_point begin, end;
-  int64_t general_time, initial_time, final_time;
+  float general_time;
+  int64_t initial_time, final_time;
 
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   // redirect the stdout to a file]
   std::ofstream
-  out(output_path + "/products.txt");
-  std::streambuf *coutbuf = std::cout.rdbuf(); 
-  std::cout.rdbuf(out.rdbuf()); 
+      out(output_path + "/products.txt");
+  std::streambuf *coutbuf = std::cout.rdbuf();
+  std::cout.rdbuf(out.rdbuf());
 
   std::cout << "==== Albedo" << std::endl;
   printLinearPointer(products.albedo, height_band, width_band);
@@ -383,7 +389,7 @@ string Landsat::print_products(string output_path)
   printLinearPointer(products.evapotranspiration, height_band, width_band);
 
   end = system_clock::now();
-  general_time = duration_cast<nanoseconds>(end - begin).count();
+  general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "SERIAL,P6_STDOUT_PRODS," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";

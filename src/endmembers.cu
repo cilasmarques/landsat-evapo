@@ -81,7 +81,7 @@ string getEndmembersSTEEP(float *ndvi, float *d_ndvi, float *surface_temperature
   try
   {
     begin = system_clock::now();
-    initial_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     get_quartiles_cuda(d_ndvi, ndviQuartile.data(), height_band, width_band, 0.15, 0.97, 0.97, blocks_num, threads_num);
     get_quartiles_cuda(d_albedo, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
@@ -97,7 +97,7 @@ string getEndmembersSTEEP(float *ndvi, float *d_ndvi, float *surface_temperature
 
     end = system_clock::now();
     general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
-    final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     result += "KERNELS,PIXEL_FILTER," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
     cudaMemcpy(&indexes, d_indexes, sizeof(int) * 2, cudaMemcpyDeviceToHost);
@@ -167,7 +167,7 @@ string getEndmembersASEBAL(float *ndvi, float *d_ndvi, float *surface_temperatur
   try
   {
     begin = system_clock::now();
-    initial_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     get_quartiles_cuda(d_ndvi, ndviQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
     get_quartiles_cuda(d_albedo, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
@@ -182,7 +182,7 @@ string getEndmembersASEBAL(float *ndvi, float *d_ndvi, float *surface_temperatur
 
     end = system_clock::now();
     general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
-    final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     result += "KERNELS,PIXEL_FILTER," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
     cudaMemcpy(&indexes, d_indexes, sizeof(int) * 2, cudaMemcpyDeviceToHost);
