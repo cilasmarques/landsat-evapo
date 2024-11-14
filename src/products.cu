@@ -266,7 +266,7 @@ string Products::radiance_function(MTL mtl)
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,RADIANCE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
@@ -299,7 +299,7 @@ string Products::reflectance_function(MTL mtl)
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,REFLECTANCE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
@@ -323,7 +323,7 @@ string Products::albedo_function(MTL mtl)
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,ALBEDO," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
@@ -346,7 +346,7 @@ string Products::ndvi_function()
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,NDVI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -369,7 +369,7 @@ string Products::pai_function()
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,PAI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -392,7 +392,7 @@ string Products::lai_function()
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,LAI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -415,7 +415,7 @@ string Products::evi_function()
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,EVI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -438,7 +438,7 @@ string Products::enb_emissivity_function()
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,ENB_EMISSIVITY," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -461,7 +461,7 @@ string Products::eo_emissivity_function()
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,EO_EMISSIVITY," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -484,7 +484,7 @@ string Products::ea_emissivity_function()
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,EA_EMISSIVITY," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -530,7 +530,7 @@ string Products::surface_temperature_function(MTL mtl)
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,SURFACE_TEMPERATURE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -553,7 +553,7 @@ string Products::short_wave_radiation_function(MTL mtl)
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,SHORT_WAVE_RADIATION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -576,7 +576,7 @@ string Products::large_wave_radiation_surface_function()
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,LARGE_WAVE_RADIATION_SURFACE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -599,7 +599,7 @@ string Products::large_wave_radiation_atmosphere_function(float temperature)
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,LARGE_WAVE_RADIATION_ATMOSPHERE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -622,7 +622,7 @@ string Products::net_radiation_function()
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,NET_RADIATION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -645,7 +645,7 @@ string Products::soil_heat_flux_function()
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,SOIL_HEAT_FLUX," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -671,7 +671,7 @@ string Products::d0_fuction()
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,D0," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -694,7 +694,7 @@ string Products::zom_fuction(float A_ZOM, float B_ZOM)
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,ZOM," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -717,7 +717,7 @@ string Products::ustar_fuction(float u10)
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,USTAR," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -740,7 +740,7 @@ string Products::kb_function(float ndvi_max, float ndvi_min)
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,KB1," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -763,7 +763,7 @@ string Products::aerodynamic_resistance_fuction()
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,RAH_INI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -786,7 +786,7 @@ string Products::sensible_heat_flux_function(float a, float b)
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,SENSIBLE_HEAT_FLUX," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -809,7 +809,7 @@ string Products::latent_heat_flux_function()
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,LATENT_HEAT_FLUX," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -832,7 +832,7 @@ string Products::net_radiation_24h_function(float Ra24h, float Rs24h)
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,NET_RADIATION_24H," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -855,7 +855,7 @@ string Products::evapotranspiration_fraction_fuction()
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,EVAPOTRANSPIRATION_FRACTION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -878,7 +878,7 @@ string Products::sensible_heat_flux_24h_fuction()
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,SENSIBLE_HEAT_FLUX_24H," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -901,7 +901,7 @@ string Products::latent_heat_flux_24h_function()
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,LATENT_HEAT_FLUX_24H," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -924,7 +924,7 @@ string Products::evapotranspiration_24h_function(Station station)
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,EVAPOTRANSPIRATION_24H," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
@@ -947,15 +947,20 @@ string Products::evapotranspiration_function()
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   return "KERNELS,EVAPOTRANSPIRATION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::rah_correction_function_blocks_STEEP(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
 {
-  system_clock::time_point begin_core, end_core;
-  int64_t general_time_core, initial_time_core, final_time_core;
+  string result = "";
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+  int64_t initial_time, final_time;
+
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   // ========= CUDA Setup
   int dev = 0;
@@ -993,16 +998,9 @@ string Products::rah_correction_function_blocks_STEEP(float ndvi_min, float ndvi
     float a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
 
     // ==== Paralelization core
-    begin_core = system_clock::now();
-    initial_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
+    cudaEventRecord(start);
     rah_correction_cycle_STEEP<<<num_blocks, threads_per_block>>>(surface_temperature_d, d0_d, kb1_d, zom_d, ustar_d, rah_d, sensible_heat_flux_d, a, b, height_band, width_band);
-    HANDLE_ERROR(cudaDeviceSynchronize());
-    HANDLE_ERROR(cudaGetLastError());
-
-    end_core = system_clock::now();
-    general_time_core = duration_cast<nanoseconds>(end_core - begin_core).count();
-    final_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    cudaEventRecord(stop);
     // ====
 
     HANDLE_ERROR(cudaMemcpy(ustar, ustar_d, nBytes_band, cudaMemcpyDeviceToHost));
@@ -1014,15 +1012,26 @@ string Products::rah_correction_function_blocks_STEEP(float ndvi_min, float ndvi
 
     float rah_cold = this->aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
     cold_pixel.setAerodynamicResistance(rah_cold);
+
+    float cuda_time = 0;
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&cuda_time, start, stop);
+    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    result += "KERNELS,RAH_CYCLE_" + std::to_string(i) + "," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   }
 
-  return "KERNELS,RAH_CYCLE," + std::to_string(general_time_core) + "," + std::to_string(initial_time_core) + "," + std::to_string(final_time_core) + "\n";
+  return result;
 }
 
 string Products::rah_correction_function_blocks_ASEBAL(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel, float u200)
 {
-  system_clock::time_point begin_core, end_core;
-  int64_t general_time_core, initial_time_core, final_time_core;
+  string result = "";
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+  int64_t initial_time, final_time;
+
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   // ========= CUDA Setup
   int dev = 0;
@@ -1061,16 +1070,9 @@ string Products::rah_correction_function_blocks_ASEBAL(float ndvi_min, float ndv
     float a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
 
     // ==== Paralelization core
-    begin_core = system_clock::now();
-    initial_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
+    cudaEventRecord(start);
     rah_correction_cycle_ASEBAL<<<num_blocks, threads_per_block>>>(surface_temperature_d, kb1_d, zom_d, ustar_d, rah_d, sensible_heat_flux_d, a, b, u200, height_band, width_band);
-    HANDLE_ERROR(cudaDeviceSynchronize());
-    HANDLE_ERROR(cudaGetLastError());
-
-    end_core = system_clock::now();
-    general_time_core = duration_cast<nanoseconds>(end_core - begin_core).count();
-    final_time_core = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    cudaEventRecord(stop);
     // ====
 
     HANDLE_ERROR(cudaMemcpy(ustar, ustar_d, nBytes_band, cudaMemcpyDeviceToHost));
@@ -1083,11 +1085,17 @@ string Products::rah_correction_function_blocks_ASEBAL(float ndvi_min, float ndv
     float rah_cold = this->aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
     cold_pixel.setAerodynamicResistance(rah_cold);
 
+    float cuda_time = 0;
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&cuda_time, start, stop);
+    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    result += "KERNELS,RAH_CYCLE_" + std::to_string(i) + "," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+
     if (i > 0 && fabs(1 - rah_ini_pq_terra / rah_hot) < 0.05)
       break;
     else
       i++;
   }
 
-  return "KERNELS,RAH_CYCLE," + std::to_string(general_time_core) + "," + std::to_string(initial_time_core) + "," + std::to_string(final_time_core) + "\n";
+  return result;
 }

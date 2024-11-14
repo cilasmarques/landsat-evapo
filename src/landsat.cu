@@ -138,7 +138,7 @@ string Landsat::compute_Rn_G(Station station)
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   result += "KERNELS,P1_INITIAL_PROD," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   return result;
@@ -174,7 +174,7 @@ string Landsat::select_endmembers(int method)
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   result += "KERNELS,P2_PIXEL_SEL," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   return result;
@@ -225,7 +225,7 @@ string Landsat::converge_rah_cycle(Station station, int method)
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   result += "KERNELS,P3_RAH," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   return result;
@@ -268,7 +268,7 @@ string Landsat::compute_H_ET(Station station)
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
-  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   result += "KERNELS,P4_FINAL_PROD," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   return result;

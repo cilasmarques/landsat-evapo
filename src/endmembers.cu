@@ -111,7 +111,7 @@ string getEndmembersSTEEP(float *ndvi, float *d_ndvi, float *surface_temperature
     float cuda_time = 0;
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&cuda_time, start, stop);
-    final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     result += "KERNELS,PIXEL_FILTER," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   }
   catch (const std::exception &e)
@@ -198,7 +198,7 @@ string getEndmembersASEBAL(float *ndvi, float *d_ndvi, float *surface_temperatur
     float cuda_time = 0;
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&cuda_time, start, stop);
-    final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     result += "KERNELS,PIXEL_FILTER," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   }
   catch (const std::exception &e)
