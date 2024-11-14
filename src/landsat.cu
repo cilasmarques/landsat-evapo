@@ -101,13 +101,14 @@ Landsat::Landsat(string bands_paths[], MTL mtl, int threads_num)
 string Landsat::compute_Rn_G(Station station)
 {
   string result = "";
-  system_clock::time_point begin, end;
-  float general_time;
   int64_t initial_time, final_time;
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
 
-  begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
+  cudaEventRecord(start);
   result += products.radiance_function(mtl);
   result += products.reflectance_function(mtl);
   result += products.albedo_function(mtl);
@@ -132,24 +133,28 @@ string Landsat::compute_Rn_G(Station station)
   // Main products
   result += products.net_radiation_function();
   result += products.soil_heat_flux_function();
+  cudaEventRecord(stop);
 
-  end = system_clock::now();
-  general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
-  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  result += "KERNELS,P1_INITIAL_PROD," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  float cuda_time = 0;
+  cudaEventSynchronize(stop);
+  cudaEventElapsedTime(&cuda_time, start, stop);
+  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+
+  result += "KERNELS,P1_INITIAL_PROD," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   return result;
 }
 
 string Landsat::select_endmembers(int method)
 {
   string result = "";
-  system_clock::time_point begin, end;
-  float general_time;
   int64_t initial_time, final_time;
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
 
-  begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
+  cudaEventRecord(start);
   if (method == 0)
   { // STEEP
     result += getEndmembersSTEEP(products.ndvi, products.ndvi_d, products.surface_temperature, products.surface_temperature_d,
@@ -164,25 +169,28 @@ string Landsat::select_endmembers(int method)
                                   products.soil_heat, products.soil_heat_d, products.blocks_num, products.threads_num,
                                   hot_pixel, cold_pixel, height_band, width_band);
   }
+  cudaEventRecord(stop);
 
-  end = system_clock::now();
-  general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
-  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  result += "KERNELS,P2_PIXEL_SEL," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  float cuda_time = 0;
+  cudaEventSynchronize(stop);
+  cudaEventElapsedTime(&cuda_time, start, stop);
+  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 
+  result += "KERNELS,P2_PIXEL_SEL," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   return result;
 }
 
 string Landsat::converge_rah_cycle(Station station, int method)
 {
   string result = "";
-  system_clock::time_point begin, end;
-  float general_time;
   int64_t initial_time, final_time;
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
 
-  begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
+  cudaEventRecord(start);
   float ustar_station = (VON_KARMAN * station.v6) / (log(station.WIND_SPEED / station.SURFACE_ROUGHNESS));
   float u10 = (ustar_station / VON_KARMAN) * log(10 / station.SURFACE_ROUGHNESS);
   float u200 = (ustar_station / VON_KARMAN) * log(200 / station.SURFACE_ROUGHNESS);
@@ -212,25 +220,28 @@ string Landsat::converge_rah_cycle(Station station, int method)
     result += products.rah_correction_function_blocks_STEEP(ndvi_min, ndvi_max, hot_pixel, cold_pixel);
   else // ASEBAL
     result += products.rah_correction_function_blocks_ASEBAL(ndvi_min, ndvi_max, hot_pixel, cold_pixel, u200);
+  cudaEventRecord(stop);
 
-  end = system_clock::now();
-  general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
-  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  float cuda_time = 0;
+  cudaEventSynchronize(stop);
+  cudaEventElapsedTime(&cuda_time, start, stop);
+  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 
-  result += "KERNELS,P3_RAH," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  result += "KERNELS,P3_RAH," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   return result;
 };
 
 string Landsat::compute_H_ET(Station station)
 {
   string result = "";
-  system_clock::time_point begin, end;
-  float general_time;
   int64_t initial_time, final_time;
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
 
-  begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
+  cudaEventRecord(start);
   float dr = (1 / mtl.distance_earth_sun) * (1 / mtl.distance_earth_sun);
   float sigma = 0.409 * sin(((2 * PI / 365) * mtl.julian_day) - 1.39);
   float phi = (PI / 180) * station.latitude;
@@ -252,11 +263,14 @@ string Landsat::compute_H_ET(Station station)
   result += products.latent_heat_flux_24h_function();
   result += products.evapotranspiration_24h_function(station);
   result += products.evapotranspiration_function();
+  cudaEventRecord(stop);
 
-  end = system_clock::now();
-  general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
-  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  result += "KERNELS,P4_FINAL_PROD," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  float cuda_time = 0;
+  cudaEventSynchronize(stop);
+  cudaEventElapsedTime(&cuda_time, start, stop);
+  final_time = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+
+  result += "KERNELS,P4_FINAL_PROD," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   return result;
 };
 

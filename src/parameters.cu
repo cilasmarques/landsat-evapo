@@ -212,7 +212,6 @@ Station::Station(string station_data_path, float image_hour)
 
   for (int i = 1; i < this->info.size(); i++)
   {
-
     v7_max = max(v7_max, atof(this->info[i][6].c_str()));
     v7_min = min(v7_min, atof(this->info[i][6].c_str()));
 
