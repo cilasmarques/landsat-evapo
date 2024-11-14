@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
 
   // save products
   // time_output << landsat.save_products(output_folder);
-  time_output << landsat.print_products(output_folder);
+  // time_output << landsat.print_products(output_folder);
 
   end = system_clock::now();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
