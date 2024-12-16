@@ -1,8 +1,6 @@
 #include "kernels.cuh"
 
-__global__ void rad_kernel(float *band_blue_d, float *band_green_d, float *band_red_d, float *band_nir_d, float *band_swir1_d, float *band_termal_d, float *band_swir2_d,
-                           float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d, float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d,
-                           float *rad_add_d, float *rad_mult_d, int width, int height)
+__global__ void rad_kernel(float *band_d, float *radiance_d, float *rad_add_d, float *rad_mult_d, int band_idx, int width, int height)
 {
   unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -14,34 +12,14 @@ __global__ void rad_kernel(float *band_blue_d, float *band_green_d, float *band_
   {
     unsigned int pos = row * width + col;
 
-    radiance_blue_d[pos] = band_blue_d[pos] * rad_mult_d[PARAM_BAND_BLUE_INDEX] + rad_add_d[PARAM_BAND_BLUE_INDEX];
-    radiance_green_d[pos] = band_green_d[pos] * rad_mult_d[PARAM_BAND_GREEN_INDEX] + rad_add_d[PARAM_BAND_GREEN_INDEX];
-    radiance_red_d[pos] = band_red_d[pos] * rad_mult_d[PARAM_BAND_RED_INDEX] + rad_add_d[PARAM_BAND_RED_INDEX];
-    radiance_nir_d[pos] = band_nir_d[pos] * rad_mult_d[PARAM_BAND_NIR_INDEX] + rad_add_d[PARAM_BAND_NIR_INDEX];
-    radiance_swir1_d[pos] = band_swir1_d[pos] * rad_mult_d[PARAM_BAND_SWIR1_INDEX] + rad_add_d[PARAM_BAND_SWIR1_INDEX];
-    radiance_termal_d[pos] = band_termal_d[pos] * rad_mult_d[PARAM_BAND_TERMAL_INDEX] + rad_add_d[PARAM_BAND_TERMAL_INDEX];
-    radiance_swir2_d[pos] = band_swir2_d[pos] * rad_mult_d[PARAM_BAND_SWIR2_INDEX] + rad_add_d[PARAM_BAND_SWIR2_INDEX];
+    radiance_d[pos] = band_d[pos] * rad_mult_d[band_idx] + rad_add_d[band_idx];
 
-    if (radiance_blue_d[pos] <= 0)
-      radiance_blue_d[pos] = NAN;
-    if (radiance_green_d[pos] <= 0)
-      radiance_green_d[pos] = NAN;
-    if (radiance_red_d[pos] <= 0)
-      radiance_red_d[pos] = NAN;
-    if (radiance_nir_d[pos] <= 0)
-      radiance_nir_d[pos] = NAN;
-    if (radiance_swir1_d[pos] <= 0)
-      radiance_swir1_d[pos] = NAN;
-    if (radiance_termal_d[pos] <= 0)
-      radiance_termal_d[pos] = NAN;
-    if (radiance_swir2_d[pos] <= 0)
-      radiance_swir2_d[pos] = NAN;
+    if (radiance_d[pos] <= 0)
+      radiance_d[pos] = NAN;
   }
 }
 
-__global__ void ref_kernel(float *band_blue_d, float *band_green_d, float *band_red_d, float *band_nir_d, float *band_swir1_d, float *band_termal_d, float *band_swir2_d,
-                           float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d,
-                           float *ref_add_d, float *ref_mult_d, float sin_sun, int width, int height)
+__global__ void ref_kernel(float *band_d, float *reflectance_d, float *ref_add_d, float *ref_mult_d, float sin_sun, int band_idx, int width, int height)
 {
   unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -53,28 +31,10 @@ __global__ void ref_kernel(float *band_blue_d, float *band_green_d, float *band_
   {
     unsigned int pos = row * width + col;
 
-    reflectance_blue_d[pos] = (band_blue_d[pos] * ref_mult_d[PARAM_BAND_BLUE_INDEX] + ref_add_d[PARAM_BAND_BLUE_INDEX]) / sin_sun;
-    reflectance_green_d[pos] = (band_green_d[pos] * ref_mult_d[PARAM_BAND_GREEN_INDEX] + ref_add_d[PARAM_BAND_GREEN_INDEX]) / sin_sun;
-    reflectance_red_d[pos] = (band_red_d[pos] * ref_mult_d[PARAM_BAND_RED_INDEX] + ref_add_d[PARAM_BAND_RED_INDEX]) / sin_sun;
-    reflectance_nir_d[pos] = (band_nir_d[pos] * ref_mult_d[PARAM_BAND_NIR_INDEX] + ref_add_d[PARAM_BAND_NIR_INDEX]) / sin_sun;
-    reflectance_swir1_d[pos] = (band_swir1_d[pos] * ref_mult_d[PARAM_BAND_SWIR1_INDEX] + ref_add_d[PARAM_BAND_SWIR1_INDEX]) / sin_sun;
-    reflectance_termal_d[pos] = (band_termal_d[pos] * ref_mult_d[PARAM_BAND_TERMAL_INDEX] + ref_add_d[PARAM_BAND_TERMAL_INDEX]) / sin_sun;
-    reflectance_swir2_d[pos] = (band_swir2_d[pos] * ref_mult_d[PARAM_BAND_SWIR2_INDEX] + ref_add_d[PARAM_BAND_SWIR2_INDEX]) / sin_sun;
+    reflectance_d[pos] = (band_d[pos] * ref_mult_d[band_idx] + ref_add_d[band_idx]) / sin_sun;
 
-    if (reflectance_blue_d[pos] <= 0)
-      reflectance_blue_d[pos] = NAN;
-    if (reflectance_green_d[pos] <= 0)
-      reflectance_green_d[pos] = NAN;
-    if (reflectance_red_d[pos] <= 0)
-      reflectance_red_d[pos] = NAN;
-    if (reflectance_nir_d[pos] <= 0)
-      reflectance_nir_d[pos] = NAN;
-    if (reflectance_swir1_d[pos] <= 0)
-      reflectance_swir1_d[pos] = NAN;
-    if (reflectance_termal_d[pos] <= 0)
-      reflectance_termal_d[pos] = NAN;
-    if (reflectance_swir2_d[pos] <= 0)
-      reflectance_swir2_d[pos] = NAN;
+    if (reflectance_d[pos] <= 0)
+      reflectance_d[pos] = NAN;
   }
 }
 

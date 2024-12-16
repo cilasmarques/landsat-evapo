@@ -6,55 +6,29 @@
 /**
  * @brief  Compute the radiance of the bands.
  *
- * @param band_blue_d  The blue band.
- * @param band_green_d  The green band.
- * @param band_red_d  The red band.
- * @param band_nir_d  The NIR band.
- * @param band_swir1_d  The SWIR1 band.
- * @param band_termal_d  The termal band.
- * @param band_swir2_d  The SWIR2 band.
- * @param radiance_blue_d  The blue radiance.
- * @param radiance_green_d  The green radiance.
- * @param radiance_red_d  The red radiance.
- * @param radiance_nir_d  The NIR radiance.
- * @param radiance_swir1_d  The SWIR1 radiance.
- * @param radiance_termal_d  The termal radiance.
- * @param radiance_swir2_d  The SWIR2 radiance.
+ * @param band_d  The band.
+ * @param radiance_d  The radiance.
  * @param rad_add_d  The radiance add value.
  * @param rad_mult_d  The radiance mult value.
+ * @param band_idx  The band index.
  * @param width  The width of the bands.
  * @param height  The height of the bands.
  */
-__global__ void rad_kernel(float *band_blue_d, float *band_green_d, float *band_red_d, float *band_nir_d, float *band_swir1_d, float *band_termal_d, float *band_swir2_d,
-                           float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d, float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d,
-                           float *rad_add_d, float *rad_mult_d, int width, int height);
+__global__ void rad_kernel(float *band_d, float *radiance_d, float *rad_add_d, float *rad_mult_d, int band_idx, int width, int height);
 
 /**
  * @brief  Compute the reflectance of the bands.
  *
- * @param radiance_blue_d  The blue radiance.
- * @param radiance_green_d  The green radiance.
- * @param radiance_red_d  The red radiance.
- * @param radiance_nir_d  The NIR radiance.
- * @param radiance_swir1_d  The SWIR1 radiance.
- * @param radiance_termal_d  The termal radiance.
- * @param radiance_swir2_d  The SWIR2 radiance.
- * @param reflectance_blue_d  The blue reflectance.
- * @param reflectance_green_d  The green reflectance.
- * @param reflectance_red_d  The red reflectance.
- * @param reflectance_nir_d  The NIR reflectance.
- * @param reflectance_swir1_d  The SWIR1 reflectance.
- * @param reflectance_termal_d  The termal reflectance.
- * @param reflectance_swir2_d  The SWIR2 reflectance.
+ * @param band_d  The band.
+ * @param reflectance_d  The reflectance.
  * @param ref_add_d  The reflectance add value.
  * @param ref_mult_d  The reflectance mult value.
  * @param sin_sun  The sin of the sun.
+ * @param band_idx  The band index.
  * @param width  The width of the bands.
  * @param height  The height of the bands.
  */
-__global__ void ref_kernel(float *radiance_blue_d, float *radiance_green_d, float *radiance_red_d, float *radiance_nir_d, float *radiance_swir1_d, float *radiance_termal_d, float *radiance_swir2_d,
-                           float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_termal_d, float *reflectance_swir2_d,
-                           float *ref_add_d, float *ref_mult_d, float sin_sun, int width, int height);
+__global__ void ref_kernel(float *band_d, float *reflectance_d, float *ref_add_d, float *ref_mult_d, float sin_sun, int band_idx, int width, int height);
 
 /**
  * @brief  Compute the albedo of the bands.

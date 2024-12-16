@@ -250,18 +250,22 @@ string Products::radiance_function(MTL mtl)
 
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  cudaEventRecord(start);
-  rad_kernel<<<this->blocks_num, this->threads_num>>>(band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d,
-                                                      radiance_blue_d, radiance_green_d, radiance_red_d, radiance_nir_d, radiance_swir1_d, radiance_termal_d, radiance_swir2_d,
-                                                      mtl.rad_add_d, mtl.rad_mult_d, width_band, height_band);  cudaEventRecord(stop);
-
+  cudaEventRecord(start, 0);
+  rad_kernel<<<this->blocks_num, this->threads_num>>>(band_blue_d, radiance_blue_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_BLUE_INDEX, width_band, height_band);
   HANDLE_ERROR(cudaMemcpy(radiance_blue, radiance_blue_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  rad_kernel<<<this->blocks_num, this->threads_num>>>(band_green_d, radiance_green_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_GREEN_INDEX, width_band, height_band);
   HANDLE_ERROR(cudaMemcpy(radiance_green, radiance_green_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  rad_kernel<<<this->blocks_num, this->threads_num>>>(band_red_d, radiance_red_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_RED_INDEX, width_band, height_band);
   HANDLE_ERROR(cudaMemcpy(radiance_red, radiance_red_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  rad_kernel<<<this->blocks_num, this->threads_num>>>(band_nir_d, radiance_nir_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_NIR_INDEX, width_band, height_band);
   HANDLE_ERROR(cudaMemcpy(radiance_nir, radiance_nir_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  rad_kernel<<<this->blocks_num, this->threads_num>>>(band_swir1_d, radiance_swir1_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_SWIR1_INDEX, width_band, height_band);
   HANDLE_ERROR(cudaMemcpy(radiance_swir1, radiance_swir1_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  rad_kernel<<<this->blocks_num, this->threads_num>>>(band_termal_d, radiance_termal_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_TERMAL_INDEX, width_band, height_band);
   HANDLE_ERROR(cudaMemcpy(radiance_termal, radiance_termal_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  rad_kernel<<<this->blocks_num, this->threads_num>>>(band_swir2_d, radiance_swir2_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_SWIR2_INDEX, width_band, height_band);
   HANDLE_ERROR(cudaMemcpy(radiance_swir2, radiance_swir2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  cudaEventRecord(stop, 0);
 
   float cuda_time = 0;
   cudaEventSynchronize(stop);
@@ -282,19 +286,22 @@ string Products::reflectance_function(MTL mtl)
 
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-
   cudaEventRecord(start);
-  ref_kernel<<<this->blocks_num, this->threads_num>>>(band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d,
-                                                      reflectance_blue_d, reflectance_green_d, reflectance_red_d, reflectance_nir_d, reflectance_swir1_d, reflectance_termal_d, reflectance_swir2_d,
-                                                      mtl.ref_add_d, mtl.ref_mult_d, sin_sun, width_band, height_band);  cudaEventRecord(stop);
-
+  ref_kernel<<<this->blocks_num, this->threads_num>>>(band_blue_d, reflectance_blue_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_BLUE_INDEX, width_band, height_band);
   HANDLE_ERROR(cudaMemcpy(reflectance_blue, reflectance_blue_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  ref_kernel<<<this->blocks_num, this->threads_num>>>(band_green_d, reflectance_green_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_GREEN_INDEX, width_band, height_band);
   HANDLE_ERROR(cudaMemcpy(reflectance_green, reflectance_green_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  ref_kernel<<<this->blocks_num, this->threads_num>>>(band_red_d, reflectance_red_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_RED_INDEX, width_band, height_band);
   HANDLE_ERROR(cudaMemcpy(reflectance_red, reflectance_red_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  ref_kernel<<<this->blocks_num, this->threads_num>>>(band_nir_d, reflectance_nir_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_NIR_INDEX, width_band, height_band);
   HANDLE_ERROR(cudaMemcpy(reflectance_nir, reflectance_nir_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  ref_kernel<<<this->blocks_num, this->threads_num>>>(band_swir1_d, reflectance_swir1_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_SWIR1_INDEX, width_band, height_band);
   HANDLE_ERROR(cudaMemcpy(reflectance_swir1, reflectance_swir1_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  ref_kernel<<<this->blocks_num, this->threads_num>>>(band_termal_d, reflectance_termal_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_TERMAL_INDEX, width_band, height_band);
   HANDLE_ERROR(cudaMemcpy(reflectance_termal, reflectance_termal_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  ref_kernel<<<this->blocks_num, this->threads_num>>>(band_swir2_d, reflectance_swir2_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_SWIR2_INDEX, width_band, height_band);
   HANDLE_ERROR(cudaMemcpy(reflectance_swir2, reflectance_swir2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  cudaEventRecord(stop);
 
   float cuda_time = 0;
   cudaEventSynchronize(stop);
@@ -303,6 +310,7 @@ string Products::reflectance_function(MTL mtl)
 
   return "KERNELS,REFLECTANCE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
+
 
 string Products::albedo_function(MTL mtl)
 {
