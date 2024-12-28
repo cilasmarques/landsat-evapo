@@ -1,5 +1,6 @@
 #include "landsat.h"
 #include "cuda_utils.h"
+#include <thrust/sort.h>
 
 Landsat::Landsat(string bands_paths[], MTL mtl, int threads_num)
 {
@@ -157,17 +158,13 @@ string Landsat::select_endmembers(int method)
   cudaEventRecord(start);
   if (method == 0)
   { // STEEP
-    result += getEndmembersSTEEP(products.ndvi, products.ndvi_d, products.surface_temperature, products.surface_temperature_d,
-                                 products.albedo, products.albedo_d, products.net_radiation, products.net_radiation_d,
-                                 products.soil_heat, products.soil_heat_d, products.blocks_num, products.threads_num,
-                                 hot_pixel, cold_pixel, height_band, width_band);
+    result += getEndmembersSTEEP(products.ndvi_d, products.surface_temperature_d, products.albedo_d, products.net_radiation_d, products.soil_heat_d,
+                                 products.blocks_num, products.threads_num, hot_pixel, cold_pixel, height_band, width_band);
   }
   else if (method == 1)
   { // ASEBAL
-    result += getEndmembersASEBAL(products.ndvi, products.ndvi_d, products.surface_temperature, products.surface_temperature_d,
-                                  products.albedo, products.albedo_d, products.net_radiation, products.net_radiation_d,
-                                  products.soil_heat, products.soil_heat_d, products.blocks_num, products.threads_num,
-                                  hot_pixel, cold_pixel, height_band, width_band);
+    result += getEndmembersASEBAL(products.ndvi_d, products.surface_temperature_d, products.albedo_d, products.net_radiation_d, products.soil_heat_d,
+                                  products.blocks_num, products.threads_num, hot_pixel, cold_pixel, height_band, width_band);
   }
   cudaEventRecord(stop);
 
@@ -194,16 +191,18 @@ string Landsat::converge_rah_cycle(Station station, int method)
   float ustar_station = (VON_KARMAN * station.v6) / (log(station.WIND_SPEED / station.SURFACE_ROUGHNESS));
   float u10 = (ustar_station / VON_KARMAN) * log(10 / station.SURFACE_ROUGHNESS);
   float u200 = (ustar_station / VON_KARMAN) * log(200 / station.SURFACE_ROUGHNESS);
-  float ndvi_min = 1.0;
-  float ndvi_max = -1.0;
 
-  for (int i = 0; i < this->height_band * this->width_band; i++)
-  {
-    if (products.ndvi[i] < ndvi_min)
-      ndvi_min = products.ndvi[i];
-    if (products.ndvi[i] > ndvi_max)
-      ndvi_max = products.ndvi[i];
-  }
+  float ndvi_min = thrust::reduce(thrust::device, 
+                                products.ndvi_d,
+                                products.ndvi_d + height_band * width_band,
+                                1.0f,  // Initial value
+                                thrust::minimum<float>());
+
+  float ndvi_max = thrust::reduce(thrust::device,
+                                products.ndvi_d,
+                                products.ndvi_d + height_band * width_band,
+                                -1.0f, // Initial value 
+                                thrust::maximum<float>());
 
   result += products.d0_fuction();
   result += products.zom_fuction(station.A_ZOM, station.B_ZOM);

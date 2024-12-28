@@ -20,7 +20,7 @@
  *
  * @retval void
  */
-void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int width_band, float first_interval, float middle_interval, float last_interval,int blocks_num, int threads_num);
+void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int width_band, float first_interval, float middle_interval, float last_interval, int blocks_num, int threads_num);
 
 /**
  * @brief Get the hot pixel based on the STEPP algorithm. GPU version.
@@ -44,9 +44,9 @@ void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int
  *
  * @retval Candidate
  */
-string getEndmembersSTEEP(float *ndvi, float *d_ndvi, float *surface_temperature, float *d_surface_temperature, float *albedo, float *d_albedo,
-                           float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat, int blocks_num, int threads_num,
-                           Candidate &hot_pixel, Candidate &cold_pixel, int height_band, int width_band);
+string getEndmembersSTEEP(float *d_ndvi, float *d_surface_temperature, float *albedo,
+                          float *d_net_radiation, float *d_soil_heat, int blocks_num, int threads_num,
+                          Candidate &hot_pixel, Candidate &cold_pixel, int height_band, int width_band);
 
 /**
  * @brief Get the hot pixel based on the STEPP algorithm. GPU version.
@@ -70,6 +70,6 @@ string getEndmembersSTEEP(float *ndvi, float *d_ndvi, float *surface_temperature
  *
  * @retval Candidate
  */
-string getEndmembersASEBAL(float *ndvi, float *d_ndvi, float *surface_temperature, float *d_surface_temperature, float *albedo, float *d_albedo,
-                           float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat, int blocks_num, int threads_num,
+string getEndmembersASEBAL(float *d_ndvi, float *d_surface_temperature, float *albedo,
+                           float *d_net_radiation, float *d_soil_heat, int blocks_num, int threads_num,
                            Candidate &hot_pixel, Candidate &cold_pixel, int height_band, int width_band);

@@ -36,8 +36,8 @@ void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int
   cudaFree(d_indexes);
 }
 
-string getEndmembersSTEEP(float *ndvi, float *d_ndvi, float *surface_temperature, float *d_surface_temperature, float *albedo, float *d_albedo,
-                          float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat, int blocks_num, int threads_num,
+string getEndmembersSTEEP(float *d_ndvi, float *d_surface_temperature, float *d_albedo,
+                          float *d_net_radiation, float *d_soil_heat, int blocks_num, int threads_num,
                           Candidate &hot_pixel, Candidate &cold_pixel, int height_band, int width_band)
 {
   string result = "";
@@ -123,8 +123,8 @@ string getEndmembersSTEEP(float *ndvi, float *d_ndvi, float *surface_temperature
   return result;
 }
 
-string getEndmembersASEBAL(float *ndvi, float *d_ndvi, float *surface_temperature, float *d_surface_temperature, float *albedo, float *d_albedo,
-                           float *net_radiation, float *d_net_radiation, float *soil_heat, float *d_soil_heat, int blocks_num, int threads_num,
+string getEndmembersASEBAL(float *d_ndvi, float *d_surface_temperature, float *d_albedo,
+                           float *d_net_radiation, float *d_soil_heat, int blocks_num, int threads_num,
                            Candidate &hot_pixel, Candidate &cold_pixel, int height_band, int width_band)
 {
   string result = "";
