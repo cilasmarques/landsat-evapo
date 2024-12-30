@@ -30,18 +30,3 @@ void Candidate::setAerodynamicResistance(float newRah)
 {
   this->aerodynamic_resistance = newRah;
 }
-
-bool equals(Candidate a, Candidate b)
-{
-  return (a.col == b.col) && (a.line == b.line);
-}
-
-bool compare_candidate_temperature(Candidate a, Candidate b)
-{
-  bool result = a.temperature < b.temperature;
-
-  if (a.temperature == b.temperature)
-    result = a.ndvi < b.ndvi;
-
-  return result;
-}

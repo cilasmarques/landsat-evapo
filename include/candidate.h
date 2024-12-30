@@ -57,3 +57,17 @@ bool equals(Candidate a, Candidate b);
  * @retval TRUE if second candidate is greater than first one, and FALSE otherwise.
  */
 bool compare_candidate_temperature(Candidate a, Candidate b);
+
+struct CompareCandidateTemperature
+{
+  __host__ __device__ bool operator()(Candidate a, Candidate b)
+  {
+    // Assuming Candidate has a member variable 'temperature'
+    bool result = a.temperature < b.temperature;
+
+    if (a.temperature == b.temperature)
+      result = a.ndvi < b.ndvi;
+
+    return result;
+  }
+};

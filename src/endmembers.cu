@@ -48,21 +48,8 @@ string getEndmembersSTEEP(float *d_ndvi, float *d_surface_temperature, float *d_
 
   Candidate *d_hotCandidates, *d_coldCandidates;
   const size_t MAXC = sizeof(Candidate) * height_band * width_band;
-
-  cudaError_t err;
-  err = cudaMalloc((void **)&d_hotCandidates, MAXC);
-  if (err != cudaSuccess)
-  {
-    std::cerr << "CUDA memory allocation for d_hotCandidates failed: " << cudaGetErrorString(err) << std::endl;
-    // Handle the error appropriately
-  }
-
-  err = cudaMalloc((void **)&d_coldCandidates, MAXC);
-  if (err != cudaSuccess)
-  {
-    std::cerr << "CUDA memory allocation for d_coldCandidates failed: " << cudaGetErrorString(err) << std::endl;
-    // Handle the error appropriately
-  }
+  HANDLE_ERROR(cudaMalloc((void **)&d_hotCandidates, MAXC));
+  HANDLE_ERROR(cudaMalloc((void **)&d_coldCandidates, MAXC));
 
   float *d_ho;
   cudaMalloc((void **)&d_ho, sizeof(float) * height_band * width_band);
@@ -71,10 +58,6 @@ string getEndmembersSTEEP(float *d_ndvi, float *d_surface_temperature, float *d_
   int indexes[2] = {0, 0};
   cudaMalloc((void **)&d_indexes, sizeof(int) * 2);
   cudaMemcpy(d_indexes, indexes, sizeof(int) * 2, cudaMemcpyHostToDevice);
-
-  Candidate *hotCandidates, *coldCandidates;
-  hotCandidates = (Candidate *)malloc(MAXC);
-  coldCandidates = (Candidate *)malloc(MAXC);
 
   vector<float> tsQuartile(3);
   vector<float> ndviQuartile(3);
@@ -96,17 +79,16 @@ string getEndmembersSTEEP(float *d_ndvi, float *d_surface_temperature, float *d_
     cudaEventRecord(stop);
 
     cudaMemcpy(&indexes, d_indexes, sizeof(int) * 2, cudaMemcpyDeviceToHost);
-    cudaMemcpy(hotCandidates, d_hotCandidates, sizeof(Candidate) * indexes[0], cudaMemcpyDeviceToHost);
-    cudaMemcpy(coldCandidates, d_coldCandidates, sizeof(Candidate) * indexes[1], cudaMemcpyDeviceToHost);
-
-    std::sort(hotCandidates, hotCandidates + indexes[0], compare_candidate_temperature);
-    std::sort(coldCandidates, coldCandidates + indexes[1], compare_candidate_temperature);
-
     unsigned int hotPos = static_cast<unsigned int>(std::floor(indexes[0] * 0.5));
     unsigned int coldPos = static_cast<unsigned int>(std::floor(indexes[1] * 0.5));
 
-    hot_pixel = hotCandidates[hotPos];
-    cold_pixel = coldCandidates[coldPos];
+    // The dev_ptr_hot sort also sorts the d_hotCandidates array
+    thrust::device_ptr<Candidate> dev_ptr_hot(d_hotCandidates);
+    thrust::sort(dev_ptr_hot, dev_ptr_hot + indexes[0], CompareCandidateTemperature());
+
+    // The dev_ptr_cold sort also sorts the d_coldCandidates array
+    thrust::device_ptr<Candidate> dev_ptr_cold(d_coldCandidates);
+    thrust::sort(dev_ptr_cold, dev_ptr_cold + indexes[1], CompareCandidateTemperature());
 
     float cuda_time = 0;
     cudaEventSynchronize(stop);
@@ -135,21 +117,8 @@ string getEndmembersASEBAL(float *d_ndvi, float *d_surface_temperature, float *d
 
   Candidate *d_hotCandidates, *d_coldCandidates;
   const size_t MAXC = sizeof(Candidate) * height_band * width_band;
-
-  cudaError_t err;
-  err = cudaMalloc((void **)&d_hotCandidates, MAXC);
-  if (err != cudaSuccess)
-  {
-    std::cerr << "CUDA memory allocation for d_hotCandidates failed: " << cudaGetErrorString(err) << std::endl;
-    // Handle the error appropriately
-  }
-
-  err = cudaMalloc((void **)&d_coldCandidates, MAXC);
-  if (err != cudaSuccess)
-  {
-    std::cerr << "CUDA memory allocation for d_coldCandidates failed: " << cudaGetErrorString(err) << std::endl;
-    // Handle the error appropriately
-  }
+  HANDLE_ERROR(cudaMalloc((void **)&d_hotCandidates, MAXC));
+  HANDLE_ERROR(cudaMalloc((void **)&d_coldCandidates, MAXC));
 
   float *d_ho;
   cudaMalloc((void **)&d_ho, sizeof(float) * height_band * width_band);
@@ -158,10 +127,6 @@ string getEndmembersASEBAL(float *d_ndvi, float *d_surface_temperature, float *d
   int indexes[2] = {0, 0};
   cudaMalloc((void **)&d_indexes, sizeof(int) * 2);
   cudaMemcpy(d_indexes, indexes, sizeof(int) * 2, cudaMemcpyHostToDevice);
-
-  Candidate *hotCandidates, *coldCandidates;
-  hotCandidates = (Candidate *)malloc(MAXC);
-  coldCandidates = (Candidate *)malloc(MAXC);
 
   vector<float> tsQuartile(3);
   vector<float> ndviQuartile(3);
@@ -183,17 +148,16 @@ string getEndmembersASEBAL(float *d_ndvi, float *d_surface_temperature, float *d
     cudaEventRecord(stop);
 
     cudaMemcpy(&indexes, d_indexes, sizeof(int) * 2, cudaMemcpyDeviceToHost);
-    cudaMemcpy(hotCandidates, d_hotCandidates, sizeof(Candidate) * indexes[0], cudaMemcpyDeviceToHost);
-    cudaMemcpy(coldCandidates, d_coldCandidates, sizeof(Candidate) * indexes[1], cudaMemcpyDeviceToHost);
-
-    std::sort(hotCandidates, hotCandidates + indexes[0], compare_candidate_temperature);
-    std::sort(coldCandidates, coldCandidates + indexes[1], compare_candidate_temperature);
-
     unsigned int hotPos = static_cast<unsigned int>(std::floor(indexes[0] * 0.5));
     unsigned int coldPos = static_cast<unsigned int>(std::floor(indexes[1] * 0.5));
 
-    hot_pixel = hotCandidates[hotPos];
-    cold_pixel = coldCandidates[coldPos];
+    // The dev_ptr_hot sort also sorts the d_hotCandidates array
+    thrust::device_ptr<Candidate> dev_ptr_hot(d_hotCandidates);
+    thrust::sort(dev_ptr_hot, dev_ptr_hot + indexes[0], CompareCandidateTemperature());
+
+    // The dev_ptr_cold sort also sorts the d_coldCandidates array
+    thrust::device_ptr<Candidate> dev_ptr_cold(d_coldCandidates);
+    thrust::sort(dev_ptr_cold, dev_ptr_cold + indexes[1], CompareCandidateTemperature());
 
     float cuda_time = 0;
     cudaEventSynchronize(stop);
