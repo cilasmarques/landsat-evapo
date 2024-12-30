@@ -101,6 +101,7 @@ int main(int argc, char *argv[])
   time_output << landsat.compute_H_ET(station);
 
   // save products
+  // time_output << landsat.copy_to_host();
   // time_output << landsat.save_products(output_folder);
   // time_output << landsat.print_products(output_folder);
 

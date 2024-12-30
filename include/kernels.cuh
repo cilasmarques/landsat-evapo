@@ -2,6 +2,7 @@
 
 #include "constants.h"
 #include "cuda_utils.h"
+#include "candidate.h"
 
 /**
  * @brief  Compute the radiance of the bands.
@@ -268,17 +269,20 @@ __global__ void aerodynamic_resistance_kernel(float *zom_d, float *d0_d, float *
 /**
  * @brief  Compute the sensible heat flux of the bands.
  *
+ * @param d_hotCandidates  Hot candidates
+ * @param d_coldCandidates  Cold candidates
+ * @param hot_pos  Hot position
+ * @param cold_pos  Cold position
  * @param surface_temperature_d  The surface temperature.
  * @param rah_d  The RAH.
  * @param net_radiation_d  The net radiation.
  * @param soil_heat_d  The soil heat.
  * @param sensible_heat_flux_d  The sensible heat flux.
- * @param a  The A constant.
- * @param b  The B constant.
  * @param width_band  The width of the bands.
  * @param height_band  The height of the bands.
  */
-__global__ void sensible_heat_flux_kernel(float *surface_temperature_d, float *rah_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d, float a, float b, int width_band, int height_band);
+__global__ void sensible_heat_flux_kernel(Candidate *d_hotCandidates, Candidate *d_coldCandidates, int hot_pos, int cold_pos, float *surface_temperature_d, 
+                                          float *rah_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d, int width, int height);
 
 /**
  * @brief  Compute the latent heat flux of the bands.
@@ -364,33 +368,49 @@ __global__ void evapotranspiration_kernel(float *net_radiation_24h_d, float *eva
 /**
  * @brief  Compute the rah correction cycle. (STEEP algorithm)
  *
- * @param surface_temperature_pointer  Surface temperature
+ * @param d_hotCandidates  Hot candidates
+ * @param d_coldCandidates  Cold candidates
+ * @param hot_pos  Hot position
+ * @param cold_pos  Cold position
+ * @param ndvi_pointer  NDVI
+ * @param surf_temp_pointer  Surface temperature
  * @param d0_pointer  Zero plane displacement height
  * @param kb1_pointer  KB-1 stability parameter
  * @param zom_pointer  Roughness length for momentum
  * @param ustar_pointer  Ustar pointer
  * @param rah_pointer  Rah pointer
  * @param H_pointer  Sensible heat flux
- * @param a  Coefficient a
- * @param b  Coefficient b
+ * @param ndvi_max  NDVI max value
+ * @param ndvi_min  NDVI min value
  * @param height  Height of the input data
  * @param width  Width of the input data
  */
-__global__ void rah_correction_cycle_STEEP(float *surface_temperature_pointer, float *d0_pointer, float *kb1_pointer, float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer, float a, float b, int height, int width);
+__global__ void rah_correction_cycle_STEEP(Candidate *d_hotCandidates, Candidate *d_coldCandidates, int hot_idx, int cold_idx,
+                                           float *ndvi_pointer, float *surf_temp_pointer, float *d0_pointer, float *kb1_pointer,
+                                           float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer,
+                                           float ndvi_max, float ndvi_min, int height, int width);
 
 /**
  * @brief  Compute the rah correction cycle. (STEEP algorithm)
  *
- * @param surface_temperature_pointer  Surface temperature
+ * @param d_hotCandidates  Hot candidates
+ * @param d_coldCandidates  Cold candidates
+ * @param hot_pos  Hot position
+ * @param cold_pos  Cold position
+ * @param ndvi_pointer  NDVI
+ * @param surf_temp_pointer  Surface temperature
  * @param kb1_pointer  KB-1 stability parameter
  * @param zom_pointer  Roughness length for momentum
  * @param ustar_pointer  Ustar pointer
  * @param rah_pointer  Rah pointer
  * @param H_pointer  Sensible heat flux
- * @param a  Coefficient a
- * @param b  Coefficient b
+ * @param ndvi_max  NDVI max value
+ * @param ndvi_min  NDVI min value
  * @param u200 U200
  * @param height  Height of the input data
  * @param width  Width of the input data
  */
-__global__ void rah_correction_cycle_ASEBAL(float *surface_temperature_pointer, float *kb1_pointer, float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer, float a, float b, float u200, int height, int width);
+__global__ void rah_correction_cycle_ASEBAL(Candidate *d_hotCandidates, Candidate *d_coldCandidates, int hot_pos, int cold_pos,
+                                            float *ndvi_pointer, float *surf_temp_pointer, float *kb1_pointer, float *zom_pointer,
+                                            float *ustar_pointer, float *rah_pointer, float *H_pointer, float ndvi_max, float ndvi_min,
+                                             float u200, int height, int width, int *stop_condition);

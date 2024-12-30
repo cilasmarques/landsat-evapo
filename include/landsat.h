@@ -19,8 +19,8 @@ struct Landsat
   uint32_t width_band;
   int threads_num;
 
-  Candidate hot_pixel;
-  Candidate cold_pixel;
+  int hot_pos, cold_pos;
+  Candidate *d_hotCandidates, *d_coldCandidates;
 
   MTL mtl;
   Products products;
@@ -71,6 +71,13 @@ struct Landsat
    * @return string with the time spent.
    */
   string compute_H_ET(Station station);
+
+  /**
+   * @brief Copy the products to the host.
+   * 
+   * @return string with the time spent.
+   */
+  string copy_to_host();
 
   /**
    * @brief Save the products.

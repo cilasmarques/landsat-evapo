@@ -97,6 +97,10 @@ Landsat::Landsat(string bands_paths[], MTL mtl, int threads_num)
   HANDLE_ERROR(cudaMemcpy(this->products.band_termal_d, this->products.band_termal, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
   HANDLE_ERROR(cudaMemcpy(this->products.band_swir2_d, this->products.band_swir2, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
   HANDLE_ERROR(cudaMemcpy(this->products.tal_d, this->products.tal, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
+
+  const size_t MAXC = sizeof(Candidate) * height_band * width_band;
+  HANDLE_ERROR(cudaMalloc((void **)&d_hotCandidates, MAXC));
+  HANDLE_ERROR(cudaMalloc((void **)&d_coldCandidates, MAXC));
 };
 
 string Landsat::compute_Rn_G(Station station)
@@ -159,12 +163,12 @@ string Landsat::select_endmembers(int method)
   if (method == 0)
   { // STEEP
     result += getEndmembersSTEEP(products.ndvi_d, products.surface_temperature_d, products.albedo_d, products.net_radiation_d, products.soil_heat_d,
-                                 products.blocks_num, products.threads_num, hot_pixel, cold_pixel, height_band, width_band);
+                                 products.blocks_num, products.threads_num, d_hotCandidates, d_coldCandidates, hot_pos, cold_pos, height_band, width_band);
   }
   else if (method == 1)
   { // ASEBAL
     result += getEndmembersASEBAL(products.ndvi_d, products.surface_temperature_d, products.albedo_d, products.net_radiation_d, products.soil_heat_d,
-                                  products.blocks_num, products.threads_num, hot_pixel, cold_pixel, height_band, width_band);
+                                  products.blocks_num, products.threads_num, d_hotCandidates, d_coldCandidates, hot_pos, cold_pos, height_band, width_band);
   }
   cudaEventRecord(stop);
 
@@ -192,17 +196,17 @@ string Landsat::converge_rah_cycle(Station station, int method)
   float u10 = (ustar_station / VON_KARMAN) * log(10 / station.SURFACE_ROUGHNESS);
   float u200 = (ustar_station / VON_KARMAN) * log(200 / station.SURFACE_ROUGHNESS);
 
-  float ndvi_min = thrust::reduce(thrust::device, 
-                                products.ndvi_d,
-                                products.ndvi_d + height_band * width_band,
-                                1.0f,  // Initial value
-                                thrust::minimum<float>());
+  float ndvi_min = thrust::reduce(thrust::device,
+                                  products.ndvi_d,
+                                  products.ndvi_d + height_band * width_band,
+                                  1.0f, // Initial value
+                                  thrust::minimum<float>());
 
   float ndvi_max = thrust::reduce(thrust::device,
-                                products.ndvi_d,
-                                products.ndvi_d + height_band * width_band,
-                                -1.0f, // Initial value 
-                                thrust::maximum<float>());
+                                  products.ndvi_d,
+                                  products.ndvi_d + height_band * width_band,
+                                  -1.0f, // Initial value
+                                  thrust::maximum<float>());
 
   result += products.d0_fuction();
   result += products.zom_fuction(station.A_ZOM, station.B_ZOM);
@@ -216,9 +220,9 @@ string Landsat::converge_rah_cycle(Station station, int method)
   result += products.aerodynamic_resistance_fuction();
 
   if (method == 0) // STEEP
-    result += products.rah_correction_function_blocks_STEEP(ndvi_min, ndvi_max, hot_pixel, cold_pixel);
+    result += products.rah_correction_function_blocks_STEEP(d_hotCandidates, d_coldCandidates, hot_pos, cold_pos, ndvi_min, ndvi_max);
   else // ASEBAL
-    result += products.rah_correction_function_blocks_ASEBAL(ndvi_min, ndvi_max, hot_pixel, cold_pixel, u200);
+    result += products.rah_correction_function_blocks_ASEBAL(d_hotCandidates, d_coldCandidates, hot_pos, cold_pos, ndvi_min, ndvi_max, u200);
   cudaEventRecord(stop);
 
   float cuda_time = 0;
@@ -248,13 +252,7 @@ string Landsat::compute_H_ET(Station station)
   float Ra24h = (((24 * 60 / PI) * GSC * dr) * (omegas * sin(phi) * sin(sigma) + cos(phi) * cos(sigma) * sin(omegas))) * (1000000 / 86400.0);
   float Rs24h = station.INTERNALIZATION_FACTOR * sqrt(station.v7_max - station.v7_min) * Ra24h;
 
-  float dt_pq_terra = products.H_pq_terra * products.rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
-  float dt_pf_terra = products.H_pf_terra * products.rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
-
-  float b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
-  float a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
-
-  result += products.sensible_heat_flux_function(a, b);
+  result += products.sensible_heat_flux_function(d_hotCandidates, d_coldCandidates, hot_pos, cold_pos);
   result += products.latent_heat_flux_function();
   result += products.net_radiation_24h_function(Ra24h, Rs24h);
   result += products.evapotranspiration_fraction_fuction();
@@ -272,6 +270,63 @@ string Landsat::compute_H_ET(Station station)
   result += "KERNELS,P4_FINAL_PROD," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
   return result;
 };
+
+string Landsat::copy_to_host()
+{
+  system_clock::time_point begin, end;
+  float general_time;
+  int64_t initial_time, final_time;
+
+  begin = system_clock::now();
+  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+  HANDLE_ERROR(cudaMemcpy(products.radiance_blue, products.radiance_blue_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.radiance_green, products.radiance_green_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.radiance_red, products.radiance_red_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.radiance_nir, products.radiance_nir_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.radiance_swir1, products.radiance_swir1_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.radiance_termal, products.radiance_termal_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.radiance_swir2, products.radiance_swir2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.reflectance_blue, products.reflectance_blue_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.reflectance_green, products.reflectance_green_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.reflectance_red, products.reflectance_red_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.reflectance_nir, products.reflectance_nir_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.reflectance_swir1, products.reflectance_swir1_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.reflectance_termal, products.reflectance_termal_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.reflectance_swir2, products.reflectance_swir2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.albedo, products.albedo_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.ndvi, products.ndvi_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.pai, products.pai_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.lai, products.lai_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.evi, products.evi_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.enb_emissivity, products.enb_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.eo_emissivity, products.eo_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.ea_emissivity, products.ea_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.surface_temperature, products.surface_temperature_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.short_wave_radiation, products.short_wave_radiation_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.large_wave_radiation_surface, products.large_wave_radiation_surface_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.large_wave_radiation_atmosphere, products.large_wave_radiation_atmosphere_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.net_radiation, products.net_radiation_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.soil_heat, products.soil_heat_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.d0, products.d0_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.zom, products.zom_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.ustar, products.ustar_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.kb1, products.kb1_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.sensible_heat_flux, products.sensible_heat_flux_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.latent_heat_flux, products.latent_heat_flux_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.net_radiation_24h, products.net_radiation_24h_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.evapotranspiration_fraction, products.evapotranspiration_fraction_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.sensible_heat_flux_24h, products.sensible_heat_flux_24h_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.latent_heat_flux_24h, products.latent_heat_flux_24h_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.evapotranspiration_24h, products.evapotranspiration_24h_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  HANDLE_ERROR(cudaMemcpy(products.evapotranspiration, products.evapotranspiration_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+
+  end = system_clock::now();
+  general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+  return "SERIAL,P5_COPY_HOST," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+}
 
 string Landsat::save_products(string output_path)
 {
@@ -311,7 +366,7 @@ string Landsat::save_products(string output_path)
   general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  return "SERIAL,P5_SAVE_PRODS," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "SERIAL,P6_SAVE_PRODS," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Landsat::print_products(string output_path)
@@ -405,7 +460,7 @@ string Landsat::print_products(string output_path)
   general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-  return "SERIAL,P6_STDOUT_PRODS," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+  return "SERIAL,P7_STDOUT_PRODS," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 void Landsat::close()

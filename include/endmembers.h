@@ -44,9 +44,10 @@ void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int
  *
  * @retval Candidate
  */
-string getEndmembersSTEEP(float *d_ndvi, float *d_surface_temperature, float *albedo,
+string getEndmembersSTEEP(float *d_ndvi, float *d_surface_temperature, float *d_albedo,
                           float *d_net_radiation, float *d_soil_heat, int blocks_num, int threads_num,
-                          Candidate &hot_pixel, Candidate &cold_pixel, int height_band, int width_band);
+                          Candidate *d_hotCandidates, Candidate *d_coldCandidates, int &hot_pos, int &cold_pos,
+                          int height_band, int width_band);
 
 /**
  * @brief Get the hot pixel based on the STEPP algorithm. GPU version.
@@ -70,6 +71,7 @@ string getEndmembersSTEEP(float *d_ndvi, float *d_surface_temperature, float *al
  *
  * @retval Candidate
  */
-string getEndmembersASEBAL(float *d_ndvi, float *d_surface_temperature, float *albedo,
+string getEndmembersASEBAL(float *d_ndvi, float *d_surface_temperature, float *d_albedo,
                            float *d_net_radiation, float *d_soil_heat, int blocks_num, int threads_num,
-                           Candidate &hot_pixel, Candidate &cold_pixel, int height_band, int width_band);
+                           Candidate *d_hotCandidates, Candidate *d_coldCandidates, int &hot_pos, int &cold_pos,
+                           int height_band, int width_band);

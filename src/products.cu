@@ -69,6 +69,9 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   this->evapotranspiration_24h = (float *)malloc(nBytes_band);
   this->evapotranspiration = (float *)malloc(nBytes_band);
 
+  this->stop_condition = (int *)malloc(sizeof(int));  
+  HANDLE_ERROR(cudaMalloc((void **)&this->stop_condition_d, sizeof(int)));
+
   HANDLE_ERROR(cudaMalloc((void **)&this->band_blue_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->band_green_d, nBytes_band));
   HANDLE_ERROR(cudaMalloc((void **)&this->band_red_d, nBytes_band));
@@ -252,19 +255,12 @@ string Products::radiance_function(MTL mtl)
 
   cudaEventRecord(start, 0);
   rad_kernel<<<this->blocks_num, this->threads_num>>>(band_blue_d, radiance_blue_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_BLUE_INDEX, width_band, height_band);
-  // HANDLE_ERROR(cudaMemcpy(radiance_blue, radiance_blue_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   rad_kernel<<<this->blocks_num, this->threads_num>>>(band_green_d, radiance_green_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_GREEN_INDEX, width_band, height_band);
-  // HANDLE_ERROR(cudaMemcpy(radiance_green, radiance_green_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   rad_kernel<<<this->blocks_num, this->threads_num>>>(band_red_d, radiance_red_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_RED_INDEX, width_band, height_band);
-  // HANDLE_ERROR(cudaMemcpy(radiance_red, radiance_red_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   rad_kernel<<<this->blocks_num, this->threads_num>>>(band_nir_d, radiance_nir_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_NIR_INDEX, width_band, height_band);
-  // HANDLE_ERROR(cudaMemcpy(radiance_nir, radiance_nir_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   rad_kernel<<<this->blocks_num, this->threads_num>>>(band_swir1_d, radiance_swir1_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_SWIR1_INDEX, width_band, height_band);
-  // HANDLE_ERROR(cudaMemcpy(radiance_swir1, radiance_swir1_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   rad_kernel<<<this->blocks_num, this->threads_num>>>(band_termal_d, radiance_termal_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_TERMAL_INDEX, width_band, height_band);
-  // HANDLE_ERROR(cudaMemcpy(radiance_termal, radiance_termal_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   rad_kernel<<<this->blocks_num, this->threads_num>>>(band_swir2_d, radiance_swir2_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_SWIR2_INDEX, width_band, height_band);
-  // HANDLE_ERROR(cudaMemcpy(radiance_swir2, radiance_swir2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   cudaEventRecord(stop, 0);
 
   float cuda_time = 0;
@@ -288,19 +284,12 @@ string Products::reflectance_function(MTL mtl)
 
   cudaEventRecord(start);
   ref_kernel<<<this->blocks_num, this->threads_num>>>(band_blue_d, reflectance_blue_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_BLUE_INDEX, width_band, height_band);
-  // HANDLE_ERROR(cudaMemcpy(reflectance_blue, reflectance_blue_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   ref_kernel<<<this->blocks_num, this->threads_num>>>(band_green_d, reflectance_green_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_GREEN_INDEX, width_band, height_band);
-  // HANDLE_ERROR(cudaMemcpy(reflectance_green, reflectance_green_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   ref_kernel<<<this->blocks_num, this->threads_num>>>(band_red_d, reflectance_red_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_RED_INDEX, width_band, height_band);
-  // HANDLE_ERROR(cudaMemcpy(reflectance_red, reflectance_red_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   ref_kernel<<<this->blocks_num, this->threads_num>>>(band_nir_d, reflectance_nir_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_NIR_INDEX, width_band, height_band);
-  // HANDLE_ERROR(cudaMemcpy(reflectance_nir, reflectance_nir_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   ref_kernel<<<this->blocks_num, this->threads_num>>>(band_swir1_d, reflectance_swir1_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_SWIR1_INDEX, width_band, height_band);
-  // HANDLE_ERROR(cudaMemcpy(reflectance_swir1, reflectance_swir1_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   ref_kernel<<<this->blocks_num, this->threads_num>>>(band_termal_d, reflectance_termal_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_TERMAL_INDEX, width_band, height_band);
-  // HANDLE_ERROR(cudaMemcpy(reflectance_termal, reflectance_termal_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   ref_kernel<<<this->blocks_num, this->threads_num>>>(band_swir2_d, reflectance_swir2_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_SWIR2_INDEX, width_band, height_band);
-  // HANDLE_ERROR(cudaMemcpy(reflectance_swir2, reflectance_swir2_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
   cudaEventRecord(stop);
 
   float cuda_time = 0;
@@ -310,7 +299,6 @@ string Products::reflectance_function(MTL mtl)
 
   return "KERNELS,REFLECTANCE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
-
 
 string Products::albedo_function(MTL mtl)
 {
@@ -325,8 +313,6 @@ string Products::albedo_function(MTL mtl)
   albedo_kernel<<<this->blocks_num, this->threads_num>>>(reflectance_blue_d, reflectance_green_d, reflectance_red_d, reflectance_nir_d, reflectance_swir1_d, reflectance_swir2_d,
                                                          tal_d, albedo_d, mtl.ref_w_coeff_d, width_band, height_band);
   cudaEventRecord(stop);
-
-  // HANDLE_ERROR(cudaMemcpy(albedo, albedo_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
   float cuda_time = 0;
   cudaEventSynchronize(stop);
@@ -349,8 +335,6 @@ string Products::ndvi_function()
   ndvi_kernel<<<this->blocks_num, this->threads_num>>>(reflectance_nir_d, reflectance_red_d, ndvi_d, width_band, height_band);
   cudaEventRecord(stop);
 
-  // HANDLE_ERROR(cudaMemcpy(ndvi, ndvi_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
-
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
@@ -371,8 +355,6 @@ string Products::pai_function()
   cudaEventRecord(start);
   pai_kernel<<<this->blocks_num, this->threads_num>>>(reflectance_nir_d, reflectance_red_d, pai_d, width_band, height_band);
   cudaEventRecord(stop);
-
-  // HANDLE_ERROR(cudaMemcpy(pai, pai_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
   float cuda_time = 0;
   cudaEventSynchronize(stop);
@@ -395,8 +377,6 @@ string Products::lai_function()
   lai_kernel<<<this->blocks_num, this->threads_num>>>(reflectance_nir_d, reflectance_red_d, lai_d, width_band, height_band);
   cudaEventRecord(stop);
 
-  // HANDLE_ERROR(cudaMemcpy(lai, lai_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
-
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
@@ -417,8 +397,6 @@ string Products::evi_function()
   cudaEventRecord(start);
   evi_kernel<<<this->blocks_num, this->threads_num>>>(reflectance_nir_d, reflectance_red_d, reflectance_blue_d, evi_d, width_band, height_band);
   cudaEventRecord(stop);
-
-  // HANDLE_ERROR(cudaMemcpy(evi, evi_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
   float cuda_time = 0;
   cudaEventSynchronize(stop);
@@ -441,8 +419,6 @@ string Products::enb_emissivity_function()
   enb_kernel<<<this->blocks_num, this->threads_num>>>(lai_d, ndvi_d, enb_d, width_band, height_band);
   cudaEventRecord(stop);
 
-  // HANDLE_ERROR(cudaMemcpy(enb_emissivity, enb_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
-
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
@@ -464,8 +440,6 @@ string Products::eo_emissivity_function()
   eo_kernel<<<this->blocks_num, this->threads_num>>>(lai_d, ndvi_d, eo_d, width_band, height_band);
   cudaEventRecord(stop);
 
-  // HANDLE_ERROR(cudaMemcpy(eo_emissivity, eo_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
-
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
@@ -486,8 +460,6 @@ string Products::ea_emissivity_function()
   cudaEventRecord(start);
   ea_kernel<<<this->blocks_num, this->threads_num>>>(tal_d, ea_d, width_band, height_band);
   cudaEventRecord(stop);
-
-  // HANDLE_ERROR(cudaMemcpy(ea_emissivity, ea_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
   float cuda_time = 0;
   cudaEventSynchronize(stop);
@@ -533,8 +505,6 @@ string Products::surface_temperature_function(MTL mtl)
   surface_temperature_kernel<<<this->blocks_num, this->threads_num>>>(enb_d, radiance_termal_d, surface_temperature_d, k1, k2, width_band, height_band);
   cudaEventRecord(stop);
 
-  // HANDLE_ERROR(cudaMemcpy(surface_temperature, surface_temperature_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
-
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
@@ -555,8 +525,6 @@ string Products::short_wave_radiation_function(MTL mtl)
   cudaEventRecord(start);
   short_wave_radiation_kernel<<<this->blocks_num, this->threads_num>>>(tal_d, short_wave_radiation_d, mtl.sun_elevation, mtl.distance_earth_sun, PI, width_band, height_band);
   cudaEventRecord(stop);
-
-  // HANDLE_ERROR(cudaMemcpy(short_wave_radiation, short_wave_radiation_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
   float cuda_time = 0;
   cudaEventSynchronize(stop);
@@ -579,8 +547,6 @@ string Products::large_wave_radiation_surface_function()
   large_wave_radiation_surface_kernel<<<this->blocks_num, this->threads_num>>>(surface_temperature_d, eo_d, large_wave_radiation_surface_d, width_band, height_band);
   cudaEventRecord(stop);
 
-  // HANDLE_ERROR(cudaMemcpy(large_wave_radiation_surface, large_wave_radiation_surface_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
-
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
@@ -601,8 +567,6 @@ string Products::large_wave_radiation_atmosphere_function(float temperature)
   cudaEventRecord(start);
   large_wave_radiation_atmosphere_kernel<<<this->blocks_num, this->threads_num>>>(ea_d, large_wave_radiation_atmosphere_d, temperature, width_band, height_band);
   cudaEventRecord(stop);
-
-  // HANDLE_ERROR(cudaMemcpy(large_wave_radiation_atmosphere, large_wave_radiation_atmosphere_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
   float cuda_time = 0;
   cudaEventSynchronize(stop);
@@ -625,8 +589,6 @@ string Products::net_radiation_function()
   net_radiation_kernel<<<this->blocks_num, this->threads_num>>>(short_wave_radiation_d, albedo_d, large_wave_radiation_atmosphere_d, large_wave_radiation_surface_d, eo_d, net_radiation_d, width_band, height_band);
   cudaEventRecord(stop);
 
-  // HANDLE_ERROR(cudaMemcpy(net_radiation, net_radiation_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
-
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
@@ -647,8 +609,6 @@ string Products::soil_heat_flux_function()
   cudaEventRecord(start);
   soil_heat_kernel<<<this->blocks_num, this->threads_num>>>(ndvi_d, albedo_d, surface_temperature_d, net_radiation_d, soil_heat_d, width_band, height_band);
   cudaEventRecord(stop);
-
-  // HANDLE_ERROR(cudaMemcpy(soil_heat, soil_heat_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
   float cuda_time = 0;
   cudaEventSynchronize(stop);
@@ -674,8 +634,6 @@ string Products::d0_fuction()
   d0_kernel<<<this->blocks_num, this->threads_num>>>(pai_d, d0_d, CD1, HGHT, width_band, height_band);
   cudaEventRecord(stop);
 
-  // HANDLE_ERROR(cudaMemcpy(d0, d0_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
-
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
@@ -696,8 +654,6 @@ string Products::zom_fuction(float A_ZOM, float B_ZOM)
   cudaEventRecord(start);
   zom_kernel<<<this->blocks_num, this->threads_num>>>(d0_d, pai_d, zom_d, A_ZOM, B_ZOM, width_band, height_band);
   cudaEventRecord(stop);
-
-  // HANDLE_ERROR(cudaMemcpy(zom, zom_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
   float cuda_time = 0;
   cudaEventSynchronize(stop);
@@ -720,8 +676,6 @@ string Products::ustar_fuction(float u10)
   ustar_kernel<<<this->blocks_num, this->threads_num>>>(zom_d, d0_d, ustar_d, u10, width_band, height_band);
   cudaEventRecord(stop);
 
-  // HANDLE_ERROR(cudaMemcpy(ustar, ustar_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
-
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
@@ -742,8 +696,6 @@ string Products::kb_function(float ndvi_max, float ndvi_min)
   cudaEventRecord(start);
   kb_kernel<<<this->blocks_num, this->threads_num>>>(zom_d, ustar_d, pai_d, kb1_d, ndvi_d, width_band, height_band, ndvi_max, ndvi_min);
   cudaEventRecord(stop);
-
-  // HANDLE_ERROR(cudaMemcpy(kb1, kb1_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
   float cuda_time = 0;
   cudaEventSynchronize(stop);
@@ -766,8 +718,6 @@ string Products::aerodynamic_resistance_fuction()
   aerodynamic_resistance_kernel<<<this->blocks_num, this->threads_num>>>(zom_d, d0_d, ustar_d, kb1_d, rah_d, width_band, height_band);
   cudaEventRecord(stop);
 
-  HANDLE_ERROR(cudaMemcpy(aerodynamic_resistance, rah_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
-
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
@@ -776,7 +726,7 @@ string Products::aerodynamic_resistance_fuction()
   return "KERNELS,RAH_INI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::sensible_heat_flux_function(float a, float b)
+string Products::sensible_heat_flux_function(Candidate *d_hotCandidates, Candidate *d_coldCandidates, int hot_pos, int cold_pos)
 {
   int64_t initial_time, final_time;
   cudaEvent_t start, stop;
@@ -786,10 +736,10 @@ string Products::sensible_heat_flux_function(float a, float b)
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   cudaEventRecord(start);
-  sensible_heat_flux_kernel<<<this->blocks_num, this->threads_num>>>(surface_temperature_d, rah_d, net_radiation_d, soil_heat_d, sensible_heat_flux_d, a, b, width_band, height_band);
-  cudaEventRecord(stop);
+  sensible_heat_flux_kernel<<<this->blocks_num, this->threads_num>>>(d_hotCandidates, d_coldCandidates, hot_pos, cold_pos, surface_temperature_d, 
+                                                                     rah_d, net_radiation_d, soil_heat_d, sensible_heat_flux_d, width_band, height_band);
 
-  // HANDLE_ERROR(cudaMemcpy(sensible_heat_flux, sensible_heat_flux_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
+  cudaEventRecord(stop);
 
   float cuda_time = 0;
   cudaEventSynchronize(stop);
@@ -812,8 +762,6 @@ string Products::latent_heat_flux_function()
   latent_heat_flux_kernel<<<this->blocks_num, this->threads_num>>>(net_radiation_d, soil_heat_d, sensible_heat_flux_d, latent_heat_flux_d, width_band, height_band);
   cudaEventRecord(stop);
 
-  // HANDLE_ERROR(cudaMemcpy(latent_heat_flux, latent_heat_flux_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
-
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
@@ -834,8 +782,6 @@ string Products::net_radiation_24h_function(float Ra24h, float Rs24h)
   cudaEventRecord(start);
   net_radiation_24h_kernel<<<this->blocks_num, this->threads_num>>>(albedo_d, Rs24h, Ra24h, net_radiation_24h_d, width_band, height_band);
   cudaEventRecord(stop);
-
-  // HANDLE_ERROR(cudaMemcpy(net_radiation_24h, net_radiation_24h_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
   float cuda_time = 0;
   cudaEventSynchronize(stop);
@@ -858,8 +804,6 @@ string Products::evapotranspiration_fraction_fuction()
   evapotranspiration_fraction_kernel<<<this->blocks_num, this->threads_num>>>(net_radiation_d, soil_heat_d, latent_heat_flux_d, evapotranspiration_fraction_d, width_band, height_band);
   cudaEventRecord(stop);
 
-  // HANDLE_ERROR(cudaMemcpy(evapotranspiration_fraction, evapotranspiration_fraction_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
-
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
@@ -880,8 +824,6 @@ string Products::sensible_heat_flux_24h_fuction()
   cudaEventRecord(start);
   sensible_heat_flux_24h_kernel<<<this->blocks_num, this->threads_num>>>(net_radiation_24h_d, evapotranspiration_fraction_d, sensible_heat_flux_24h_d, width_band, height_band);
   cudaEventRecord(stop);
-
-  // HANDLE_ERROR(cudaMemcpy(sensible_heat_flux_24h, sensible_heat_flux_24h_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
   float cuda_time = 0;
   cudaEventSynchronize(stop);
@@ -904,8 +846,6 @@ string Products::latent_heat_flux_24h_function()
   latent_heat_flux_24h_kernel<<<this->blocks_num, this->threads_num>>>(net_radiation_24h_d, evapotranspiration_fraction_d, latent_heat_flux_24h_d, width_band, height_band);
   cudaEventRecord(stop);
 
-  // HANDLE_ERROR(cudaMemcpy(latent_heat_flux_24h, latent_heat_flux_24h_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
-
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
@@ -926,8 +866,6 @@ string Products::evapotranspiration_24h_function(Station station)
   cudaEventRecord(start);
   evapotranspiration_24h_kernel<<<this->blocks_num, this->threads_num>>>(latent_heat_flux_24h_d, evapotranspiration_24h_d, station.v7_max, station.v7_min, width_band, height_band);
   cudaEventRecord(stop);
-
-  // HANDLE_ERROR(cudaMemcpy(evapotranspiration_24h, evapotranspiration_24h_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
 
   float cuda_time = 0;
   cudaEventSynchronize(stop);
@@ -950,8 +888,6 @@ string Products::evapotranspiration_function()
   evapotranspiration_kernel<<<this->blocks_num, this->threads_num>>>(net_radiation_24h_d, evapotranspiration_fraction_d, evapotranspiration_d, width_band, height_band);
   cudaEventRecord(stop);
 
-  HANDLE_ERROR(cudaMemcpy(evapotranspiration, evapotranspiration_d, sizeof(float) * height_band * width_band, cudaMemcpyDeviceToHost));
-
   float cuda_time = 0;
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&cuda_time, start, stop);
@@ -960,7 +896,8 @@ string Products::evapotranspiration_function()
   return "KERNELS,EVAPOTRANSPIRATION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::rah_correction_function_blocks_STEEP(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel)
+string Products::rah_correction_function_blocks_STEEP(Candidate *d_hotCandidates, Candidate *d_coldCandidates,
+                                                      int hot_pos, int cold_pos, float ndvi_min, float ndvi_max)
 {
   string result = "";
   cudaEvent_t start, stop;
@@ -976,60 +913,24 @@ string Products::rah_correction_function_blocks_STEEP(float ndvi_min, float ndvi
   HANDLE_ERROR(cudaGetDeviceProperties(&deviceProp, dev));
   HANDLE_ERROR(cudaSetDevice(dev));
 
-  int threads_per_block = threads_num;
-  int num_blocks = ceil(width_band * height_band / threads_per_block);
-
-  float hot_pixel_aerodynamic = aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
-  hot_pixel.setAerodynamicResistance(hot_pixel_aerodynamic);
-
-  float cold_pixel_aerodynamic = aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
-  cold_pixel.setAerodynamicResistance(cold_pixel_aerodynamic);
-
-  float fc_hot = 1 - pow((ndvi[hot_pixel.line * width_band + hot_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
-  float fc_cold = 1 - pow((ndvi[cold_pixel.line * width_band + cold_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
-
+  cudaEventRecord(start);
   for (int i = 0; i < 2; i++)
   {
-    this->rah_ini_pq_terra = hot_pixel.aerodynamic_resistance;
-    this->rah_ini_pf_terra = cold_pixel.aerodynamic_resistance;
-
-    float LEc_terra = 0.55 * fc_hot * (hot_pixel.net_radiation - hot_pixel.soil_heat_flux) * 0.78;
-    float LEc_terra_pf = 1.75 * fc_cold * (cold_pixel.net_radiation - cold_pixel.soil_heat_flux) * 0.78;
-
-    this->H_pf_terra = cold_pixel.net_radiation - cold_pixel.soil_heat_flux - LEc_terra_pf;
-    float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
-
-    this->H_pq_terra = hot_pixel.net_radiation - hot_pixel.soil_heat_flux - LEc_terra;
-    float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
-
-    float b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
-    float a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
-
-    // ==== Paralelization core
-    cudaEventRecord(start);
-    rah_correction_cycle_STEEP<<<num_blocks, threads_per_block>>>(surface_temperature_d, d0_d, kb1_d, zom_d, ustar_d, rah_d, sensible_heat_flux_d, a, b, height_band, width_band);
-    cudaEventRecord(stop);
-    // ====
-
-    HANDLE_ERROR(cudaMemcpy(aerodynamic_resistance, rah_d, nBytes_band, cudaMemcpyDeviceToHost));
-
-    float rah_hot = this->aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
-    hot_pixel.setAerodynamicResistance(rah_hot);
-
-    float rah_cold = this->aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
-    cold_pixel.setAerodynamicResistance(rah_cold);
-
-    float cuda_time = 0;
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&cuda_time, start, stop);
-    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-    result += "KERNELS,RAH_CYCLE_" + std::to_string(i) + "," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    rah_correction_cycle_STEEP<<<this->blocks_num, this->threads_num>>>(d_hotCandidates, d_coldCandidates, hot_pos, cold_pos, ndvi_d,
+                                                                        surface_temperature_d, d0_d, kb1_d, zom_d, ustar_d, rah_d, sensible_heat_flux_d,
+                                                                        ndvi_max, ndvi_min, height_band, width_band);
   }
+  cudaEventRecord(stop);
 
-  return result;
+  float cuda_time = 0;
+  cudaEventSynchronize(stop);
+  cudaEventElapsedTime(&cuda_time, start, stop);
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "KERNELS,RAH_CYCLE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
-string Products::rah_correction_function_blocks_ASEBAL(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel, float u200)
+string Products::rah_correction_function_blocks_ASEBAL(Candidate *d_hotCandidates, Candidate *d_coldCandidates,
+                                                       int hot_pos, int cold_pos, float ndvi_min, float ndvi_max, float u200)
 {
   string result = "";
   cudaEvent_t start, stop;
@@ -1045,61 +946,28 @@ string Products::rah_correction_function_blocks_ASEBAL(float ndvi_min, float ndv
   HANDLE_ERROR(cudaGetDeviceProperties(&deviceProp, dev));
   HANDLE_ERROR(cudaSetDevice(dev));
 
-  int threads_per_block = threads_num;
-  int num_blocks = ceil(width_band * height_band / threads_per_block);
-
-  float hot_pixel_aerodynamic = aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
-  hot_pixel.setAerodynamicResistance(hot_pixel_aerodynamic);
-
-  float cold_pixel_aerodynamic = aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
-  cold_pixel.setAerodynamicResistance(cold_pixel_aerodynamic);
-
-  float fc_hot = 1 - pow((ndvi[hot_pixel.line * width_band + hot_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
-  float fc_cold = 1 - pow((ndvi[cold_pixel.line * width_band + cold_pixel.col] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
-
+  cudaEventRecord(start);
   int i = 0;
   while (true)
   {
-    this->rah_ini_pq_terra = hot_pixel.aerodynamic_resistance;
-    this->rah_ini_pf_terra = cold_pixel.aerodynamic_resistance;
+    rah_correction_cycle_ASEBAL<<<this->blocks_num, this->threads_num>>>(d_hotCandidates, d_coldCandidates, hot_pos, cold_pos,
+                                                                         ndvi_d, surface_temperature_d, kb1_d, zom_d, ustar_d,
+                                                                         rah_d, sensible_heat_flux_d, ndvi_max, ndvi_min,
+                                                                         u200, height_band, width_band, stop_condition_d);
 
-    float LEc_terra = 0.55 * fc_hot * (hot_pixel.net_radiation - hot_pixel.soil_heat_flux) * 0.78;
-    float LEc_terra_pf = 1.75 * fc_cold * (cold_pixel.net_radiation - cold_pixel.soil_heat_flux) * 0.78;
+    HANDLE_ERROR(cudaMemcpy(stop_condition, stop_condition_d, sizeof(int), cudaMemcpyDeviceToHost));
 
-    this->H_pf_terra = cold_pixel.net_radiation - cold_pixel.soil_heat_flux - LEc_terra_pf;
-    float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
-
-    this->H_pq_terra = hot_pixel.net_radiation - hot_pixel.soil_heat_flux - LEc_terra;
-    float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
-
-    float b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
-    float a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
-
-    // ==== Paralelization core
-    cudaEventRecord(start);
-    rah_correction_cycle_ASEBAL<<<num_blocks, threads_per_block>>>(surface_temperature_d, kb1_d, zom_d, ustar_d, rah_d, sensible_heat_flux_d, a, b, u200, height_band, width_band);
-    cudaEventRecord(stop);
-    // ====
-
-    HANDLE_ERROR(cudaMemcpy(aerodynamic_resistance, rah_d, nBytes_band, cudaMemcpyDeviceToHost));
-
-    float rah_hot = this->aerodynamic_resistance[hot_pixel.line * width_band + hot_pixel.col];
-    hot_pixel.setAerodynamicResistance(rah_hot);
-
-    float rah_cold = this->aerodynamic_resistance[cold_pixel.line * width_band + cold_pixel.col];
-    cold_pixel.setAerodynamicResistance(rah_cold);
-
-    float cuda_time = 0;
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&cuda_time, start, stop);
-    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-    result += "KERNELS,RAH_CYCLE_" + std::to_string(i) + "," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
-
-    if (i > 0 && fabs(1 - rah_ini_pq_terra / rah_hot) < 0.05)
+    if (i > 0 && *stop_condition)
       break;
     else
       i++;
   }
 
-  return result;
+  cudaEventRecord(stop);
+
+  float cuda_time = 0;
+  cudaEventSynchronize(stop);
+  cudaEventElapsedTime(&cuda_time, start, stop);
+  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+  return "KERNELS,RAH_CYCLE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }

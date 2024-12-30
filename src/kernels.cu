@@ -1,5 +1,10 @@
 #include "kernels.cuh"
 
+__shared__ float rah_ini_pq_terra;
+__shared__ float rah_ini_pf_terra;
+__shared__ float H_pq_terra;
+__shared__ float H_pf_terra;
+
 __global__ void rad_kernel(float *band_d, float *radiance_d, float *rad_add_d, float *rad_mult_d, int band_idx, int width, int height)
 {
   unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -38,8 +43,7 @@ __global__ void ref_kernel(float *band_d, float *reflectance_d, float *ref_add_d
   }
 }
 
-__global__ void albedo_kernel(float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_swir2_d,
-                              float *tal_d, float *albedo_d, float *ref_w_coeff_d, int width, int height)
+__global__ void albedo_kernel(float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_swir2_d, float *tal_d, float *albedo_d, float *ref_w_coeff_d, int width, int height)
 {
   unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -455,7 +459,8 @@ __global__ void aerodynamic_resistance_kernel(float *zom_d, float *d0_d, float *
   }
 }
 
-__global__ void sensible_heat_flux_kernel(float *surface_temperature_d, float *rah_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d, float a, float b, int width, int height)
+__global__ void sensible_heat_flux_kernel(Candidate *d_hotCandidates, Candidate *d_coldCandidates, int hot_pos, int cold_pos, float *surface_temperature_d,
+                                          float *rah_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d, int width, int height)
 {
   unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -466,6 +471,15 @@ __global__ void sensible_heat_flux_kernel(float *surface_temperature_d, float *r
   if (idx < width * height)
   {
     unsigned int pos = row * width + col;
+
+    Candidate hot_pixel = d_hotCandidates[hot_pos];
+    Candidate cold_pixel = d_coldCandidates[cold_pos];
+
+    float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
+    float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
+
+    float b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
+    float a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
 
     sensible_heat_flux_d[pos] = RHO * SPECIFIC_HEAT_AIR * (a + b * (surface_temperature_d[pos] - 273.15)) / rah_d[pos];
 
@@ -583,9 +597,10 @@ __global__ void evapotranspiration_kernel(float *net_radiation_24h_d, float *eva
   }
 }
 
-__global__ void rah_correction_cycle_STEEP(float *surface_temperature_pointer, float *d0_pointer, float *kb1_pointer, float *zom_pointer,
-                                           float *ustar_pointer, float *rah_pointer, float *H_pointer, float a, float b, int height,
-                                           int width)
+__global__ void rah_correction_cycle_STEEP(Candidate *d_hotCandidates, Candidate *d_coldCandidates, int hot_idx, int cold_idx,
+                                           float *ndvi_pointer, float *surf_temp_pointer, float *d0_pointer, float *kb1_pointer,
+                                           float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer,
+                                           float ndvi_max, float ndvi_min, int height, int width)
 {
   // Identify 1D position
   unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -598,11 +613,34 @@ __global__ void rah_correction_cycle_STEEP(float *surface_temperature_pointer, f
   {
     unsigned int pos = row * width + col;
 
+    Candidate hot_pixel = d_hotCandidates[hot_idx];
+    Candidate cold_pixel = d_coldCandidates[cold_idx];
+    unsigned int hot_pos = hot_pixel.line * width + hot_pixel.col;
+    unsigned int cold_pos = cold_pixel.line * width + cold_pixel.col;
+
+    float fc_hot = 1 - pow((ndvi_pointer[hot_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+    float fc_cold = 1 - pow((ndvi_pointer[cold_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+
+    rah_ini_pq_terra = rah_pointer[hot_pos];
+    rah_ini_pf_terra = rah_pointer[cold_pos];
+
+    float LEc_terra = 0.55 * fc_hot * (hot_pixel.net_radiation - hot_pixel.soil_heat_flux) * 0.78;
+    float LEc_terra_pf = 1.75 * fc_cold * (cold_pixel.net_radiation - cold_pixel.soil_heat_flux) * 0.78;
+
+    H_pf_terra = cold_pixel.net_radiation - cold_pixel.soil_heat_flux - LEc_terra_pf;
+    float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
+
+    H_pq_terra = hot_pixel.net_radiation - hot_pixel.soil_heat_flux - LEc_terra;
+    float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
+
+    float b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
+    float a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
+
     float DISP = d0_pointer[pos];
-    float dT_ini_terra = a + b * (surface_temperature_pointer[pos] - 273.15);
+    float dT_ini_terra = a + b * (surf_temp_pointer[pos] - 273.15);
 
     float sensibleHeatFlux = RHO * SPECIFIC_HEAT_AIR * (dT_ini_terra) / rah_pointer[pos];
-    float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_pointer[pos], 3) * surface_temperature_pointer[pos]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
+    float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_pointer[pos], 3) * surf_temp_pointer[pos]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
 
     float y2 = pow((1 - (16 * (10 - DISP)) / L), 0.25);
     float x200 = pow((1 - (16 * (10 - DISP)) / L), 0.25);
@@ -633,8 +671,10 @@ __global__ void rah_correction_cycle_STEEP(float *surface_temperature_pointer, f
   }
 }
 
-__global__ void rah_correction_cycle_ASEBAL(float *surface_temperature_pointer, float *kb1_pointer, float *zom_pointer, float *ustar_pointer, 
-                                            float *rah_pointer, float *H_pointer, float a, float b, float u200, int height, int width)
+__global__ void rah_correction_cycle_ASEBAL(Candidate *d_hotCandidates, Candidate *d_coldCandidates, int hot_pos, int cold_pos,
+                                            float *ndvi_pointer, float *surf_temp_pointer, float *kb1_pointer, float *zom_pointer,
+                                            float *ustar_pointer, float *rah_pointer, float *H_pointer, float ndvi_max, float ndvi_min,
+                                            float u200, int height, int width, int *stop_condition)
 {
   // Identify 1D position
   unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -647,10 +687,33 @@ __global__ void rah_correction_cycle_ASEBAL(float *surface_temperature_pointer, 
   {
     unsigned int pos = row * width + col;
 
-    float dT_ini_terra = a + b * (surface_temperature_pointer[pos] - 273.15);
+    Candidate hot_pixel = d_hotCandidates[hot_pos];
+    Candidate cold_pixel = d_coldCandidates[cold_pos];
+    unsigned int hot_pos = hot_pixel.line * width + hot_pixel.col;
+    unsigned int cold_pos = cold_pixel.line * width + cold_pixel.col;
+
+    float fc_hot = 1 - pow((ndvi_pointer[hot_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+    float fc_cold = 1 - pow((ndvi_pointer[cold_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+
+    rah_ini_pq_terra = rah_pointer[hot_pos];
+    rah_ini_pf_terra = rah_pointer[cold_pos];
+
+    float LEc_terra = 0.55 * fc_hot * (hot_pixel.net_radiation - hot_pixel.soil_heat_flux) * 0.78;
+    float LEc_terra_pf = 1.75 * fc_cold * (cold_pixel.net_radiation - cold_pixel.soil_heat_flux) * 0.78;
+
+    H_pf_terra = cold_pixel.net_radiation - cold_pixel.soil_heat_flux - LEc_terra_pf;
+    float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
+
+    H_pq_terra = hot_pixel.net_radiation - hot_pixel.soil_heat_flux - LEc_terra;
+    float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
+
+    float b = (dt_pq_terra - dt_pf_terra) / (surf_temp_pointer[hot_pos] - surf_temp_pointer[cold_pos]);
+    float a = dt_pf_terra - (b * (surf_temp_pointer[cold_pos] - 273.15));
+
+    float dT_ini_terra = a + b * (surf_temp_pointer[pos] - 273.15);
 
     float sensibleHeatFlux = RHO * SPECIFIC_HEAT_AIR * (dT_ini_terra) / rah_pointer[pos];
-    float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_pointer[pos], 3) * surface_temperature_pointer[pos]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
+    float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_pointer[pos], 3) * surf_temp_pointer[pos]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
 
     float y1 = pow((1 - (16 * 0.1) / L), 0.25);
     float y2 = pow((1 - (16 * 2) / L), 0.25);
@@ -676,5 +739,11 @@ __global__ void rah_correction_cycle_ASEBAL(float *surface_temperature_pointer, 
     ustar_pointer[pos] = ust;
     rah_pointer[pos] = rah;
     H_pointer[pos] = sensibleHeatFlux;
+
+    if ((pos == hot_pos) && (fabs(1 - rah_ini_pq_terra / rah_pointer[hot_pos]) < 0.05))
+    {
+      atomicExch(stop_condition, 1); // Set the global flag if any thread meets the condition
+    }
+
   }
 }

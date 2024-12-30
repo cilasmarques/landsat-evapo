@@ -38,18 +38,14 @@ void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int
 
 string getEndmembersSTEEP(float *d_ndvi, float *d_surface_temperature, float *d_albedo,
                           float *d_net_radiation, float *d_soil_heat, int blocks_num, int threads_num,
-                          Candidate &hot_pixel, Candidate &cold_pixel, int height_band, int width_band)
+                          Candidate *d_hotCandidates, Candidate *d_coldCandidates, int &hot_pos, int &cold_pos,
+                          int height_band, int width_band)
 {
   string result = "";
   int64_t initial_time, final_time;
   cudaEvent_t start, stop;
   cudaEventCreate(&start);
   cudaEventCreate(&stop);
-
-  Candidate *d_hotCandidates, *d_coldCandidates;
-  const size_t MAXC = sizeof(Candidate) * height_band * width_band;
-  HANDLE_ERROR(cudaMalloc((void **)&d_hotCandidates, MAXC));
-  HANDLE_ERROR(cudaMalloc((void **)&d_coldCandidates, MAXC));
 
   float *d_ho;
   cudaMalloc((void **)&d_ho, sizeof(float) * height_band * width_band);
@@ -79,8 +75,8 @@ string getEndmembersSTEEP(float *d_ndvi, float *d_surface_temperature, float *d_
     cudaEventRecord(stop);
 
     cudaMemcpy(&indexes, d_indexes, sizeof(int) * 2, cudaMemcpyDeviceToHost);
-    unsigned int hotPos = static_cast<unsigned int>(std::floor(indexes[0] * 0.5));
-    unsigned int coldPos = static_cast<unsigned int>(std::floor(indexes[1] * 0.5));
+    hot_pos = static_cast<unsigned int>(std::floor(indexes[0] * 0.5));
+    cold_pos = static_cast<unsigned int>(std::floor(indexes[1] * 0.5));
 
     // The dev_ptr_hot sort also sorts the d_hotCandidates array
     thrust::device_ptr<Candidate> dev_ptr_hot(d_hotCandidates);
@@ -107,18 +103,14 @@ string getEndmembersSTEEP(float *d_ndvi, float *d_surface_temperature, float *d_
 
 string getEndmembersASEBAL(float *d_ndvi, float *d_surface_temperature, float *d_albedo,
                            float *d_net_radiation, float *d_soil_heat, int blocks_num, int threads_num,
-                           Candidate &hot_pixel, Candidate &cold_pixel, int height_band, int width_band)
+                           Candidate *d_hotCandidates, Candidate *d_coldCandidates, int &hot_pos, int &cold_pos,
+                           int height_band, int width_band)
 {
   string result = "";
   int64_t initial_time, final_time;
   cudaEvent_t start, stop;
   cudaEventCreate(&start);
   cudaEventCreate(&stop);
-
-  Candidate *d_hotCandidates, *d_coldCandidates;
-  const size_t MAXC = sizeof(Candidate) * height_band * width_band;
-  HANDLE_ERROR(cudaMalloc((void **)&d_hotCandidates, MAXC));
-  HANDLE_ERROR(cudaMalloc((void **)&d_coldCandidates, MAXC));
 
   float *d_ho;
   cudaMalloc((void **)&d_ho, sizeof(float) * height_band * width_band);
@@ -148,8 +140,8 @@ string getEndmembersASEBAL(float *d_ndvi, float *d_surface_temperature, float *d
     cudaEventRecord(stop);
 
     cudaMemcpy(&indexes, d_indexes, sizeof(int) * 2, cudaMemcpyDeviceToHost);
-    unsigned int hotPos = static_cast<unsigned int>(std::floor(indexes[0] * 0.5));
-    unsigned int coldPos = static_cast<unsigned int>(std::floor(indexes[1] * 0.5));
+    hot_pos = static_cast<unsigned int>(std::floor(indexes[0] * 0.5));
+    cold_pos = static_cast<unsigned int>(std::floor(indexes[1] * 0.5));
 
     // The dev_ptr_hot sort also sorts the d_hotCandidates array
     thrust::device_ptr<Candidate> dev_ptr_hot(d_hotCandidates);

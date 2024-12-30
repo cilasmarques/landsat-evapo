@@ -17,11 +17,6 @@ struct Products
   uint32_t width_band;
   uint32_t height_band;
 
-  float H_pf_terra;
-  float H_pq_terra;
-  float rah_ini_pq_terra;
-  float rah_ini_pf_terra;
-
   float *band_blue;
   float *band_green;
   float *band_red;
@@ -87,6 +82,8 @@ struct Products
   float *enb_d, *eo_d, *ea_d, *short_wave_radiation_d, *large_wave_radiation_surface_d, *large_wave_radiation_atmosphere_d;
   float *soil_heat_d, *surface_temperature_d, *net_radiation_d, *d0_d, *kb1_d, *zom_d, *ustar_d, *rah_d, *sensible_heat_flux_d;
   float *latent_heat_flux_d, *net_radiation_24h_d, *evapotranspiration_fraction_d, *sensible_heat_flux_24h_d, *latent_heat_flux_24h_d, *evapotranspiration_24h_d, *evapotranspiration_d;
+
+  int *stop_condition, *stop_condition_d;
 
   /**
    * @brief  Constructor.
@@ -224,10 +221,13 @@ struct Products
 
   /**
    * @brief  The sensible heat flux is computed.
-   * @param  a: Coefficient A.
-   * @param  b: Coefficient B.
+   * 
+   * @param d_hotCandidates: Hot candidates vector in device.
+   * @param d_coldCandidates: Cold candidates vector in device.
+   * @param hot_pos: Hot position in device.
+   * @param cold_pos: Cold position in device.
    */
-  string sensible_heat_flux_function(float a, float b);
+  string sensible_heat_flux_function(Candidate *d_hotCandidates, Candidate *d_coldCandidates, int hot_pos, int cold_pos);
 
   /**
    * @brief  The latent heat flux is computed.
@@ -268,22 +268,32 @@ struct Products
 
   /**
    * @brief  The  aerodynamic resistance convergence is computed.
+   * 
+   * @param d_hotCandidates: Hot candidates vector in device.
+   * @param d_coldCandidates: Cold candidates vector in device.
+   * @param hot_pos: Hot position in device.
+   * @param cold_pos: Cold position in device.
    * @param  ndvi_min: Minimum NDVI.
    * @param  ndvi_max: Maximum NDVI.
-   * @param  hot_pixel: Hot pixel.
-   * @param  cold_pixel: Cold pixel.
+   * 
    * @return  string: Time message.
    */
-  string rah_correction_function_blocks_STEEP(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel);
+  string rah_correction_function_blocks_STEEP(Candidate *d_hotCandidates, Candidate *d_coldCandidates,
+                                              int hot_pos, int cold_pos, float ndvi_min, float ndvi_max);
 
   /**
    * @brief  The  aerodynamic resistance convergence is computed.
+   *
+   * @param d_hotCandidates: Hot candidates vector in device.
+   * @param d_coldCandidates: Cold candidates vector in device.
+   * @param hot_pos: Hot position in device.
+   * @param cold_pos: Cold position in device.
    * @param  ndvi_min: Minimum NDVI.
    * @param  ndvi_max: Maximum NDVI.
-   * @param  hot_pixel: Hot pixel.
-   * @param  cold_pixel: Cold pixel.
    * @param  u200: U200 parameter.
+   * 
    * @return  string: Time message.
    */
-  string rah_correction_function_blocks_ASEBAL(float ndvi_min, float ndvi_max, Candidate hot_pixel, Candidate cold_pixel, float u200);
+  string rah_correction_function_blocks_ASEBAL(Candidate *d_hotCandidates, Candidate *d_coldCandidates,
+                                               int hot_pos, int cold_pos, float ndvi_min, float ndvi_max, float u200);
 };
