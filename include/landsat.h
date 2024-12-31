@@ -19,7 +19,6 @@ struct Landsat
   uint32_t width_band;
   int threads_num;
 
-  int hot_pos, cold_pos;
   Candidate *d_hotCandidates, *d_coldCandidates;
 
   MTL mtl;

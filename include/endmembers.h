@@ -46,7 +46,7 @@ void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int
  */
 string getEndmembersSTEEP(float *d_ndvi, float *d_surface_temperature, float *d_albedo,
                           float *d_net_radiation, float *d_soil_heat, int blocks_num, int threads_num,
-                          Candidate *d_hotCandidates, Candidate *d_coldCandidates, int &hot_pos, int &cold_pos,
+                          Candidate *d_hotCandidates, Candidate *d_coldCandidates, 
                           int height_band, int width_band);
 
 /**
@@ -73,5 +73,5 @@ string getEndmembersSTEEP(float *d_ndvi, float *d_surface_temperature, float *d_
  */
 string getEndmembersASEBAL(float *d_ndvi, float *d_surface_temperature, float *d_albedo,
                            float *d_net_radiation, float *d_soil_heat, int blocks_num, int threads_num,
-                           Candidate *d_hotCandidates, Candidate *d_coldCandidates, int &hot_pos, int &cold_pos,
+                           Candidate *d_hotCandidates, Candidate *d_coldCandidates, 
                            int height_band, int width_band);

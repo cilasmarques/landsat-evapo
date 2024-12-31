@@ -4,6 +4,9 @@
 #include "cuda_utils.h"
 #include "candidate.h"
 
+extern __device__ int pos_hot_d;
+extern __device__ int pos_cold_d;
+
 /**
  * @brief  Compute the radiance of the bands.
  *
@@ -281,7 +284,7 @@ __global__ void aerodynamic_resistance_kernel(float *zom_d, float *d0_d, float *
  * @param width_band  The width of the bands.
  * @param height_band  The height of the bands.
  */
-__global__ void sensible_heat_flux_kernel(Candidate *d_hotCandidates, Candidate *d_coldCandidates, int hot_pos, int cold_pos, float *surface_temperature_d,
+__global__ void sensible_heat_flux_kernel(Candidate *d_hotCandidates, Candidate *d_coldCandidates, float *surface_temperature_d,
                                           float *rah_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d, int width, int height);
 
 /**
@@ -385,7 +388,7 @@ __global__ void evapotranspiration_kernel(float *net_radiation_24h_d, float *eva
  * @param height  Height of the input data
  * @param width  Width of the input data
  */
-__global__ void rah_correction_cycle_STEEP(Candidate *d_hotCandidates, Candidate *d_coldCandidates, int hot_idx, int cold_idx,
+__global__ void rah_correction_cycle_STEEP(Candidate *d_hotCandidates, Candidate *d_coldCandidates, 
                                            float *ndvi_pointer, float *surf_temp_pointer, float *d0_pointer, float *kb1_pointer,
                                            float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer,
                                            float ndvi_max, float ndvi_min, int height, int width);
@@ -410,7 +413,7 @@ __global__ void rah_correction_cycle_STEEP(Candidate *d_hotCandidates, Candidate
  * @param height  Height of the input data
  * @param width  Width of the input data
  */
-__global__ void rah_correction_cycle_ASEBAL(Candidate *d_hotCandidates, Candidate *d_coldCandidates, int hot_pos, int cold_pos,
+__global__ void rah_correction_cycle_ASEBAL(Candidate *d_hotCandidates, Candidate *d_coldCandidates, 
                                             float *ndvi_pointer, float *surf_temp_pointer, float *kb1_pointer, float *zom_pointer,
                                             float *ustar_pointer, float *rah_pointer, float *H_pointer, float ndvi_max, float ndvi_min,
                                             float u200, int height, int width, int *stop_condition);

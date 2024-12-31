@@ -163,12 +163,12 @@ string Landsat::select_endmembers(int method)
   if (method == 0)
   { // STEEP
     result += getEndmembersSTEEP(products.ndvi_d, products.surface_temperature_d, products.albedo_d, products.net_radiation_d, products.soil_heat_d,
-                                 products.blocks_num, products.threads_num, d_hotCandidates, d_coldCandidates, hot_pos, cold_pos, height_band, width_band);
+                                 products.blocks_num, products.threads_num, d_hotCandidates, d_coldCandidates, height_band, width_band);
   }
   else if (method == 1)
   { // ASEBAL
     result += getEndmembersASEBAL(products.ndvi_d, products.surface_temperature_d, products.albedo_d, products.net_radiation_d, products.soil_heat_d,
-                                  products.blocks_num, products.threads_num, d_hotCandidates, d_coldCandidates, hot_pos, cold_pos, height_band, width_band);
+                                  products.blocks_num, products.threads_num, d_hotCandidates, d_coldCandidates, height_band, width_band);
   }
   cudaEventRecord(stop);
 
@@ -220,9 +220,9 @@ string Landsat::converge_rah_cycle(Station station, int method)
   result += products.aerodynamic_resistance_fuction();
 
   if (method == 0) // STEEP
-    result += products.rah_correction_function_blocks_STEEP(d_hotCandidates, d_coldCandidates, hot_pos, cold_pos, ndvi_min, ndvi_max);
+    result += products.rah_correction_function_blocks_STEEP(d_hotCandidates, d_coldCandidates, ndvi_min, ndvi_max);
   else // ASEBAL
-    result += products.rah_correction_function_blocks_ASEBAL(d_hotCandidates, d_coldCandidates, hot_pos, cold_pos, ndvi_min, ndvi_max, u200);
+    result += products.rah_correction_function_blocks_ASEBAL(d_hotCandidates, d_coldCandidates, ndvi_min, ndvi_max, u200);
   cudaEventRecord(stop);
 
   float cuda_time = 0;
@@ -252,7 +252,7 @@ string Landsat::compute_H_ET(Station station)
   float Ra24h = (((24 * 60 / PI) * GSC * dr) * (omegas * sin(phi) * sin(sigma) + cos(phi) * cos(sigma) * sin(omegas))) * (1000000 / 86400.0);
   float Rs24h = station.INTERNALIZATION_FACTOR * sqrt(station.v7_max - station.v7_min) * Ra24h;
 
-  result += products.sensible_heat_flux_function(d_hotCandidates, d_coldCandidates, hot_pos, cold_pos);
+  result += products.sensible_heat_flux_function(d_hotCandidates, d_coldCandidates);
   result += products.latent_heat_flux_function();
   result += products.net_radiation_24h_function(Ra24h, Rs24h);
   result += products.evapotranspiration_fraction_fuction();

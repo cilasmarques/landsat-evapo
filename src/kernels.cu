@@ -5,6 +5,9 @@ __shared__ float rah_ini_pf_terra;
 __shared__ float H_pq_terra;
 __shared__ float H_pf_terra;
 
+__device__ int pos_hot_d;
+__device__ int pos_cold_d;
+
 __global__ void rad_kernel(float *band_d, float *radiance_d, float *rad_add_d, float *rad_mult_d, int band_idx, int width, int height)
 {
   unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -459,7 +462,7 @@ __global__ void aerodynamic_resistance_kernel(float *zom_d, float *d0_d, float *
   }
 }
 
-__global__ void sensible_heat_flux_kernel(Candidate *d_hotCandidates, Candidate *d_coldCandidates, int hot_pos, int cold_pos, float *surface_temperature_d,
+__global__ void sensible_heat_flux_kernel(Candidate *d_hotCandidates, Candidate *d_coldCandidates, float *surface_temperature_d,
                                           float *rah_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d, int width, int height)
 {
   unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -472,8 +475,8 @@ __global__ void sensible_heat_flux_kernel(Candidate *d_hotCandidates, Candidate 
   {
     unsigned int pos = row * width + col;
 
-    Candidate hot_pixel = d_hotCandidates[hot_pos];
-    Candidate cold_pixel = d_coldCandidates[cold_pos];
+    Candidate hot_pixel = d_hotCandidates[pos_hot_d];
+    Candidate cold_pixel = d_coldCandidates[pos_cold_d];
 
     float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
     float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
@@ -597,7 +600,7 @@ __global__ void evapotranspiration_kernel(float *net_radiation_24h_d, float *eva
   }
 }
 
-__global__ void rah_correction_cycle_STEEP(Candidate *d_hotCandidates, Candidate *d_coldCandidates, int hot_idx, int cold_idx,
+__global__ void rah_correction_cycle_STEEP(Candidate *d_hotCandidates, Candidate *d_coldCandidates, 
                                            float *ndvi_pointer, float *surf_temp_pointer, float *d0_pointer, float *kb1_pointer,
                                            float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer,
                                            float ndvi_max, float ndvi_min, int height, int width)
@@ -613,8 +616,8 @@ __global__ void rah_correction_cycle_STEEP(Candidate *d_hotCandidates, Candidate
   {
     unsigned int pos = row * width + col;
 
-    Candidate hot_pixel = d_hotCandidates[hot_idx];
-    Candidate cold_pixel = d_coldCandidates[cold_idx];
+    Candidate hot_pixel = d_hotCandidates[pos_hot_d];
+    Candidate cold_pixel = d_coldCandidates[pos_cold_d];
     unsigned int hot_pos = hot_pixel.line * width + hot_pixel.col;
     unsigned int cold_pos = cold_pixel.line * width + cold_pixel.col;
 
@@ -671,7 +674,7 @@ __global__ void rah_correction_cycle_STEEP(Candidate *d_hotCandidates, Candidate
   }
 }
 
-__global__ void rah_correction_cycle_ASEBAL(Candidate *d_hotCandidates, Candidate *d_coldCandidates, int hot_pos, int cold_pos,
+__global__ void rah_correction_cycle_ASEBAL(Candidate *d_hotCandidates, Candidate *d_coldCandidates, 
                                             float *ndvi_pointer, float *surf_temp_pointer, float *kb1_pointer, float *zom_pointer,
                                             float *ustar_pointer, float *rah_pointer, float *H_pointer, float ndvi_max, float ndvi_min,
                                             float u200, int height, int width, int *stop_condition)
@@ -687,8 +690,8 @@ __global__ void rah_correction_cycle_ASEBAL(Candidate *d_hotCandidates, Candidat
   {
     unsigned int pos = row * width + col;
 
-    Candidate hot_pixel = d_hotCandidates[hot_pos];
-    Candidate cold_pixel = d_coldCandidates[cold_pos];
+    Candidate hot_pixel = d_hotCandidates[pos_hot_d];
+    Candidate cold_pixel = d_coldCandidates[pos_cold_d];
     unsigned int hot_pos = hot_pixel.line * width + hot_pixel.col;
     unsigned int cold_pos = cold_pixel.line * width + cold_pixel.col;
 

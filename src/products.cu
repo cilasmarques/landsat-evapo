@@ -726,7 +726,7 @@ string Products::aerodynamic_resistance_fuction()
   return "KERNELS,RAH_INI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::sensible_heat_flux_function(Candidate *d_hotCandidates, Candidate *d_coldCandidates, int hot_pos, int cold_pos)
+string Products::sensible_heat_flux_function(Candidate *d_hotCandidates, Candidate *d_coldCandidates)
 {
   int64_t initial_time, final_time;
   cudaEvent_t start, stop;
@@ -736,7 +736,7 @@ string Products::sensible_heat_flux_function(Candidate *d_hotCandidates, Candida
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
   cudaEventRecord(start);
-  sensible_heat_flux_kernel<<<this->blocks_num, this->threads_num>>>(d_hotCandidates, d_coldCandidates, hot_pos, cold_pos, surface_temperature_d, 
+  sensible_heat_flux_kernel<<<this->blocks_num, this->threads_num>>>(d_hotCandidates, d_coldCandidates, surface_temperature_d, 
                                                                      rah_d, net_radiation_d, soil_heat_d, sensible_heat_flux_d, width_band, height_band);
 
   cudaEventRecord(stop);
@@ -897,7 +897,7 @@ string Products::evapotranspiration_function()
 };
 
 string Products::rah_correction_function_blocks_STEEP(Candidate *d_hotCandidates, Candidate *d_coldCandidates,
-                                                      int hot_pos, int cold_pos, float ndvi_min, float ndvi_max)
+                                                      float ndvi_min, float ndvi_max)
 {
   string result = "";
   cudaEvent_t start, stop;
@@ -916,7 +916,7 @@ string Products::rah_correction_function_blocks_STEEP(Candidate *d_hotCandidates
   cudaEventRecord(start);
   for (int i = 0; i < 2; i++)
   {
-    rah_correction_cycle_STEEP<<<this->blocks_num, this->threads_num>>>(d_hotCandidates, d_coldCandidates, hot_pos, cold_pos, ndvi_d,
+    rah_correction_cycle_STEEP<<<this->blocks_num, this->threads_num>>>(d_hotCandidates, d_coldCandidates, ndvi_d,
                                                                         surface_temperature_d, d0_d, kb1_d, zom_d, ustar_d, rah_d, sensible_heat_flux_d,
                                                                         ndvi_max, ndvi_min, height_band, width_band);
   }
@@ -930,7 +930,7 @@ string Products::rah_correction_function_blocks_STEEP(Candidate *d_hotCandidates
 }
 
 string Products::rah_correction_function_blocks_ASEBAL(Candidate *d_hotCandidates, Candidate *d_coldCandidates,
-                                                       int hot_pos, int cold_pos, float ndvi_min, float ndvi_max, float u200)
+                                                       float ndvi_min, float ndvi_max, float u200)
 {
   string result = "";
   cudaEvent_t start, stop;
@@ -950,7 +950,7 @@ string Products::rah_correction_function_blocks_ASEBAL(Candidate *d_hotCandidate
   int i = 0;
   while (true)
   {
-    rah_correction_cycle_ASEBAL<<<this->blocks_num, this->threads_num>>>(d_hotCandidates, d_coldCandidates, hot_pos, cold_pos,
+    rah_correction_cycle_ASEBAL<<<this->blocks_num, this->threads_num>>>(d_hotCandidates, d_coldCandidates, 
                                                                          ndvi_d, surface_temperature_d, kb1_d, zom_d, ustar_d,
                                                                          rah_d, sensible_heat_flux_d, ndvi_max, ndvi_min,
                                                                          u200, height_band, width_band, stop_condition_d);
