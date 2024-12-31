@@ -1,5 +1,5 @@
 #include "endmembers.h"
-#include "filter.cuh"
+#include "kernels.cuh"
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
 

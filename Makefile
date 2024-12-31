@@ -17,7 +17,7 @@ IMAGE_DATE="2017-05-11"
 METHOD=0
 THREADS=1024
 OUTPUT_DATA_PATH=./output
-INPUT_DATA_PATH=$(IMAGES_DIR)/$(IMAGE_LANDSAT)_$(IMAGE_PATHROW)_$(IMAGE_DATE)/6502x7295
+INPUT_DATA_PATH=$(IMAGES_DIR)/$(IMAGE_LANDSAT)_$(IMAGE_PATHROW)_$(IMAGE_DATE)/120x120
 
 clean:
 	rm $(OUTPUT_DATA_PATH)/*
@@ -26,7 +26,7 @@ clean-all:
 	rm -rf $(OUTPUT_DATA_PATH)/*
 
 build-cores:
-	nvcc -arch=sm_86 -I ./include -g ./src/*.cu -o ./main -std=c++14 -ltiff -lcutensor -rdc=true
+	nvcc -I ./include -g ./src/*.cu -o ./main -std=c++14 -ltiff -lcutensor -rdc=true
 
 fix-permissions:
 	sudo chmod -R 755 $(INPUT_DATA_PATH)/*
