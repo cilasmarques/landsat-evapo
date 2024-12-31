@@ -97,10 +97,6 @@ Landsat::Landsat(string bands_paths[], MTL mtl, int threads_num)
   HANDLE_ERROR(cudaMemcpy(this->products.band_termal_d, this->products.band_termal, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
   HANDLE_ERROR(cudaMemcpy(this->products.band_swir2_d, this->products.band_swir2, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
   HANDLE_ERROR(cudaMemcpy(this->products.tal_d, this->products.tal, sizeof(float) * height_band * width_band, cudaMemcpyHostToDevice));
-
-  const size_t MAXC = sizeof(Candidate) * height_band * width_band;
-  HANDLE_ERROR(cudaMalloc((void **)&d_hotCandidates, MAXC));
-  HANDLE_ERROR(cudaMalloc((void **)&d_coldCandidates, MAXC));
 };
 
 string Landsat::compute_Rn_G(Station station)
@@ -163,12 +159,12 @@ string Landsat::select_endmembers(int method)
   if (method == 0)
   { // STEEP
     result += getEndmembersSTEEP(products.ndvi_d, products.surface_temperature_d, products.albedo_d, products.net_radiation_d, products.soil_heat_d,
-                                 products.blocks_num, products.threads_num, d_hotCandidates, d_coldCandidates, height_band, width_band);
+                                 products.blocks_num, products.threads_num, products.d_hotCandidates, products.d_coldCandidates, height_band, width_band);
   }
   else if (method == 1)
   { // ASEBAL
     result += getEndmembersASEBAL(products.ndvi_d, products.surface_temperature_d, products.albedo_d, products.net_radiation_d, products.soil_heat_d,
-                                  products.blocks_num, products.threads_num, d_hotCandidates, d_coldCandidates, height_band, width_band);
+                                  products.blocks_num, products.threads_num, products.d_hotCandidates, products.d_coldCandidates, height_band, width_band);
   }
   cudaEventRecord(stop);
 
@@ -220,9 +216,9 @@ string Landsat::converge_rah_cycle(Station station, int method)
   result += products.aerodynamic_resistance_fuction();
 
   if (method == 0) // STEEP
-    result += products.rah_correction_function_blocks_STEEP(d_hotCandidates, d_coldCandidates, ndvi_min, ndvi_max);
+    result += products.rah_correction_function_blocks_STEEP(ndvi_min, ndvi_max);
   else // ASEBAL
-    result += products.rah_correction_function_blocks_ASEBAL(d_hotCandidates, d_coldCandidates, ndvi_min, ndvi_max, u200);
+    result += products.rah_correction_function_blocks_ASEBAL(ndvi_min, ndvi_max, u200);
   cudaEventRecord(stop);
 
   float cuda_time = 0;
@@ -252,7 +248,7 @@ string Landsat::compute_H_ET(Station station)
   float Ra24h = (((24 * 60 / PI) * GSC * dr) * (omegas * sin(phi) * sin(sigma) + cos(phi) * cos(sigma) * sin(omegas))) * (1000000 / 86400.0);
   float Rs24h = station.INTERNALIZATION_FACTOR * sqrt(station.v7_max - station.v7_min) * Ra24h;
 
-  result += products.sensible_heat_flux_function(d_hotCandidates, d_coldCandidates);
+  result += products.sensible_heat_flux_function();
   result += products.latent_heat_flux_function();
   result += products.net_radiation_24h_function(Ra24h, Rs24h);
   result += products.evapotranspiration_fraction_fuction();

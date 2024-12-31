@@ -85,6 +85,8 @@ struct Products
 
   int *stop_condition, *stop_condition_d;
 
+  Candidate *d_hotCandidates, *d_coldCandidates;
+
   /**
    * @brief  Constructor.
    */
@@ -227,7 +229,7 @@ struct Products
    * @param hot_pos: Hot position in device.
    * @param cold_pos: Cold position in device.
    */
-  string sensible_heat_flux_function(Candidate *d_hotCandidates, Candidate *d_coldCandidates);
+  string sensible_heat_flux_function();
 
   /**
    * @brief  The latent heat flux is computed.
@@ -278,8 +280,7 @@ struct Products
    * 
    * @return  string: Time message.
    */
-  string rah_correction_function_blocks_STEEP(Candidate *d_hotCandidates, Candidate *d_coldCandidates,
-                                              float ndvi_min, float ndvi_max);
+  string rah_correction_function_blocks_STEEP(float ndvi_min, float ndvi_max);
 
   /**
    * @brief  The  aerodynamic resistance convergence is computed.
@@ -294,6 +295,5 @@ struct Products
    * 
    * @return  string: Time message.
    */
-  string rah_correction_function_blocks_ASEBAL(Candidate *d_hotCandidates, Candidate *d_coldCandidates,
-                                               float ndvi_min, float ndvi_max, float u200);
+  string rah_correction_function_blocks_ASEBAL(float ndvi_min, float ndvi_max, float u200);
 };

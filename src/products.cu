@@ -69,6 +69,10 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
   this->evapotranspiration_24h = (float *)malloc(nBytes_band);
   this->evapotranspiration = (float *)malloc(nBytes_band);
 
+  const size_t MAXC = sizeof(Candidate) * height_band * width_band;
+  HANDLE_ERROR(cudaMalloc((void **)&this->d_hotCandidates, MAXC));
+  HANDLE_ERROR(cudaMalloc((void **)&this->d_coldCandidates, MAXC));
+
   this->stop_condition = (int *)malloc(sizeof(int));  
   HANDLE_ERROR(cudaMalloc((void **)&this->stop_condition_d, sizeof(int)));
 
@@ -726,7 +730,7 @@ string Products::aerodynamic_resistance_fuction()
   return "KERNELS,RAH_INI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::sensible_heat_flux_function(Candidate *d_hotCandidates, Candidate *d_coldCandidates)
+string Products::sensible_heat_flux_function()
 {
   int64_t initial_time, final_time;
   cudaEvent_t start, stop;
@@ -896,8 +900,7 @@ string Products::evapotranspiration_function()
   return "KERNELS,EVAPOTRANSPIRATION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::rah_correction_function_blocks_STEEP(Candidate *d_hotCandidates, Candidate *d_coldCandidates,
-                                                      float ndvi_min, float ndvi_max)
+string Products::rah_correction_function_blocks_STEEP(float ndvi_min, float ndvi_max)
 {
   string result = "";
   cudaEvent_t start, stop;
@@ -929,8 +932,7 @@ string Products::rah_correction_function_blocks_STEEP(Candidate *d_hotCandidates
   return "KERNELS,RAH_CYCLE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
-string Products::rah_correction_function_blocks_ASEBAL(Candidate *d_hotCandidates, Candidate *d_coldCandidates,
-                                                       float ndvi_min, float ndvi_max, float u200)
+string Products::rah_correction_function_blocks_ASEBAL(float ndvi_min, float ndvi_max, float u200)
 {
   string result = "";
   cudaEvent_t start, stop;
