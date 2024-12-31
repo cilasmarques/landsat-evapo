@@ -1,9 +1,7 @@
 #include "kernels.cuh"
 
-__shared__ float rah_ini_pq_terra;
-__shared__ float rah_ini_pf_terra;
-__shared__ float H_pq_terra;
-__shared__ float H_pf_terra;
+__shared__ float a_d;
+__shared__ float b_d;
 
 __device__ int pos_hot_d;
 __device__ int pos_cold_d;
@@ -475,17 +473,7 @@ __global__ void sensible_heat_flux_kernel(Candidate *d_hotCandidates, Candidate 
   {
     unsigned int pos = row * width + col;
 
-    Candidate hot_pixel = d_hotCandidates[pos_hot_d];
-    Candidate cold_pixel = d_coldCandidates[pos_cold_d];
-
-    float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
-    float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
-
-    float b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
-    float a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
-
-    sensible_heat_flux_d[pos] = RHO * SPECIFIC_HEAT_AIR * (a + b * (surface_temperature_d[pos] - 273.15)) / rah_d[pos];
-
+    sensible_heat_flux_d[pos] = RHO * SPECIFIC_HEAT_AIR * (a_d + b_d * (surface_temperature_d[pos] - 273.15)) / rah_d[pos];
     if (!isnan(sensible_heat_flux_d[pos]) && sensible_heat_flux_d[pos] > (net_radiation_d[pos] - soil_heat_d[pos]))
     {
       sensible_heat_flux_d[pos] = net_radiation_d[pos] - soil_heat_d[pos];
@@ -624,20 +612,23 @@ __global__ void rah_correction_cycle_STEEP(Candidate *d_hotCandidates, Candidate
     float fc_hot = 1 - pow((ndvi_pointer[hot_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
     float fc_cold = 1 - pow((ndvi_pointer[cold_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
 
-    rah_ini_pq_terra = rah_pointer[hot_pos];
-    rah_ini_pf_terra = rah_pointer[cold_pos];
+    float rah_ini_pq_terra = rah_pointer[hot_pos];
+    float rah_ini_pf_terra = rah_pointer[cold_pos];
 
     float LEc_terra = 0.55 * fc_hot * (hot_pixel.net_radiation - hot_pixel.soil_heat_flux) * 0.78;
     float LEc_terra_pf = 1.75 * fc_cold * (cold_pixel.net_radiation - cold_pixel.soil_heat_flux) * 0.78;
 
-    H_pf_terra = cold_pixel.net_radiation - cold_pixel.soil_heat_flux - LEc_terra_pf;
+    float H_pf_terra = cold_pixel.net_radiation - cold_pixel.soil_heat_flux - LEc_terra_pf;
     float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
 
-    H_pq_terra = hot_pixel.net_radiation - hot_pixel.soil_heat_flux - LEc_terra;
+    float H_pq_terra = hot_pixel.net_radiation - hot_pixel.soil_heat_flux - LEc_terra;
     float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
 
     float b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
     float a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
+
+    b_d = b;
+    a_d = a;
 
     float DISP = d0_pointer[pos];
     float dT_ini_terra = a + b * (surf_temp_pointer[pos] - 273.15);
@@ -698,20 +689,23 @@ __global__ void rah_correction_cycle_ASEBAL(Candidate *d_hotCandidates, Candidat
     float fc_hot = 1 - pow((ndvi_pointer[hot_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
     float fc_cold = 1 - pow((ndvi_pointer[cold_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
 
-    rah_ini_pq_terra = rah_pointer[hot_pos];
-    rah_ini_pf_terra = rah_pointer[cold_pos];
+    float rah_ini_pq_terra = rah_pointer[hot_pos];
+    float rah_ini_pf_terra = rah_pointer[cold_pos];
 
     float LEc_terra = 0.55 * fc_hot * (hot_pixel.net_radiation - hot_pixel.soil_heat_flux) * 0.78;
     float LEc_terra_pf = 1.75 * fc_cold * (cold_pixel.net_radiation - cold_pixel.soil_heat_flux) * 0.78;
 
-    H_pf_terra = cold_pixel.net_radiation - cold_pixel.soil_heat_flux - LEc_terra_pf;
+    float H_pf_terra = cold_pixel.net_radiation - cold_pixel.soil_heat_flux - LEc_terra_pf;
     float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
 
-    H_pq_terra = hot_pixel.net_radiation - hot_pixel.soil_heat_flux - LEc_terra;
+    float H_pq_terra = hot_pixel.net_radiation - hot_pixel.soil_heat_flux - LEc_terra;
     float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
 
     float b = (dt_pq_terra - dt_pf_terra) / (surf_temp_pointer[hot_pos] - surf_temp_pointer[cold_pos]);
     float a = dt_pf_terra - (b * (surf_temp_pointer[cold_pos] - 273.15));
+
+    b_d = b;
+    a_d = a;
 
     float dT_ini_terra = a + b * (surf_temp_pointer[pos] - 273.15);
 
