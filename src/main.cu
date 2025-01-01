@@ -2,6 +2,10 @@
 #include "sensors.cuh"
 #include "surfaceData.cuh"
 
+int blocks_n;
+int threads_n;
+int model_method;
+
 /**
  * @brief Main function
  * This function is responsible for reading the input parameters and calling the Landsat class to process the products.
@@ -35,19 +39,19 @@ int main(int argc, char *argv[])
     }
 
     // Load the SEB model (SEBAL or STEEP)
-    int method = 0;
     if (argc >= METHOD_INDEX) {
         string flag = argv[METHOD_INDEX];
         if (flag.substr(0, 6) == "-meth=")
-            method = flag[6] - '0';
+            model_method = flag[6] - '0';
     }
 
     // Load the number of threads for each block
-    int threads_num = 1024;
     if (argc >= THREADS_INDEX) {
         string threads_flag = argv[THREADS_INDEX];
         if (threads_flag.substr(0, 9) == "-threads=")
-            threads_num = atof(threads_flag.substr(9, threads_flag.size()).c_str());
+            threads_n = atof(threads_flag.substr(9, threads_flag.size()).c_str());
+        else
+            threads_n = 32;
     }
 
     // Save output paths
@@ -66,7 +70,8 @@ int main(int argc, char *argv[])
     MTL mtl = MTL(path_meta_file);
     Landsat landsat = Landsat(bands_paths);
     Station station = Station(station_data_path, mtl.image_hour);
-    Products products = Products(landsat.width_band, landsat.height_band, threads_num);
+    Products products = Products(landsat.width_band, landsat.height_band);
+    blocks_n = (landsat.width_band * landsat.height_band + threads_n - 1) / threads_n;
 
     // ===== RUN ALGORITHM =====
     begin = system_clock::now();
@@ -76,14 +81,14 @@ int main(int argc, char *argv[])
     // process products
     time_output << products.read_data(landsat.landsat_bands);
     time_output << products.compute_Rn_G(products, station, mtl);
-    time_output << products.select_endmembers(method);
-    time_output << products.converge_rah_cycle(products, station, method);
+    time_output << products.select_endmembers();
+    time_output << products.converge_rah_cycle(products, station);
     time_output << products.compute_H_ET(products, station, mtl);
 
     // save products
-    time_output << products.host_data();
+    // time_output << products.host_data();
     // time_output << products.save_products(output_folder);
-    time_output << products.print_products(output_folder);
+    // time_output << products.print_products(output_folder);
     // products.close(landsat.landsat_bands);
 
     end = system_clock::now();

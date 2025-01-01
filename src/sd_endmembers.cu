@@ -33,7 +33,7 @@ void Candidate::setAerodynamicResistance(float newRah)
     this->aerodynamic_resistance = newRah;
 }
 
-void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int width_band, float first_interval, float middle_interval, float last_interval, int blocks_num, int threads_num)
+void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int width_band, float first_interval, float middle_interval, float last_interval, int blocks_n, int threads_n)
 {
     float *d_filtered;
     cudaMalloc(&d_filtered, sizeof(float) * height_band * width_band);
@@ -43,7 +43,7 @@ void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int
     cudaMalloc((void **)&indexes_d, sizeof(int) * 1);
     cudaMemcpy(indexes_d, indexes, sizeof(int) * 1, cudaMemcpyHostToDevice);
 
-    filter_valid_values<<<blocks_num, threads_num>>>(d_target, d_filtered, indexes_d);
+    filter_valid_values<<<blocks_n, threads_n>>>(d_target, d_filtered, indexes_d);
 
     cudaMemcpy(&indexes[0], indexes_d, sizeof(int), cudaMemcpyDeviceToHost);
 
@@ -64,7 +64,7 @@ void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int
     cudaFree(indexes_d);
 }
 
-string getEndmembersSTEEP(float *d_ndvi, float *d_surface_temperature, float *d_albedo, float *d_net_radiation, float *d_soil_heat, int blocks_num, int threads_num, Candidate *hotCandidates_d, Candidate *coldCandidates_d, int height_band, int width_band)
+string getEndmembersSTEEP(float *d_ndvi, float *d_surface_temperature, float *d_albedo, float *d_net_radiation, float *d_soil_heat, int blocks_n, int threads_n, Candidate *hotCandidates_d, Candidate *coldCandidates_d, int height_band, int width_band)
 {
     string result = "";
     int64_t initial_time, final_time;
@@ -88,11 +88,11 @@ string getEndmembersSTEEP(float *d_ndvi, float *d_surface_temperature, float *d_
         initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
         cudaEventRecord(start);
-        get_quartiles_cuda(d_ndvi, ndviQuartile.data(), height_band, width_band, 0.15, 0.97, 0.97, blocks_num, threads_num);
-        get_quartiles_cuda(d_albedo, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
-        get_quartiles_cuda(d_surface_temperature, tsQuartile.data(), height_band, width_band, 0.20, 0.85, 0.97, blocks_num, threads_num);
+        get_quartiles_cuda(d_ndvi, ndviQuartile.data(), height_band, width_band, 0.15, 0.97, 0.97, blocks_n, threads_n);
+        get_quartiles_cuda(d_albedo, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_n, threads_n);
+        get_quartiles_cuda(d_surface_temperature, tsQuartile.data(), height_band, width_band, 0.20, 0.85, 0.97, blocks_n, threads_n);
 
-        process_pixels_STEEP<<<blocks_num, threads_num>>>(hotCandidates_d, coldCandidates_d, indexes_d, d_ndvi, d_surface_temperature, d_albedo, d_net_radiation, d_soil_heat, d_ho, ndviQuartile[0], ndviQuartile[1], tsQuartile[0], tsQuartile[1], tsQuartile[2], albedoQuartile[0], albedoQuartile[1], albedoQuartile[2]);
+        process_pixels_STEEP<<<blocks_n, threads_n>>>(hotCandidates_d, coldCandidates_d, indexes_d, d_ndvi, d_surface_temperature, d_albedo, d_net_radiation, d_soil_heat, d_ho, ndviQuartile[0], ndviQuartile[1], tsQuartile[0], tsQuartile[1], tsQuartile[2], albedoQuartile[0], albedoQuartile[1], albedoQuartile[2]);
         cudaEventRecord(stop);
 
         cudaMemcpy(&indexes, indexes_d, sizeof(int) * 2, cudaMemcpyDeviceToHost);
@@ -123,7 +123,7 @@ string getEndmembersSTEEP(float *d_ndvi, float *d_surface_temperature, float *d_
     return result;
 }
 
-string getEndmembersASEBAL(float *d_ndvi, float *d_surface_temperature, float *d_albedo, float *d_net_radiation, float *d_soil_heat, int blocks_num, int threads_num, Candidate *hotCandidates_d, Candidate *coldCandidates_d, int height_band, int width_band)
+string getEndmembersASEBAL(float *d_ndvi, float *d_surface_temperature, float *d_albedo, float *d_net_radiation, float *d_soil_heat, int blocks_n, int threads_n, Candidate *hotCandidates_d, Candidate *coldCandidates_d, int height_band, int width_band)
 {
     string result = "";
     int64_t initial_time, final_time;
@@ -147,11 +147,11 @@ string getEndmembersASEBAL(float *d_ndvi, float *d_surface_temperature, float *d
         initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
         cudaEventRecord(start);
-        get_quartiles_cuda(d_ndvi, ndviQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
-        get_quartiles_cuda(d_albedo, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
-        get_quartiles_cuda(d_surface_temperature, tsQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_num, threads_num);
+        get_quartiles_cuda(d_ndvi, ndviQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_n, threads_n);
+        get_quartiles_cuda(d_albedo, albedoQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_n, threads_n);
+        get_quartiles_cuda(d_surface_temperature, tsQuartile.data(), height_band, width_band, 0.25, 0.50, 0.75, blocks_n, threads_n);
 
-        process_pixels_ASEBAL<<<blocks_num, threads_num>>>(hotCandidates_d, coldCandidates_d, indexes_d, d_ndvi, d_surface_temperature, d_albedo, d_net_radiation, d_soil_heat, d_ho, ndviQuartile[0], ndviQuartile[2], tsQuartile[1], tsQuartile[0], albedoQuartile[1], albedoQuartile[1]);
+        process_pixels_ASEBAL<<<blocks_n, threads_n>>>(hotCandidates_d, coldCandidates_d, indexes_d, d_ndvi, d_surface_temperature, d_albedo, d_net_radiation, d_soil_heat, d_ho, ndviQuartile[0], ndviQuartile[2], tsQuartile[1], tsQuartile[0], albedoQuartile[1], albedoQuartile[1]);
         cudaEventRecord(stop);
 
         cudaMemcpy(&indexes, indexes_d, sizeof(int) * 2, cudaMemcpyDeviceToHost);
@@ -182,7 +182,7 @@ string getEndmembersASEBAL(float *d_ndvi, float *d_surface_temperature, float *d
     return result;
 }
 
-string Products::select_endmembers(int method)
+string Products::select_endmembers()
 {
     string result = "";
     int64_t initial_time, final_time;
@@ -193,10 +193,10 @@ string Products::select_endmembers(int method)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    if (method == 0) { // STEEP
-        result += getEndmembersSTEEP(ndvi_d, surface_temperature_d, albedo_d, net_radiation_d, soil_heat_d, blocks_num, threads_num, hotCandidates_d, coldCandidates_d, height_band, width_band);
-    } else if (method == 1) { // ASEBAL
-        result += getEndmembersASEBAL(ndvi_d, surface_temperature_d, albedo_d, net_radiation_d, soil_heat_d, blocks_num, threads_num, hotCandidates_d, coldCandidates_d, height_band, width_band);
+    if (model_method == 0) { // STEEP
+        result += getEndmembersSTEEP(ndvi_d, surface_temperature_d, albedo_d, net_radiation_d, soil_heat_d, blocks_n, threads_n, hotCandidates_d, coldCandidates_d, height_band, width_band);
+    } else if (model_method == 1) { // ASEBAL
+        result += getEndmembersASEBAL(ndvi_d, surface_temperature_d, albedo_d, net_radiation_d, soil_heat_d, blocks_n, threads_n, hotCandidates_d, coldCandidates_d, height_band, width_band);
     }
     cudaEventRecord(stop);
 

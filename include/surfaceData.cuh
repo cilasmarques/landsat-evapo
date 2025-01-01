@@ -58,9 +58,6 @@ struct CompareCandidateTemperature
  */
 struct Products
 {
-  int threads_num = 1;
-  int blocks_num;
-
   uint32_t width_band;
   uint32_t height_band;
 
@@ -198,7 +195,7 @@ struct Products
    * @param  width_band: Band width.
    * @param  height_band: Band height.
    */
-  Products(uint32_t width_band, uint32_t height_band, int threads_num);
+  Products(uint32_t width_band, uint32_t height_band);
 
   /**
    * @brief Read the data and move to the device.
@@ -226,20 +223,19 @@ struct Products
   /**
    * @brief Select the cold and hot endmembers
    *
-   * @param  method: Method to select the endmembers.
    * @return string with the time spent.
    */
-  string select_endmembers(int method);
+  string select_endmembers();
 
   /**
    * @brief make the rah cycle converge
    *
    * @param  station: Station struct.
-   * @param  method: Method to converge the rah cycle.
+   * @param  model_method: Method to converge the rah cycle.
    *
    * @return string with the time spent.
    */
-  string converge_rah_cycle(Products products, Station station, int method);
+  string converge_rah_cycle(Products products, Station station);
 
   /**
    * @brief Compute the final products.

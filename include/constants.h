@@ -20,11 +20,17 @@
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
 
+// NAMESPACES 
 using namespace std;
 using namespace std::chrono;
 
-// CONSTANTS DECLARATION
+// GLOBAL VARIABLES DECLARATION
+extern int model_method;
+extern int threads_n;
+extern int blocks_n;
 
+
+// CONSTANTS DECLARATION
 #define PARAM_BAND_BLUE_INDEX       0
 #define PARAM_BAND_GREEN_INDEX      1
 #define PARAM_BAND_RED_INDEX        2

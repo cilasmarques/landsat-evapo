@@ -13,7 +13,7 @@ string sensible_heat_flux_function(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    sensible_heat_flux_kernel<<<products.blocks_num, products.threads_num>>>(products.hotCandidates_d, products.coldCandidates_d, products.surface_temperature_d, products.rah_d, products.net_radiation_d, products.soil_heat_d, products.sensible_heat_flux_d);
+    sensible_heat_flux_kernel<<<blocks_n, threads_n>>>(products.hotCandidates_d, products.coldCandidates_d, products.surface_temperature_d, products.rah_d, products.net_radiation_d, products.soil_heat_d, products.sensible_heat_flux_d);
 
     cudaEventRecord(stop);
 
@@ -35,7 +35,7 @@ string latent_heat_flux_function(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    latent_heat_flux_kernel<<<products.blocks_num, products.threads_num>>>(products.net_radiation_d, products.soil_heat_d, products.sensible_heat_flux_d, products.latent_heat_flux_d);
+    latent_heat_flux_kernel<<<blocks_n, threads_n>>>(products.net_radiation_d, products.soil_heat_d, products.sensible_heat_flux_d, products.latent_heat_flux_d);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -56,7 +56,7 @@ string net_radiation_24h_function(Products products, float Ra24h, float Rs24h)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    net_radiation_24h_kernel<<<products.blocks_num, products.threads_num>>>(products.albedo_d, Rs24h, Ra24h, products.net_radiation_24h_d);
+    net_radiation_24h_kernel<<<blocks_n, threads_n>>>(products.albedo_d, Rs24h, Ra24h, products.net_radiation_24h_d);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -77,7 +77,7 @@ string evapotranspiration_fraction_fuction(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    evapotranspiration_fraction_kernel<<<products.blocks_num, products.threads_num>>>(products.net_radiation_d, products.soil_heat_d, products.latent_heat_flux_d, products.evapotranspiration_fraction_d);
+    evapotranspiration_fraction_kernel<<<blocks_n, threads_n>>>(products.net_radiation_d, products.soil_heat_d, products.latent_heat_flux_d, products.evapotranspiration_fraction_d);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -98,7 +98,7 @@ string sensible_heat_flux_24h_fuction(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    sensible_heat_flux_24h_kernel<<<products.blocks_num, products.threads_num>>>(products.net_radiation_24h_d, products.evapotranspiration_fraction_d, products.sensible_heat_flux_24h_d);
+    sensible_heat_flux_24h_kernel<<<blocks_n, threads_n>>>(products.net_radiation_24h_d, products.evapotranspiration_fraction_d, products.sensible_heat_flux_24h_d);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -119,7 +119,7 @@ string latent_heat_flux_24h_function(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    latent_heat_flux_24h_kernel<<<products.blocks_num, products.threads_num>>>(products.net_radiation_24h_d, products.evapotranspiration_fraction_d, products.latent_heat_flux_24h_d);
+    latent_heat_flux_24h_kernel<<<blocks_n, threads_n>>>(products.net_radiation_24h_d, products.evapotranspiration_fraction_d, products.latent_heat_flux_24h_d);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -140,7 +140,7 @@ string evapotranspiration_24h_function(Products products, Station station)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    evapotranspiration_24h_kernel<<<products.blocks_num, products.threads_num>>>(products.latent_heat_flux_24h_d, products.evapotranspiration_24h_d, station.v7_max, station.v7_min);
+    evapotranspiration_24h_kernel<<<blocks_n, threads_n>>>(products.latent_heat_flux_24h_d, products.evapotranspiration_24h_d, station.v7_max, station.v7_min);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -161,7 +161,7 @@ string evapotranspiration_function(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    evapotranspiration_kernel<<<products.blocks_num, products.threads_num>>>(products.net_radiation_24h_d, products.evapotranspiration_fraction_d, products.evapotranspiration_d);
+    evapotranspiration_kernel<<<blocks_n, threads_n>>>(products.net_radiation_24h_d, products.evapotranspiration_fraction_d, products.evapotranspiration_d);
     cudaEventRecord(stop);
 
     float cuda_time = 0;

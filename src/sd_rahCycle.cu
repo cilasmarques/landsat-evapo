@@ -16,7 +16,7 @@ string d0_fuction(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    d0_kernel<<<products.blocks_num, products.threads_num>>>(products.pai_d, products.d0_d, CD1, HGHT);
+    d0_kernel<<<blocks_n, threads_n>>>(products.pai_d, products.d0_d, CD1, HGHT);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -37,7 +37,7 @@ string zom_fuction(Products products, float A_ZOM, float B_ZOM)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    zom_kernel<<<products.blocks_num, products.threads_num>>>(products.d0_d, products.pai_d, products.zom_d, A_ZOM, B_ZOM);
+    zom_kernel<<<blocks_n, threads_n>>>(products.d0_d, products.pai_d, products.zom_d, A_ZOM, B_ZOM);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -58,7 +58,7 @@ string ustar_fuction(Products products, float u10)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    ustar_kernel<<<products.blocks_num, products.threads_num>>>(products.zom_d, products.d0_d, products.ustar_d, u10);
+    ustar_kernel<<<blocks_n, threads_n>>>(products.zom_d, products.d0_d, products.ustar_d, u10);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -79,7 +79,7 @@ string kb_function(Products products, float ndvi_max, float ndvi_min)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    kb_kernel<<<products.blocks_num, products.threads_num>>>(products.zom_d, products.ustar_d, products.pai_d, products.kb1_d, products.ndvi_d, ndvi_max, ndvi_min);
+    kb_kernel<<<blocks_n, threads_n>>>(products.zom_d, products.ustar_d, products.pai_d, products.kb1_d, products.ndvi_d, ndvi_max, ndvi_min);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -100,7 +100,7 @@ string aerodynamic_resistance_fuction(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    aerodynamic_resistance_kernel<<<products.blocks_num, products.threads_num>>>(products.zom_d, products.d0_d, products.ustar_d, products.kb1_d, products.rah_d);
+    aerodynamic_resistance_kernel<<<blocks_n, threads_n>>>(products.zom_d, products.d0_d, products.ustar_d, products.kb1_d, products.rah_d);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -129,7 +129,7 @@ string rah_correction_function_blocks_STEEP(Products products, float ndvi_min, f
 
     cudaEventRecord(start);
     for (int i = 0; i < 2; i++) {
-        rah_correction_cycle_STEEP<<<products.blocks_num, products.threads_num>>>(products.hotCandidates_d, products.coldCandidates_d, products.ndvi_d, products.surface_temperature_d, products.d0_d, products.kb1_d, products.zom_d, products.ustar_d, products.rah_d, products.sensible_heat_flux_d, ndvi_max, ndvi_min);
+        rah_correction_cycle_STEEP<<<blocks_n, threads_n>>>(products.hotCandidates_d, products.coldCandidates_d, products.ndvi_d, products.surface_temperature_d, products.d0_d, products.kb1_d, products.zom_d, products.ustar_d, products.rah_d, products.sensible_heat_flux_d, ndvi_max, ndvi_min);
     }
     cudaEventRecord(stop);
 
@@ -159,7 +159,7 @@ string rah_correction_function_blocks_ASEBAL(Products products, float ndvi_min, 
     cudaEventRecord(start);
     int i = 0;
     while (true) {
-        rah_correction_cycle_ASEBAL<<<products.blocks_num, products.threads_num>>>(products.hotCandidates_d, products.coldCandidates_d, products.ndvi_d, products.surface_temperature_d, products.kb1_d, products.zom_d, products.ustar_d, products.rah_d, products.sensible_heat_flux_d, ndvi_max, ndvi_min, u200, products.stop_condition_d);
+        rah_correction_cycle_ASEBAL<<<blocks_n, threads_n>>>(products.hotCandidates_d, products.coldCandidates_d, products.ndvi_d, products.surface_temperature_d, products.kb1_d, products.zom_d, products.ustar_d, products.rah_d, products.sensible_heat_flux_d, ndvi_max, ndvi_min, u200, products.stop_condition_d);
 
         HANDLE_ERROR(cudaMemcpy(products.stop_condition, products.stop_condition_d, sizeof(int), cudaMemcpyDeviceToHost));
 
@@ -178,7 +178,7 @@ string rah_correction_function_blocks_ASEBAL(Products products, float ndvi_min, 
     return "KERNELS,RAH_CYCLE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
-string Products::converge_rah_cycle(Products products, Station station, int method)
+string Products::converge_rah_cycle(Products products, Station station)
 {
     string result = "";
     int64_t initial_time, final_time;
@@ -208,7 +208,7 @@ string Products::converge_rah_cycle(Products products, Station station, int meth
     result += d0_fuction(products);
     result += zom_fuction(products, station.A_ZOM, station.B_ZOM);
 
-    if (method == 0) // STEEP
+    if (model_method == 0) // STEEP
         result += ustar_fuction(products, u10);
     else // ASEBAL
         result += ustar_fuction(products, u200);
@@ -216,7 +216,7 @@ string Products::converge_rah_cycle(Products products, Station station, int meth
     result += kb_function(products, ndvi_max, ndvi_min);
     result += aerodynamic_resistance_fuction(products);
 
-    if (method == 0) // STEEP
+    if (model_method == 0) // STEEP
         result += rah_correction_function_blocks_STEEP(products, ndvi_min, ndvi_max);
     else // ASEBAL
         result += rah_correction_function_blocks_ASEBAL(products, ndvi_min, ndvi_max, u200);
