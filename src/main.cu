@@ -1,10 +1,6 @@
-#include <fstream>
-#include <iostream>
-
-#include "utils.h"
-#include "landsat.h"
 #include "constants.h"
-#include "parameters.h"
+#include "sensors.cuh"
+#include "surfaceData.cuh"
 
 /**
  * @brief Main function
@@ -28,13 +24,6 @@
  */
 int main(int argc, char *argv[])
 {
-  int INPUT_BAND_ELEV_INDEX = 8;
-  int INPUT_MTL_DATA_INDEX = 9;
-  int INPUT_STATION_DATA_INDEX = 10;
-  int OUTPUT_FOLDER = 11;
-  int METHOD_INDEX = 12;
-  int THREADS_INDEX = 13;
-
   // Load the meteorologic stations data
   string path_meta_file = argv[INPUT_MTL_DATA_INDEX];
   string station_data_path = argv[INPUT_STATION_DATA_INDEX];
@@ -68,42 +57,37 @@ int main(int argc, char *argv[])
   string output_folder = argv[OUTPUT_FOLDER];
   string output_time = output_folder + "/time.csv";
 
-  // time output
+  // Time output
   ofstream time_output;
   time_output.open(output_time);
   string general, initial, final;
-  system_clock::time_point begin, end, read_begin, read_end;
-  int64_t initial_time, final_time, read_initial_time, read_final_time;
-  float general_time, read_general_time;
+  system_clock::time_point begin, end;
+  int64_t initial_time, final_time;
+  float general_time;
+
+  // Instantiate classes
+  MTL mtl = MTL(path_meta_file);
+  Landsat landsat = Landsat(bands_paths);
+  Station station = Station(station_data_path, mtl.image_hour);
+  Products products = Products(landsat.width_band, landsat.height_band, threads_num);
 
   // ===== RUN ALGORITHM =====
   begin = system_clock::now();
   initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
   time_output << "STRATEGY,PHASE,TIMESTAMP,START_TIME,END_TIME" << std::endl;
 
-  // read input data
-  read_begin = system_clock::now();
-  read_initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-  MTL mtl = MTL(path_meta_file);
-  Station station = Station(station_data_path, mtl.image_hour);
-  Landsat landsat = Landsat(bands_paths, mtl, threads_num);
-
-  read_end = system_clock::now();
-  read_final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  read_general_time = duration_cast<nanoseconds>(read_end - read_begin).count() / 1000000.0;
-  time_output << "SERIAL,P0_READ_INPUT," << read_general_time << "," << read_initial_time << "," << read_final_time << std::endl;
-
   // process products
-  time_output << landsat.compute_Rn_G(station);
-  time_output << landsat.select_endmembers(method);
-  time_output << landsat.converge_rah_cycle(station, method);
-  time_output << landsat.compute_H_ET(station);
+  time_output << products.read_data(landsat.landsat_bands);
+  time_output << products.compute_Rn_G(products, station, mtl);
+  time_output << products.select_endmembers(method);
+  time_output << products.converge_rah_cycle(products, station, method);
+  time_output << products.compute_H_ET(products, station, mtl);
 
   // save products
-  // time_output << landsat.copy_to_host();
-  // time_output << landsat.save_products(output_folder);
-  // time_output << landsat.print_products(output_folder);
+  // time_output << products.host_products();
+  // time_output << products.save_products(output_folder);
+  // time_output << products.print_products(output_folder);
+  // products.close(landsat.landsat_bands);
 
   end = system_clock::now();
   final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
@@ -111,7 +95,6 @@ int main(int argc, char *argv[])
   time_output << "KERNELS,P_TOTAL," << general_time << "," << initial_time << "," << final_time << std::endl;
 
   time_output.close();
-  landsat.close();
 
   return 0;
 }

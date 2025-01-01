@@ -2,7 +2,7 @@
 
 #include "constants.h"
 #include "cuda_utils.h"
-#include "candidate.h"
+#include "surfaceData.cuh"
 
 extern __device__ int pos_hot_d;
 extern __device__ int pos_cold_d;

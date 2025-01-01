@@ -17,6 +17,8 @@
 #include <set>
 #include <thread>
 #include <assert.h>
+#include <thrust/device_ptr.h>
+#include <thrust/sort.h>
 
 using namespace std;
 using namespace std::chrono;
@@ -30,6 +32,13 @@ using namespace std::chrono;
 #define PARAM_BAND_SWIR1_INDEX      4
 #define PARAM_BAND_TERMAL_INDEX     5
 #define PARAM_BAND_SWIR2_INDEX      6
+
+#define INPUT_BAND_ELEV_INDEX       8
+#define INPUT_MTL_DATA_INDEX        9
+#define INPUT_STATION_DATA_INDEX    10
+#define OUTPUT_FOLDER               11
+#define METHOD_INDEX                12
+#define THREADS_INDEX               13
 
 // Epsilon
 const float EPS = 1e-7;

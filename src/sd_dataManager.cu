@@ -1,0 +1,542 @@
+#include "surfaceData.cuh"
+#include "cuda_utils.h"
+
+Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
+{
+    this->threads_num = threads_num;
+    this->blocks_num = (width_band * height_band + this->threads_num - 1) / this->threads_num;
+
+    this->width_band = width_band;
+    this->height_band = height_band;
+    this->nBytes_band = height_band * width_band * sizeof(float);
+
+    this->band_blue = (float *)malloc(nBytes_band);
+    this->band_green = (float *)malloc(nBytes_band);
+    this->band_red = (float *)malloc(nBytes_band);
+    this->band_nir = (float *)malloc(nBytes_band);
+    this->band_swir1 = (float *)malloc(nBytes_band);
+    this->band_termal = (float *)malloc(nBytes_band);
+    this->band_swir2 = (float *)malloc(nBytes_band);
+    this->tal = (float *)malloc(nBytes_band);
+
+    this->radiance_blue = (float *)malloc(nBytes_band);
+    this->radiance_green = (float *)malloc(nBytes_band);
+    this->radiance_red = (float *)malloc(nBytes_band);
+    this->radiance_nir = (float *)malloc(nBytes_band);
+    this->radiance_swir1 = (float *)malloc(nBytes_band);
+    this->radiance_termal = (float *)malloc(nBytes_band);
+    this->radiance_swir2 = (float *)malloc(nBytes_band);
+
+    this->reflectance_blue = (float *)malloc(nBytes_band);
+    this->reflectance_green = (float *)malloc(nBytes_band);
+    this->reflectance_red = (float *)malloc(nBytes_band);
+    this->reflectance_nir = (float *)malloc(nBytes_band);
+    this->reflectance_swir1 = (float *)malloc(nBytes_band);
+    this->reflectance_termal = (float *)malloc(nBytes_band);
+    this->reflectance_swir2 = (float *)malloc(nBytes_band);
+
+    this->albedo = (float *)malloc(nBytes_band);
+    this->ndvi = (float *)malloc(nBytes_band);
+    this->soil_heat = (float *)malloc(nBytes_band);
+    this->surface_temperature = (float *)malloc(nBytes_band);
+    this->net_radiation = (float *)malloc(nBytes_band);
+    this->lai = (float *)malloc(nBytes_band);
+    this->savi = (float *)malloc(nBytes_band);
+    this->evi = (float *)malloc(nBytes_band);
+    this->pai = (float *)malloc(nBytes_band);
+    this->enb_emissivity = (float *)malloc(nBytes_band);
+    this->eo_emissivity = (float *)malloc(nBytes_band);
+    this->ea_emissivity = (float *)malloc(nBytes_band);
+    this->short_wave_radiation = (float *)malloc(nBytes_band);
+    this->large_wave_radiation_surface = (float *)malloc(nBytes_band);
+    this->large_wave_radiation_atmosphere = (float *)malloc(nBytes_band);
+
+    this->surface_temperature = (float *)malloc(nBytes_band);
+    this->d0 = (float *)malloc(nBytes_band);
+    this->zom = (float *)malloc(nBytes_band);
+    this->ustar = (float *)malloc(nBytes_band);
+    this->kb1 = (float *)malloc(nBytes_band);
+    this->aerodynamic_resistance = (float *)malloc(nBytes_band);
+    this->sensible_heat_flux = (float *)malloc(nBytes_band);
+
+    this->latent_heat_flux = (float *)malloc(nBytes_band);
+    this->net_radiation_24h = (float *)malloc(nBytes_band);
+    this->evapotranspiration_fraction = (float *)malloc(nBytes_band);
+    this->sensible_heat_flux_24h = (float *)malloc(nBytes_band);
+    this->latent_heat_flux_24h = (float *)malloc(nBytes_band);
+    this->evapotranspiration_24h = (float *)malloc(nBytes_band);
+    this->evapotranspiration = (float *)malloc(nBytes_band);
+
+    const size_t MAXC = sizeof(Candidate) * height_band * width_band;
+    HANDLE_ERROR(cudaMalloc((void **)&this->d_hotCandidates, MAXC));
+    HANDLE_ERROR(cudaMalloc((void **)&this->d_coldCandidates, MAXC));
+
+    this->stop_condition = (int *)malloc(sizeof(int));
+    HANDLE_ERROR(cudaMalloc((void **)&this->stop_condition_d, sizeof(int)));
+
+    HANDLE_ERROR(cudaMalloc((void **)&this->band_blue_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->band_green_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->band_red_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->band_nir_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->band_swir1_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->band_termal_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->band_swir2_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->tal_d, nBytes_band));
+
+    HANDLE_ERROR(cudaMalloc((void **)&this->radiance_blue_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->radiance_green_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->radiance_red_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->radiance_nir_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->radiance_swir1_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->radiance_termal_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->radiance_swir2_d, nBytes_band));
+
+    HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_blue_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_green_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_red_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_nir_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_swir1_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_termal_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_swir2_d, nBytes_band));
+
+    HANDLE_ERROR(cudaMalloc((void **)&this->albedo_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->ndvi_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->pai_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->lai_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->evi_d, nBytes_band));
+
+    HANDLE_ERROR(cudaMalloc((void **)&this->enb_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->eo_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->ea_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->short_wave_radiation_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->large_wave_radiation_surface_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->large_wave_radiation_atmosphere_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->surface_temperature_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->net_radiation_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->soil_heat_d, nBytes_band));
+
+    HANDLE_ERROR(cudaMalloc((void **)&this->zom_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->d0_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->kb1_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->ustar_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->rah_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->sensible_heat_flux_d, nBytes_band));
+
+    HANDLE_ERROR(cudaMalloc((void **)&this->latent_heat_flux_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->net_radiation_24h_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_fraction_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->sensible_heat_flux_24h_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->latent_heat_flux_24h_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_24h_d, nBytes_band));
+    HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_d, nBytes_band));
+};
+
+void Products::device_products()
+{
+    HANDLE_ERROR(cudaMalloc((void **)&(band_blue_d), band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&(band_green_d), band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&(band_red_d), band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&(band_nir_d), band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&(band_swir1_d), band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&(band_termal_d), band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&(band_swir2_d), band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&(tal_d), band_bytes));
+
+    HANDLE_ERROR(cudaMemcpy(band_blue_d, band_blue, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(band_green_d, band_green, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(band_red_d, band_red, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(band_nir_d, band_nir, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(band_swir1_d, band_swir1, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(band_termal_d, band_termal, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(band_swir2_d, band_swir2, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(tal_d, tal, band_bytes, cudaMemcpyHostToDevice));
+}
+
+string Products::host_products()
+{
+    system_clock::time_point begin, end;
+    float general_time;
+    int64_t initial_time, final_time;
+
+    begin = system_clock::now();
+    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+    HANDLE_ERROR(cudaMemcpy(radiance_blue, radiance_blue_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(radiance_green, radiance_green_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(radiance_red, radiance_red_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(radiance_nir, radiance_nir_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(radiance_swir1, radiance_swir1_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(radiance_termal, radiance_termal_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(radiance_swir2, radiance_swir2_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(reflectance_blue, reflectance_blue_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(reflectance_green, reflectance_green_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(reflectance_red, reflectance_red_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(reflectance_nir, reflectance_nir_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(reflectance_swir1, reflectance_swir1_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(reflectance_termal, reflectance_termal_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(reflectance_swir2, reflectance_swir2_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(albedo, albedo_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(ndvi, ndvi_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(pai, pai_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(lai, lai_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(evi, evi_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(enb_emissivity, enb_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(eo_emissivity, eo_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(ea_emissivity, ea_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(surface_temperature, surface_temperature_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(short_wave_radiation, short_wave_radiation_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(large_wave_radiation_surface, large_wave_radiation_surface_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(large_wave_radiation_atmosphere, large_wave_radiation_atmosphere_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(net_radiation, net_radiation_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(soil_heat, soil_heat_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(d0, d0_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(zom, zom_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(ustar, ustar_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(kb1, kb1_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(sensible_heat_flux, sensible_heat_flux_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(latent_heat_flux, latent_heat_flux_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(net_radiation_24h, net_radiation_24h_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(evapotranspiration_fraction, evapotranspiration_fraction_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(sensible_heat_flux_24h, sensible_heat_flux_24h_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(latent_heat_flux_24h, latent_heat_flux_24h_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(evapotranspiration_24h, evapotranspiration_24h_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(evapotranspiration, evapotranspiration_d, band_bytes, cudaMemcpyDeviceToHost));
+
+    end = system_clock::now();
+    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
+    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+    return "SERIAL,P5_COPY_HOST," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+}
+
+string Products::read_data(TIFF **landsat_bands)
+{
+    system_clock::time_point begin, end;
+    int64_t initial_time, final_time;
+    float general_time;
+
+    begin = system_clock::now();
+    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+    band_size = height_band * width_band;
+    band_bytes = height_band * width_band * sizeof(float);
+
+    band_blue = (float *)malloc(band_bytes);
+    band_green = (float *)malloc(band_bytes);
+    band_red = (float *)malloc(band_bytes);
+    band_nir = (float *)malloc(band_bytes);
+    band_swir1 = (float *)malloc(band_bytes);
+    band_termal = (float *)malloc(band_bytes);
+    band_swir2 = (float *)malloc(band_bytes);
+    tal = (float *)malloc(band_bytes);
+
+    for (int i = 0; i < INPUT_BAND_ELEV_INDEX; i++)
+    {
+        for (int line = 0; line < height_band; line++)
+        {
+            TIFF *curr_band = landsat_bands[i];
+            tdata_t band_line_buff = _TIFFmalloc(TIFFScanlineSize(curr_band));
+            unsigned short curr_band_line_size = TIFFScanlineSize(curr_band) / width_band;
+            TIFFReadScanline(curr_band, band_line_buff, line);
+
+            for (int col = 0; col < width_band; col++)
+            {
+                float value = 0;
+                memcpy(&value, static_cast<unsigned char *>(band_line_buff) + col * curr_band_line_size, curr_band_line_size);
+
+                switch (i)
+                {
+                case 0:
+                    band_blue[line * width_band + col] = value;
+                    break;
+                case 1:
+                    band_green[line * width_band + col] = value;
+                    break;
+                case 2:
+                    band_red[line * width_band + col] = value;
+                    break;
+                case 3:
+                    band_nir[line * width_band + col] = value;
+                    break;
+                case 4:
+                    band_swir1[line * width_band + col] = value;
+                    break;
+                case 5:
+                    band_termal[line * width_band + col] = value;
+                    break;
+                case 6:
+                    band_swir2[line * width_band + col] = value;
+                    break;
+                case 7:
+                    tal[line * width_band + col] = 0.75 + 2 * pow(10, -5) * value;
+                    break;
+                default:
+                    break;
+                }
+            }
+            _TIFFfree(band_line_buff);
+        }
+    }
+
+    device_products();
+
+    end = system_clock::now();
+    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
+    return "SERIAL,P0_READ_INPUT," + to_string(general_time) + "," + to_string(initial_time) + "," + to_string(final_time) + "\n";
+}
+
+string Products::save_products(string output_path)
+{
+    system_clock::time_point begin, end;
+    float general_time;
+    int64_t initial_time, final_time;
+
+    begin = system_clock::now();
+    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+    saveTiff(output_path + "/albedo.tif", albedo, height_band, width_band);
+    saveTiff(output_path + "/ndvi.tif", ndvi, height_band, width_band);
+    saveTiff(output_path + "/pai.tif", pai, height_band, width_band);
+    saveTiff(output_path + "/lai.tif", lai, height_band, width_band);
+    saveTiff(output_path + "/evi.tif", evi, height_band, width_band);
+    saveTiff(output_path + "/enb_emissivity.tif", enb_emissivity, height_band, width_band);
+    saveTiff(output_path + "/eo_emissivity.tif", eo_emissivity, height_band, width_band);
+    saveTiff(output_path + "/ea_emissivity.tif", ea_emissivity, height_band, width_band);
+    saveTiff(output_path + "/surface_temperature.tif", surface_temperature, height_band, width_band);
+    saveTiff(output_path + "/net_radiation.tif", net_radiation, height_band, width_band);
+    saveTiff(output_path + "/soil_heat_flux.tif", soil_heat, height_band, width_band);
+    saveTiff(output_path + "/d0.tif", d0, height_band, width_band);
+    saveTiff(output_path + "/zom.tif", zom, height_band, width_band);
+    saveTiff(output_path + "/ustar.tif", ustar, height_band, width_band);
+    saveTiff(output_path + "/kb.tif", kb1, height_band, width_band);
+    saveTiff(output_path + "/rah.tif", aerodynamic_resistance, height_band, width_band);
+    saveTiff(output_path + "/sensible_heat_flux.tif", sensible_heat_flux, height_band, width_band);
+    saveTiff(output_path + "/latent_heat_flux.tif", latent_heat_flux, height_band, width_band);
+    saveTiff(output_path + "/net_radiation_24h.tif", net_radiation_24h, height_band, width_band);
+    saveTiff(output_path + "/evapotranspiration_fraction.tif", evapotranspiration_fraction, height_band, width_band);
+    saveTiff(output_path + "/sensible_heat_flux_24h.tif", sensible_heat_flux_24h, height_band, width_band);
+    saveTiff(output_path + "/latent_heat_flux_24h.tif", latent_heat_flux_24h, height_band, width_band);
+    saveTiff(output_path + "/evapotranspiration_24h.tif", evapotranspiration_24h, height_band, width_band);
+    saveTiff(output_path + "/evapotranspiration.tif", evapotranspiration, height_band, width_band);
+
+    end = system_clock::now();
+    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
+    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+    return "SERIAL,P6_SAVE_PRODS," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+};
+
+string Products::print_products(string output_path)
+{
+    system_clock::time_point begin, end;
+    float general_time;
+    int64_t initial_time, final_time;
+
+    begin = system_clock::now();
+    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+    // redirect the stdout to a file]
+    std::ofstream
+        out(output_path + "/products.txt");
+    std::streambuf *coutbuf = std::cout.rdbuf();
+    std::cout.rdbuf(out.rdbuf());
+
+    std::cout << "==== Albedo" << std::endl;
+    printLinearPointer(albedo, height_band, width_band);
+
+    std::cout << "==== NDVI" << std::endl;
+    printLinearPointer(ndvi, height_band, width_band);
+
+    std::cout << "==== PAI" << std::endl;
+    printLinearPointer(pai, height_band, width_band);
+
+    std::cout << "==== LAI" << std::endl;
+    printLinearPointer(lai, height_band, width_band);
+
+    std::cout << "==== EVI" << std::endl;
+    printLinearPointer(evi, height_band, width_band);
+
+    std::cout << "==== ENB Emissivity" << std::endl;
+    printLinearPointer(enb_emissivity, height_band, width_band);
+
+    std::cout << "==== EO Emissivity" << std::endl;
+    printLinearPointer(eo_emissivity, height_band, width_band);
+
+    std::cout << "==== EA Emissivity" << std::endl;
+    printLinearPointer(ea_emissivity, height_band, width_band);
+
+    std::cout << "==== Surface Temperature" << std::endl;
+    printLinearPointer(surface_temperature, height_band, width_band);
+
+    std::cout << "==== Net Radiation" << std::endl;
+    printLinearPointer(net_radiation, height_band, width_band);
+
+    std::cout << "==== Soil Heat Flux" << std::endl;
+    printLinearPointer(soil_heat, height_band, width_band);
+
+    std::cout << "==== D0" << std::endl;
+    printLinearPointer(d0, height_band, width_band);
+
+    std::cout << "==== ZOM" << std::endl;
+    printLinearPointer(zom, height_band, width_band);
+
+    std::cout << "==== Ustar" << std::endl;
+    printLinearPointer(ustar, height_band, width_band);
+
+    std::cout << "==== KB" << std::endl;
+    printLinearPointer(kb1, height_band, width_band);
+
+    std::cout << "==== RAH" << std::endl;
+    printLinearPointer(aerodynamic_resistance, height_band, width_band);
+
+    std::cout << "==== Sensible Heat Flux" << std::endl;
+    printLinearPointer(sensible_heat_flux, height_band, width_band);
+
+    std::cout << "==== Latent Heat Flux" << std::endl;
+    printLinearPointer(latent_heat_flux, height_band, width_band);
+
+    std::cout << "==== Net Radiation 24h" << std::endl;
+    printLinearPointer(net_radiation_24h, height_band, width_band);
+
+    std::cout << "==== Evapotranspiration Fraction" << std::endl;
+    printLinearPointer(evapotranspiration_fraction, height_band, width_band);
+
+    std::cout << "==== Sensible Heat Flux 24h" << std::endl;
+    printLinearPointer(sensible_heat_flux_24h, height_band, width_band);
+
+    std::cout << "==== Latent Heat Flux 24h" << std::endl;
+    printLinearPointer(latent_heat_flux_24h, height_band, width_band);
+
+    std::cout << "==== Evapotranspiration 24h" << std::endl;
+    printLinearPointer(evapotranspiration_24h, height_band, width_band);
+
+    std::cout << "==== Evapotranspiration" << std::endl;
+    printLinearPointer(evapotranspiration, height_band, width_band);
+
+    end = system_clock::now();
+    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
+    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+    return "SERIAL,P7_STDOUT_PRODS," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+};
+
+void Products::close(TIFF **landsat_bands)
+{
+    for (int i = 1; i < 8; i++)
+    {
+        TIFFClose(landsat_bands[i]);
+    }
+
+    free(this->band_blue);
+    free(this->band_green);
+    free(this->band_red);
+    free(this->band_nir);
+    free(this->band_swir1);
+    free(this->band_termal);
+    free(this->band_swir2);
+    free(this->tal);
+
+    free(this->radiance_blue);
+    free(this->radiance_green);
+    free(this->radiance_red);
+    free(this->radiance_nir);
+    free(this->radiance_swir1);
+    free(this->radiance_termal);
+    free(this->radiance_swir2);
+
+    free(this->reflectance_blue);
+    free(this->reflectance_green);
+    free(this->reflectance_red);
+    free(this->reflectance_nir);
+    free(this->reflectance_swir1);
+    free(this->reflectance_termal);
+    free(this->reflectance_swir2);
+
+    free(this->albedo);
+    free(this->ndvi);
+    free(this->lai);
+    free(this->evi);
+    free(this->pai);
+
+    free(this->enb_emissivity);
+    free(this->eo_emissivity);
+    free(this->ea_emissivity);
+    free(this->short_wave_radiation);
+    free(this->large_wave_radiation_surface);
+    free(this->large_wave_radiation_atmosphere);
+    free(this->surface_temperature);
+    free(this->net_radiation);
+    free(this->soil_heat);
+
+    free(this->zom);
+    free(this->d0);
+    free(this->ustar);
+    free(this->kb1);
+    free(this->aerodynamic_resistance);
+    free(this->sensible_heat_flux);
+
+    free(this->latent_heat_flux);
+    free(this->net_radiation_24h);
+    free(this->evapotranspiration_fraction);
+    free(this->sensible_heat_flux_24h);
+    free(this->latent_heat_flux_24h);
+    free(this->evapotranspiration_24h);
+    free(this->evapotranspiration);
+
+    HANDLE_ERROR(cudaFree(this->band_blue_d));
+    HANDLE_ERROR(cudaFree(this->band_green_d));
+    HANDLE_ERROR(cudaFree(this->band_red_d));
+    HANDLE_ERROR(cudaFree(this->band_nir_d));
+    HANDLE_ERROR(cudaFree(this->band_swir1_d));
+    HANDLE_ERROR(cudaFree(this->band_termal_d));
+    HANDLE_ERROR(cudaFree(this->band_swir2_d));
+    HANDLE_ERROR(cudaFree(this->tal_d));
+
+    HANDLE_ERROR(cudaFree(this->radiance_blue_d));
+    HANDLE_ERROR(cudaFree(this->radiance_green_d));
+    HANDLE_ERROR(cudaFree(this->radiance_red_d));
+    HANDLE_ERROR(cudaFree(this->radiance_nir_d));
+    HANDLE_ERROR(cudaFree(this->radiance_swir1_d));
+    HANDLE_ERROR(cudaFree(this->radiance_termal_d));
+    HANDLE_ERROR(cudaFree(this->radiance_swir2_d));
+
+    HANDLE_ERROR(cudaFree(this->reflectance_blue_d));
+    HANDLE_ERROR(cudaFree(this->reflectance_green_d));
+    HANDLE_ERROR(cudaFree(this->reflectance_red_d));
+    HANDLE_ERROR(cudaFree(this->reflectance_nir_d));
+    HANDLE_ERROR(cudaFree(this->reflectance_swir1_d));
+    HANDLE_ERROR(cudaFree(this->reflectance_termal_d));
+    HANDLE_ERROR(cudaFree(this->reflectance_swir2_d));
+
+    HANDLE_ERROR(cudaFree(this->albedo_d));
+    HANDLE_ERROR(cudaFree(this->ndvi_d));
+    HANDLE_ERROR(cudaFree(this->pai_d));
+    HANDLE_ERROR(cudaFree(this->lai_d));
+    HANDLE_ERROR(cudaFree(this->evi_d));
+
+    HANDLE_ERROR(cudaFree(this->enb_d));
+    HANDLE_ERROR(cudaFree(this->eo_d));
+    HANDLE_ERROR(cudaFree(this->ea_d));
+    HANDLE_ERROR(cudaFree(this->short_wave_radiation_d));
+    HANDLE_ERROR(cudaFree(this->large_wave_radiation_surface_d));
+    HANDLE_ERROR(cudaFree(this->large_wave_radiation_atmosphere_d));
+    HANDLE_ERROR(cudaFree(this->surface_temperature_d));
+    HANDLE_ERROR(cudaFree(this->net_radiation_d));
+    HANDLE_ERROR(cudaFree(this->soil_heat_d));
+
+    HANDLE_ERROR(cudaFree(this->zom_d));
+    HANDLE_ERROR(cudaFree(this->d0_d));
+    HANDLE_ERROR(cudaFree(this->kb1_d));
+    HANDLE_ERROR(cudaFree(this->ustar_d));
+    HANDLE_ERROR(cudaFree(this->rah_d));
+    HANDLE_ERROR(cudaFree(this->sensible_heat_flux_d));
+
+    HANDLE_ERROR(cudaFree(this->latent_heat_flux_d));
+    HANDLE_ERROR(cudaFree(this->net_radiation_24h_d));
+    HANDLE_ERROR(cudaFree(this->evapotranspiration_fraction_d));
+    HANDLE_ERROR(cudaFree(this->sensible_heat_flux_24h_d));
+    HANDLE_ERROR(cudaFree(this->latent_heat_flux_24h_d));
+    HANDLE_ERROR(cudaFree(this->evapotranspiration_24h_d));
+    HANDLE_ERROR(cudaFree(this->evapotranspiration_d));
+};
