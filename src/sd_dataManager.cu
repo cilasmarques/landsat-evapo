@@ -1,5 +1,6 @@
 #include "cuda_utils.h"
 #include "surfaceData.cuh"
+#include "kernels.cuh"
 
 Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
 {
@@ -67,12 +68,15 @@ Products::Products(uint32_t width_band, uint32_t height_band, int threads_num)
     this->evapotranspiration_24h = (float *)malloc(band_bytes);
     this->evapotranspiration = (float *)malloc(band_bytes);
 
-    const size_t MAXC = sizeof(Candidate) * height_band * width_band;
-    HANDLE_ERROR(cudaMalloc((void **)&this->d_hotCandidates, MAXC));
-    HANDLE_ERROR(cudaMalloc((void **)&this->d_coldCandidates, MAXC));
+    HANDLE_ERROR(cudaMemcpyToSymbol(width_d, &width_band, sizeof(int), 0, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpyToSymbol(height_d, &height_band, sizeof(int), 0, cudaMemcpyHostToDevice));
 
     this->stop_condition = (int *)malloc(sizeof(int));
     HANDLE_ERROR(cudaMalloc((void **)&this->stop_condition_d, sizeof(int)));
+
+    const size_t MAXC = sizeof(Candidate) * height_band * width_band;
+    HANDLE_ERROR(cudaMalloc((void **)&this->hotCandidates_d, MAXC));
+    HANDLE_ERROR(cudaMalloc((void **)&this->coldCandidates_d, MAXC));
 
     HANDLE_ERROR(cudaMalloc((void **)&this->band_blue_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->band_green_d, band_bytes));

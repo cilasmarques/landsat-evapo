@@ -68,7 +68,7 @@ struct Products
   int band_bytes;
 
   int *stop_condition, *stop_condition_d;
-  Candidate *d_hotCandidates, *d_coldCandidates;
+  Candidate *hotCandidates_d, *coldCandidates_d;
 
   // Host pointers
   float *band_blue;
