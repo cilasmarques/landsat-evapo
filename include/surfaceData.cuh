@@ -2,12 +2,6 @@
 
 #include "sensors.cuh"
 
-#ifdef __CUDACC__
-#define CUDA_HOSTDEV __host__ __device__
-#else
-#define CUDA_HOSTDEV
-#endif
-
 /**
  * @brief  Struct representing a hot or cold pixel candidate.
  */
@@ -21,7 +15,7 @@ struct Candidate
   /**
    * @brief  Empty constructor, all attributes are initialized with 0.
    */
-  CUDA_HOSTDEV Candidate();
+  __host__ __device__ Candidate();
 
   /**
    * @brief  Constructor with initialization values to attributes.
@@ -33,7 +27,7 @@ struct Candidate
    * @param  line: Pixel's line on TIFF.
    * @param  col: Pixel's column on TIFF.
    */
-  CUDA_HOSTDEV Candidate(float ndvi, float temperature, float net_radiation, float soil_heat_flux, float ho, int line, int col);
+  __host__ __device__ Candidate(float ndvi, float temperature, float net_radiation, float soil_heat_flux, float ho, int line, int col);
 
   /**
    * @brief  Update Pixel's aerodynamic resistance for a new value.
@@ -42,6 +36,9 @@ struct Candidate
   void setAerodynamicResistance(float newRah);
 };
 
+/**
+ * @brief  Struct to compare two candidates by their NDVI and temperature.
+ */
 struct CompareCandidateTemperature
 {
   __host__ __device__ bool operator()(Candidate a, Candidate b)
@@ -64,7 +61,6 @@ struct Products
   int threads_num = 1;
   int blocks_num;
 
-  int nBytes_band;
   uint32_t width_band;
   uint32_t height_band;
 
@@ -74,6 +70,7 @@ struct Products
   int *stop_condition, *stop_condition_d;
   Candidate *d_hotCandidates, *d_coldCandidates;
 
+  // Host pointers
   float *band_blue;
   float *band_green;
   float *band_red;
@@ -101,14 +98,15 @@ struct Products
 
   float *albedo;
   float *ndvi;
-  float *soil_heat;
-  float *surface_temperature;
-  float *net_radiation;
-
   float *savi;
   float *lai;
   float *evi;
   float *pai;
+
+  float *soil_heat;
+  float *net_radiation;
+  float *surface_temperature;
+
   float *enb_emissivity;
   float *eo_emissivity;
   float *ea_emissivity;
@@ -131,14 +129,64 @@ struct Products
   float *evapotranspiration_24h;
   float *evapotranspiration;
 
-  float *band_blue_d, *band_green_d, *band_red_d, *band_nir_d, *band_swir1_d, *band_termal_d, *band_swir2_d;
-  float *radiance_blue_d, *radiance_green_d, *radiance_red_d, *radiance_nir_d, *radiance_swir1_d, *radiance_termal_d, *radiance_swir2_d;
-  float *reflectance_blue_d, *reflectance_green_d, *reflectance_red_d, *reflectance_nir_d, *reflectance_swir1_d, *reflectance_termal_d, *reflectance_swir2_d;
+  // Device pointers
+  float *band_blue_d;
+  float *band_green_d;
+  float *band_red_d;
+  float *band_nir_d;
+  float *band_swir1_d;
+  float *band_termal_d;
+  float *band_swir2_d;
+  float *tal_d;
 
-  float *tal_d, *albedo_d, *ndvi_d, *pai_d, *savi_d, *lai_d, *evi_d;
-  float *enb_d, *eo_d, *ea_d, *short_wave_radiation_d, *large_wave_radiation_surface_d, *large_wave_radiation_atmosphere_d;
-  float *soil_heat_d, *surface_temperature_d, *net_radiation_d, *d0_d, *kb1_d, *zom_d, *ustar_d, *rah_d, *sensible_heat_flux_d;
-  float *latent_heat_flux_d, *net_radiation_24h_d, *evapotranspiration_fraction_d, *sensible_heat_flux_24h_d, *latent_heat_flux_24h_d, *evapotranspiration_24h_d, *evapotranspiration_d;
+  float *radiance_blue_d;
+  float *radiance_green_d;
+  float *radiance_red_d;
+  float *radiance_nir_d;
+  float *radiance_swir1_d;
+  float *radiance_termal_d;
+  float *radiance_swir2_d;
+
+  float *reflectance_blue_d;
+  float *reflectance_green_d;
+  float *reflectance_red_d;
+  float *reflectance_nir_d;
+  float *reflectance_swir1_d;
+  float *reflectance_termal_d;
+  float *reflectance_swir2_d;
+
+  float *albedo_d;
+  float *ndvi_d;
+  float *pai_d;
+  float *savi_d;
+  float *lai_d;
+  float *evi_d;
+
+  float *soil_heat_d;
+  float *net_radiation_d;
+  float *surface_temperature_d;
+
+  float *enb_d;
+  float *eo_d;
+  float *ea_d;
+  float *short_wave_radiation_d;
+  float *large_wave_radiation_surface_d;
+  float *large_wave_radiation_atmosphere_d;
+
+  float *d0_d;
+  float *kb1_d;
+  float *zom_d;
+  float *ustar_d;
+  float *rah_d;
+
+  float *sensible_heat_flux_d;
+  float *latent_heat_flux_d;
+  float *net_radiation_24h_d;
+  float *evapotranspiration_fraction_d;
+  float *sensible_heat_flux_24h_d;
+  float *latent_heat_flux_24h_d;
+  float *evapotranspiration_24h_d;
+  float *evapotranspiration_d;
 
   /**
    * @brief  Constructor.
@@ -153,9 +201,19 @@ struct Products
   Products(uint32_t width_band, uint32_t height_band, int threads_num);
 
   /**
-   * @brief  Destructor.
+   * @brief Read the data and move to the device.
+   * 
+   * @param  landsat_bands: Array with the TIFF files.
+   * @return string with the time spent.
    */
   string read_data(TIFF **landsat_bands);
+
+  /**
+   * @brief Copy the products to the host.
+   *
+   * @return string with the time spent.
+   */
+  string host_data();
 
   /**
    * @brief Compute the initial products.
@@ -190,20 +248,6 @@ struct Products
    * @return string with the time spent.
    */
   string compute_H_ET(Products products, Station station, MTL mtl);
-
-  /**
-   * @brief Copy the products to the host.
-   *
-   * @return string with the time spent.
-   */
-  string host_products();
-
-  /**
-   * @brief Copy the products to the host.
-   *
-   * @return string with the time spent.
-   */
-  void device_products();
 
   /**
    * @brief Save the products.

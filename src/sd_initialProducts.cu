@@ -1,7 +1,7 @@
-#include "surfaceData.cuh"
 #include "cuda_utils.h"
-#include "sensors.cuh"
 #include "kernels.cuh"
+#include "sensors.cuh"
+#include "surfaceData.cuh"
 
 string radiance_function(Products products, MTL mtl)
 {
@@ -69,8 +69,7 @@ string albedo_function(Products products, MTL mtl)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    albedo_kernel<<<products.blocks_num, products.threads_num>>>(products.reflectance_blue_d, products.reflectance_green_d, products.reflectance_red_d, products.reflectance_nir_d, products.reflectance_swir1_d, products.reflectance_swir2_d,
-                                               products.tal_d, products.albedo_d, mtl.ref_w_coeff_d, products.width_band, products.height_band);
+    albedo_kernel<<<products.blocks_num, products.threads_num>>>(products.reflectance_blue_d, products.reflectance_green_d, products.reflectance_red_d, products.reflectance_nir_d, products.reflectance_swir1_d, products.reflectance_swir2_d, products.tal_d, products.albedo_d, mtl.ref_w_coeff_d, products.width_band, products.height_band);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -231,8 +230,7 @@ string ea_emissivity_function(Products products)
 string surface_temperature_function(Products products, MTL mtl)
 {
     float k1, k2;
-    switch (mtl.number_sensor)
-    {
+    switch (mtl.number_sensor) {
     case 5:
         k1 = 607.76;
         k2 = 1260.56;
@@ -402,10 +400,10 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
     result += enb_emissivity_function(products);
     result += eo_emissivity_function(products);
     result += ea_emissivity_function(products);
-    result += surface_temperature_function(products,mtl);
+    result += surface_temperature_function(products, mtl);
 
     // Radiation waves
-    result += short_wave_radiation_function(products,mtl);
+    result += short_wave_radiation_function(products, mtl);
     result += large_wave_radiation_surface_function(products);
     result += large_wave_radiation_atmosphere_function(products, station.temperature_image);
 

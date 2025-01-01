@@ -24,77 +24,74 @@
  */
 int main(int argc, char *argv[])
 {
-  // Load the meteorologic stations data
-  string path_meta_file = argv[INPUT_MTL_DATA_INDEX];
-  string station_data_path = argv[INPUT_STATION_DATA_INDEX];
+    // Load the meteorologic stations data
+    string path_meta_file = argv[INPUT_MTL_DATA_INDEX];
+    string station_data_path = argv[INPUT_STATION_DATA_INDEX];
 
-  // Load the landsat images bands
-  string bands_paths[INPUT_BAND_ELEV_INDEX];
-  for (int i = 0; i < INPUT_BAND_ELEV_INDEX; i++)
-  {
-    bands_paths[i] = argv[i + 1];
-  }
+    // Load the landsat images bands
+    string bands_paths[INPUT_BAND_ELEV_INDEX];
+    for (int i = 0; i < INPUT_BAND_ELEV_INDEX; i++) {
+        bands_paths[i] = argv[i + 1];
+    }
 
-  // Load the SEB model (SEBAL or STEEP)
-  int method = 0;
-  if (argc >= METHOD_INDEX)
-  {
-    string flag = argv[METHOD_INDEX];
-    if (flag.substr(0, 6) == "-meth=")
-      method = flag[6] - '0';
-  }
+    // Load the SEB model (SEBAL or STEEP)
+    int method = 0;
+    if (argc >= METHOD_INDEX) {
+        string flag = argv[METHOD_INDEX];
+        if (flag.substr(0, 6) == "-meth=")
+            method = flag[6] - '0';
+    }
 
-  // Load the number of threads for each block
-  int threads_num = 1024;
-  if (argc >= THREADS_INDEX)
-  {
-    string threads_flag = argv[THREADS_INDEX];
-    if (threads_flag.substr(0, 9) == "-threads=")
-      threads_num = atof(threads_flag.substr(9, threads_flag.size()).c_str());
-  }
+    // Load the number of threads for each block
+    int threads_num = 1024;
+    if (argc >= THREADS_INDEX) {
+        string threads_flag = argv[THREADS_INDEX];
+        if (threads_flag.substr(0, 9) == "-threads=")
+            threads_num = atof(threads_flag.substr(9, threads_flag.size()).c_str());
+    }
 
-  // Save output paths
-  string output_folder = argv[OUTPUT_FOLDER];
-  string output_time = output_folder + "/time.csv";
+    // Save output paths
+    string output_folder = argv[OUTPUT_FOLDER];
+    string output_time = output_folder + "/time.csv";
 
-  // Time output
-  ofstream time_output;
-  time_output.open(output_time);
-  string general, initial, final;
-  system_clock::time_point begin, end;
-  int64_t initial_time, final_time;
-  float general_time;
+    // Time output
+    ofstream time_output;
+    time_output.open(output_time);
+    string general, initial, final;
+    system_clock::time_point begin, end;
+    int64_t initial_time, final_time;
+    float general_time;
 
-  // Instantiate classes
-  MTL mtl = MTL(path_meta_file);
-  Landsat landsat = Landsat(bands_paths);
-  Station station = Station(station_data_path, mtl.image_hour);
-  Products products = Products(landsat.width_band, landsat.height_band, threads_num);
+    // Instantiate classes
+    MTL mtl = MTL(path_meta_file);
+    Landsat landsat = Landsat(bands_paths);
+    Station station = Station(station_data_path, mtl.image_hour);
+    Products products = Products(landsat.width_band, landsat.height_band, threads_num);
 
-  // ===== RUN ALGORITHM =====
-  begin = system_clock::now();
-  initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  time_output << "STRATEGY,PHASE,TIMESTAMP,START_TIME,END_TIME" << std::endl;
+    // ===== RUN ALGORITHM =====
+    begin = system_clock::now();
+    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    time_output << "STRATEGY,PHASE,TIMESTAMP,START_TIME,END_TIME" << std::endl;
 
-  // process products
-  time_output << products.read_data(landsat.landsat_bands);
-  time_output << products.compute_Rn_G(products, station, mtl);
-  time_output << products.select_endmembers(method);
-  time_output << products.converge_rah_cycle(products, station, method);
-  time_output << products.compute_H_ET(products, station, mtl);
+    // process products
+    time_output << products.read_data(landsat.landsat_bands);
+    time_output << products.compute_Rn_G(products, station, mtl);
+    time_output << products.select_endmembers(method);
+    time_output << products.converge_rah_cycle(products, station, method);
+    time_output << products.compute_H_ET(products, station, mtl);
 
-  // save products
-  // time_output << products.host_products();
-  // time_output << products.save_products(output_folder);
-  // time_output << products.print_products(output_folder);
-  // products.close(landsat.landsat_bands);
+    // save products
+    // time_output << products.host_data();
+    // time_output << products.save_products(output_folder);
+    // time_output << products.print_products(output_folder);
+    // products.close(landsat.landsat_bands);
 
-  end = system_clock::now();
-  final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-  general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
-  time_output << "KERNELS,P_TOTAL," << general_time << "," << initial_time << "," << final_time << std::endl;
+    end = system_clock::now();
+    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
+    time_output << "KERNELS,P_TOTAL," << general_time << "," << initial_time << "," << final_time << std::endl;
 
-  time_output.close();
+    time_output.close();
 
-  return 0;
+    return 0;
 }

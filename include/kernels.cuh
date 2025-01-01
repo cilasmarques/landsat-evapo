@@ -49,8 +49,7 @@ __global__ void ref_kernel(float *band_d, float *reflectance_d, float *ref_add_d
  * @param width  The width of the bands.
  * @param height  The height of the bands.
  */
-__global__ void albedo_kernel(float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_swir2_d,
-                              float *tal_d, float *albedo_d, float *ref_w_coeff_d, int width, int height);
+__global__ void albedo_kernel(float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_swir2_d, float *tal_d, float *albedo_d, float *ref_w_coeff_d, int width, int height);
 
 /**
  * @brief  Compute the NDVI of the bands.
@@ -284,8 +283,7 @@ __global__ void aerodynamic_resistance_kernel(float *zom_d, float *d0_d, float *
  * @param width_band  The width of the bands.
  * @param height_band  The height of the bands.
  */
-__global__ void sensible_heat_flux_kernel(Candidate *d_hotCandidates, Candidate *d_coldCandidates, float *surface_temperature_d,
-                                          float *rah_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d, int width, int height);
+__global__ void sensible_heat_flux_kernel(Candidate *d_hotCandidates, Candidate *d_coldCandidates, float *surface_temperature_d, float *rah_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d, int width, int height);
 
 /**
  * @brief  Compute the latent heat flux of the bands.
@@ -388,10 +386,7 @@ __global__ void evapotranspiration_kernel(float *net_radiation_24h_d, float *eva
  * @param height  Height of the input data
  * @param width  Width of the input data
  */
-__global__ void rah_correction_cycle_STEEP(Candidate *d_hotCandidates, Candidate *d_coldCandidates, 
-                                           float *ndvi_pointer, float *surf_temp_pointer, float *d0_pointer, float *kb1_pointer,
-                                           float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer,
-                                           float ndvi_max, float ndvi_min, int height, int width);
+__global__ void rah_correction_cycle_STEEP(Candidate *d_hotCandidates, Candidate *d_coldCandidates, float *ndvi_pointer, float *surf_temp_pointer, float *d0_pointer, float *kb1_pointer, float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer, float ndvi_max, float ndvi_min, int height, int width);
 
 /**
  * @brief  Compute the rah correction cycle. (STEEP algorithm)
@@ -413,10 +408,7 @@ __global__ void rah_correction_cycle_STEEP(Candidate *d_hotCandidates, Candidate
  * @param height  Height of the input data
  * @param width  Width of the input data
  */
-__global__ void rah_correction_cycle_ASEBAL(Candidate *d_hotCandidates, Candidate *d_coldCandidates, 
-                                            float *ndvi_pointer, float *surf_temp_pointer, float *kb1_pointer, float *zom_pointer,
-                                            float *ustar_pointer, float *rah_pointer, float *H_pointer, float ndvi_max, float ndvi_min,
-                                            float u200, int height, int width, int *stop_condition);
+__global__ void rah_correction_cycle_ASEBAL(Candidate *d_hotCandidates, Candidate *d_coldCandidates, float *ndvi_pointer, float *surf_temp_pointer, float *kb1_pointer, float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer, float ndvi_max, float ndvi_min, float u200, int height, int width, int *stop_condition);
 
 /**
  * @brief Filter values that are not NaN or Inf.
@@ -452,12 +444,27 @@ __global__ void filter_valid_values(const float *target, float *filtered, int he
  * @param height_band The height of the target arrays.
  * @param width_band The width of the target arrays.
  */
-__global__ void process_pixels_STEEP(Candidate *hotCandidates, Candidate *coldCandidates, int *d_indexes,
-                                     float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, float *ho,
-                                     float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh,
-                                     float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh, int height_band, int width_band);
+__global__ void process_pixels_STEEP(Candidate *hotCandidates, Candidate *coldCandidates, int *d_indexes, float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, float *ho, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh, int height_band, int width_band);
 
-__global__ void process_pixels_ASEBAL(Candidate *hotCandidates, Candidate *coldCandidates, int *d_indexes,
-                                      float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, float *ho,
-                                      float ndvi1stQuartile, float ndvi4stQuartile, float ts1stQuartile, float ts3stQuartile,
-                                      float albedo2ndQuartile, float albedo3rdQuartile, int height_band, int width_band);
+/**
+ * @brief Process the pixels of the target arrays and store the candidates in the hot and cold arrays.
+ *
+ * @param hotCandidates The hot candidates array.
+ * @param coldCandidates The cold candidates array.
+ * @param d_indexes The indexes of the hot and cold arrays.
+ * @param ndvi The NDVI array.
+ * @param surface_temperature The surface temperature array.
+ * @param albedo The albedo array.
+ * @param net_radiation The net radiation array.
+ * @param soil_heat The soil heat array.
+ * @param ho The ho array.
+ * @param ndvi1stQuartile The NDVI 1st quartile.
+ * @param ndvi4stQuartile The NDVI 4st quartile.
+ * @param ts1stQuartile The surface temperature 1st quartile.
+ * @param ts3rdQuartile The surface temperature 3rd quartile.
+ * @param albedo2ndQuartile The albedo 2nd quartile.
+ * @param albedo3rdQuartile The albedo 3rd quartile.
+ * @param height_band The height of the target arrays.
+ * @param width_band The width of the target arrays.
+ */
+__global__ void process_pixels_ASEBAL(Candidate *hotCandidates, Candidate *coldCandidates, int *d_indexes, float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, float *ho, float ndvi1stQuartile, float ndvi4stQuartile, float ts1stQuartile, float ts3stQuartile, float albedo2ndQuartile, float albedo3rdQuartile, int height_band, int width_band);

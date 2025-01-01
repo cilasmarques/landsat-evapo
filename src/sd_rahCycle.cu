@@ -1,7 +1,7 @@
+#include "cuda_utils.h"
+#include "kernels.cuh"
 #include "sensors.cuh"
 #include "surfaceData.cuh"
-#include "kernels.cuh"
-#include "cuda_utils.h"
 
 string d0_fuction(Products products)
 {
@@ -128,11 +128,8 @@ string rah_correction_function_blocks_STEEP(Products products, float ndvi_min, f
     HANDLE_ERROR(cudaSetDevice(dev));
 
     cudaEventRecord(start);
-    for (int i = 0; i < 2; i++)
-    {
-        rah_correction_cycle_STEEP<<<products.blocks_num, products.threads_num>>>(products.d_hotCandidates, products.d_coldCandidates, products.ndvi_d,
-                                                                products.surface_temperature_d, products.d0_d, products.kb1_d, products.zom_d, products.ustar_d, products.rah_d, products.sensible_heat_flux_d,
-                                                                ndvi_max, ndvi_min, products.height_band, products.width_band);
+    for (int i = 0; i < 2; i++) {
+        rah_correction_cycle_STEEP<<<products.blocks_num, products.threads_num>>>(products.d_hotCandidates, products.d_coldCandidates, products.ndvi_d, products.surface_temperature_d, products.d0_d, products.kb1_d, products.zom_d, products.ustar_d, products.rah_d, products.sensible_heat_flux_d, ndvi_max, ndvi_min, products.height_band, products.width_band);
     }
     cudaEventRecord(stop);
 
@@ -161,12 +158,8 @@ string rah_correction_function_blocks_ASEBAL(Products products, float ndvi_min, 
 
     cudaEventRecord(start);
     int i = 0;
-    while (true)
-    {
-        rah_correction_cycle_ASEBAL<<<products.blocks_num, products.threads_num>>>(products.d_hotCandidates, products.d_coldCandidates,
-                                                                 products.ndvi_d, products.surface_temperature_d, products.kb1_d, products.zom_d, products.ustar_d,
-                                                                 products.rah_d, products.sensible_heat_flux_d, ndvi_max, ndvi_min,
-                                                                 u200, products.height_band, products.width_band, products.stop_condition_d);
+    while (true) {
+        rah_correction_cycle_ASEBAL<<<products.blocks_num, products.threads_num>>>(products.d_hotCandidates, products.d_coldCandidates, products.ndvi_d, products.surface_temperature_d, products.kb1_d, products.zom_d, products.ustar_d, products.rah_d, products.sensible_heat_flux_d, ndvi_max, ndvi_min, u200, products.height_band, products.width_band, products.stop_condition_d);
 
         HANDLE_ERROR(cudaMemcpy(products.stop_condition, products.stop_condition_d, sizeof(int), cudaMemcpyDeviceToHost));
 

@@ -1,7 +1,7 @@
+#include "cuda_utils.h"
+#include "kernels.cuh"
 #include "sensors.cuh"
 #include "surfaceData.cuh"
-#include "kernels.cuh"
-#include "cuda_utils.h"
 
 string sensible_heat_flux_function(Products products)
 {
@@ -13,8 +13,7 @@ string sensible_heat_flux_function(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    sensible_heat_flux_kernel<<<products.blocks_num, products.threads_num>>>(products.d_hotCandidates, products.d_coldCandidates, products.surface_temperature_d,
-                                                           products.rah_d, products.net_radiation_d, products.soil_heat_d, products.sensible_heat_flux_d, products.width_band, products.height_band);
+    sensible_heat_flux_kernel<<<products.blocks_num, products.threads_num>>>(products.d_hotCandidates, products.d_coldCandidates, products.surface_temperature_d, products.rah_d, products.net_radiation_d, products.soil_heat_d, products.sensible_heat_flux_d, products.width_band, products.height_band);
 
     cudaEventRecord(stop);
 
