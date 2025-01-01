@@ -29,7 +29,6 @@ extern int model_method;
 extern int threads_n;
 extern int blocks_n;
 
-
 // CONSTANTS DECLARATION
 #define PARAM_BAND_BLUE_INDEX       0
 #define PARAM_BAND_GREEN_INDEX      1

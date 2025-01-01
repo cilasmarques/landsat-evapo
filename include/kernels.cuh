@@ -242,7 +242,7 @@ __global__ void aerodynamic_resistance_kernel(float *zom_d, float *d0_d, float *
  * @param soil_heat_d  The soil heat.
  * @param sensible_heat_flux_d  The sensible heat flux.
  */
-__global__ void sensible_heat_flux_kernel(Candidate *hotCandidates_d, Candidate *coldCandidates_d, float *surface_temperature_d, float *rah_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d);
+__global__ void sensible_heat_flux_kernel(Endmember *hotCandidates_d, Endmember *coldCandidates_d, float *surface_temperature_d, float *rah_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d);
 
 /**
  * @brief  Compute the latent heat flux of the bands.
@@ -329,7 +329,7 @@ __global__ void evapotranspiration_kernel(float *net_radiation_24h_d, float *eva
  * @param ndvi_max  NDVI max value
  * @param ndvi_min  NDVI min value
  */
-__global__ void rah_correction_cycle_STEEP(Candidate *hotCandidates_d, Candidate *coldCandidates_d, float *ndvi_pointer, float *surf_temp_pointer, float *d0_pointer, float *kb1_pointer, float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer, float ndvi_max, float ndvi_min);
+__global__ void rah_correction_cycle_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, float *ndvi_pointer, float *surf_temp_pointer, float *d0_pointer, float *kb1_pointer, float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer, float ndvi_max, float ndvi_min);
 
 /**
  * @brief  Compute the rah correction cycle. (STEEP algorithm)
@@ -349,7 +349,7 @@ __global__ void rah_correction_cycle_STEEP(Candidate *hotCandidates_d, Candidate
  * @param ndvi_min  NDVI min value
  * @param u200 U200
  */
-__global__ void rah_correction_cycle_ASEBAL(Candidate *hotCandidates_d, Candidate *coldCandidates_d, float *ndvi_pointer, float *surf_temp_pointer, float *kb1_pointer, float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer, float ndvi_max, float ndvi_min, float u200, int *stop_condition);
+__global__ void rah_correction_cycle_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, float *ndvi_pointer, float *surf_temp_pointer, float *kb1_pointer, float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer, float ndvi_max, float ndvi_min, float u200, int *stop_condition);
 
 /**
  * @brief Filter values that are not NaN or Inf.
@@ -381,7 +381,7 @@ __global__ void filter_valid_values(const float *target, float *filtered, int *p
  * @param albedoQuartileMid The albedo mid quartile.
  * @param albedoQuartileHigh The albedo high quartile.
  */
-__global__ void process_pixels_STEEP(Candidate *hotCandidates, Candidate *coldCandidates, int *indexes_d, float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, float *ho, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh);
+__global__ void process_pixels_STEEP(Endmember *hotCandidates, Endmember *coldCandidates, int *indexes_d, float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, float *ho, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh);
 
 /**
  * @brief Process the pixels of the target arrays and store the candidates in the hot and cold arrays.
@@ -402,4 +402,4 @@ __global__ void process_pixels_STEEP(Candidate *hotCandidates, Candidate *coldCa
  * @param albedo2ndQuartile The albedo 2nd quartile.
  * @param albedo3rdQuartile The albedo 3rd quartile.
  */
-__global__ void process_pixels_ASEBAL(Candidate *hotCandidates, Candidate *coldCandidates, int *indexes_d, float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, float *ho, float ndvi1stQuartile, float ndvi4stQuartile, float ts1stQuartile, float ts3stQuartile, float albedo2ndQuartile, float albedo3rdQuartile);
+__global__ void process_pixels_ASEBAL(Endmember *hotCandidates, Endmember *coldCandidates, int *indexes_d, float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, float *ho, float ndvi1stQuartile, float ndvi4stQuartile, float ts1stQuartile, float ts3stQuartile, float albedo2ndQuartile, float albedo3rdQuartile);

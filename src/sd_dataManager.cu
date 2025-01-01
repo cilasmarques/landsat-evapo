@@ -71,7 +71,7 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     this->stop_condition = (int *)malloc(sizeof(int));
     HANDLE_ERROR(cudaMalloc((void **)&this->stop_condition_d, sizeof(int)));
 
-    const size_t MAXC = sizeof(Candidate) * height_band * width_band;
+    const size_t MAXC = sizeof(Endmember) * height_band * width_band;
     HANDLE_ERROR(cudaMalloc((void **)&this->hotCandidates_d, MAXC));
     HANDLE_ERROR(cudaMalloc((void **)&this->coldCandidates_d, MAXC));
 
@@ -326,8 +326,7 @@ string Products::print_products(string output_path)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     // redirect the stdout to a file]
-    std::ofstream
-        out(output_path + "/products.txt");
+    std::ofstream out(output_path + "/products.txt");
     std::streambuf *coutbuf = std::cout.rdbuf();
     std::cout.rdbuf(out.rdbuf());
 

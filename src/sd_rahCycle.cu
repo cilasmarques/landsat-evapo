@@ -195,13 +195,13 @@ string Products::converge_rah_cycle(Products products, Station station)
 
     float ndvi_min = thrust::reduce(thrust::device,
                                     products.ndvi_d,
-                                    ndvi_d + products.height_band * products.width_band,
+                                    products.ndvi_d + products.height_band * products.width_band,
                                     1.0f, // Initial value
                                     thrust::minimum<float>());
 
     float ndvi_max = thrust::reduce(thrust::device,
                                     products.ndvi_d,
-                                    ndvi_d + products.height_band * products.width_band,
+                                    products.ndvi_d + products.height_band * products.width_band,
                                     -1.0f, // Initial value
                                     thrust::maximum<float>());
 

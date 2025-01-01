@@ -5,7 +5,7 @@
 /**
  * @brief  Struct representing a hot or cold pixel candidate.
  */
-struct Candidate
+struct Endmember
 {
   int line, col;
   float aerodynamic_resistance;
@@ -15,7 +15,7 @@ struct Candidate
   /**
    * @brief  Empty constructor, all attributes are initialized with 0.
    */
-  __host__ __device__ Candidate();
+  __host__ __device__ Endmember();
 
   /**
    * @brief  Constructor with initialization values to attributes.
@@ -27,7 +27,7 @@ struct Candidate
    * @param  line: Pixel's line on TIFF.
    * @param  col: Pixel's column on TIFF.
    */
-  __host__ __device__ Candidate(float ndvi, float temperature, float net_radiation, float soil_heat_flux, float ho, int line, int col);
+  __host__ __device__ Endmember(float ndvi, float temperature, float net_radiation, float soil_heat_flux, float ho, int line, int col);
 
   /**
    * @brief  Update Pixel's aerodynamic resistance for a new value.
@@ -39,11 +39,11 @@ struct Candidate
 /**
  * @brief  Struct to compare two candidates by their NDVI and temperature.
  */
-struct CompareCandidateTemperature
+struct CompareEndmemberTemperature
 {
-  __host__ __device__ bool operator()(Candidate a, Candidate b)
+  __host__ __device__ bool operator()(Endmember a, Endmember b)
   {
-    // Assuming Candidate has a member variable 'temperature'
+    // Assuming Endmember has a member variable 'temperature'
     bool result = a.temperature < b.temperature;
 
     if (a.temperature == b.temperature)
@@ -65,7 +65,7 @@ struct Products
   int band_bytes;
 
   int *stop_condition, *stop_condition_d;
-  Candidate *hotCandidates_d, *coldCandidates_d;
+  Endmember *hotCandidates_d, *coldCandidates_d;
 
   // Host pointers
   float *band_blue;
@@ -223,9 +223,10 @@ struct Products
   /**
    * @brief Select the cold and hot endmembers
    *
+   * @param  products: Products struct.
    * @return string with the time spent.
    */
-  string select_endmembers();
+  string select_endmembers(Products products);
 
   /**
    * @brief make the rah cycle converge

@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
     // process products
     time_output << products.read_data(landsat.landsat_bands);
     time_output << products.compute_Rn_G(products, station, mtl);
-    time_output << products.select_endmembers();
+    time_output << products.select_endmembers(products);
     time_output << products.converge_rah_cycle(products, station);
     time_output << products.compute_H_ET(products, station, mtl);
 
