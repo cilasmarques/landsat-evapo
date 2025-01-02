@@ -99,6 +99,11 @@ string getEndmembersSTEEP(Products products)
         int hot_pos = static_cast<unsigned int>(std::floor(indexes[0] * 0.5));
         int cold_pos = static_cast<unsigned int>(std::floor(indexes[1] * 0.5));
 
+        if (indexes[0] == 0) 
+            throw std::runtime_error("No hot candidates found");
+        if (indexes[1] == 0)
+            throw std::runtime_error("No cold candidates found");
+
         // The dev_ptr_hot sort also sorts the hotCandidates_d array
         thrust::device_ptr<Endmember> dev_ptr_hot(products.hotCandidates_d);
         thrust::sort(dev_ptr_hot, dev_ptr_hot + indexes[0], CompareEndmemberTemperature());
@@ -157,6 +162,11 @@ string getEndmembersASEBAL(Products products)
         cudaMemcpy(&indexes, indexes_d, sizeof(int) * 2, cudaMemcpyDeviceToHost);
         int hot_pos = static_cast<unsigned int>(std::floor(indexes[0] * 0.5));
         int cold_pos = static_cast<unsigned int>(std::floor(indexes[1] * 0.5));
+
+        if (indexes[0] == 0) 
+            throw std::runtime_error("No hot candidates found");
+        if (indexes[1] == 0)
+            throw std::runtime_error("No cold candidates found");
 
         // The dev_ptr_hot sort also sorts the hotCandidates_d array
         thrust::device_ptr<Endmember> dev_ptr_hot(products.hotCandidates_d);

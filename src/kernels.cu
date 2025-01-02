@@ -305,7 +305,7 @@ __global__ void d0_kernel(float *pai_d, float *d0_d, float CD1, float HGHT)
     }
 }
 
-__global__ void ustar_kernel(float *zom_d, float *d0_d, float *ustar_d, float u10)
+__global__ void ustar_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, float u10)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -320,7 +320,21 @@ __global__ void ustar_kernel(float *zom_d, float *d0_d, float *ustar_d, float u1
     }
 }
 
-__global__ void zom_kernel(float *d0_d, float *pai_d, float *zom_d, float A_ZOM, float B_ZOM)
+__global__ void ustar_kernel_ASEBAL(float *zom_d, float *ustar_d, float u200)
+{
+    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+    // Map 1D position to 2D grid
+    unsigned int row = idx / width_d;
+    unsigned int col = idx % width_d;
+
+    if (idx < width_d * height_d) {
+        unsigned int pos = row * width_d + col;
+        ustar_d[pos] = (u200 * VON_KARMAN) / log(200 / zom_d[pos]);
+    }
+}
+
+__global__ void zom_kernel_STEEP(float *d0_d, float *pai_d, float *zom_d, float A_ZOM, float B_ZOM)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -342,6 +356,19 @@ __global__ void zom_kernel(float *d0_d, float *pai_d, float *zom_d, float A_ZOM,
             gama = 3.3;
 
         zom_d[pos] = (HGHT - d0_d[pos]) * pow(exp(1.0), (-VON_KARMAN * gama) + PSICORR);
+    }
+}
+
+__global__ void zom_kernel_ASEBAL(float *ndvi_d, float *zom_d, float A_ZOM, float B_ZOM)
+{
+    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
+        unsigned int pos = row * width_d + col;
+
+        zom_d[pos] = exp(A_ZOM + B_ZOM * ndvi_d[pos]);
     }
 }
 
@@ -389,17 +416,14 @@ __global__ void kb_kernel(float *zom_d, float *ustar_d, float *pai_d, float *kb1
     }
 }
 
-__global__ void aerodynamic_resistance_kernel(float *zom_d, float *d0_d, float *ustar_d, float *kb1_d, float *aerodynamic_resistance_d)
+__global__ void aerodynamic_resistance_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, float *kb1_d, float *rah_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     float zu = 10.0;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
         float DISP = d0_d[pos];
@@ -411,7 +435,19 @@ __global__ void aerodynamic_resistance_kernel(float *zom_d, float *d0_d, float *
         float temp_rah2 = log(((zu - DISP) / zom));
         float temp_rah3_terra = temp_rah1_terra * temp_kb_1_terra;
 
-        aerodynamic_resistance_d[pos] = temp_rah1_terra * temp_rah2 + temp_rah3_terra;
+        rah_d[pos] = temp_rah1_terra * temp_rah2 + temp_rah3_terra;
+    }
+}
+
+__global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_d)
+{
+    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
+        unsigned int pos = row * width_d + col;
+        rah_d[pos] =  log10f(2.0/ 0.1) / (ustar_d[col] * VON_KARMAN);
     }
 }
 
@@ -538,11 +574,9 @@ __global__ void rah_correction_cycle_STEEP(Endmember *hotCandidates_d, Endmember
     // Identify 1D position
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
         Endmember hot_pixel = hotCandidates_d[pos_hot_d];
@@ -608,11 +642,9 @@ __global__ void rah_correction_cycle_ASEBAL(Endmember *hotCandidates_d, Endmembe
     // Identify 1D position
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
         Endmember hot_pixel = hotCandidates_d[pos_hot_d];
@@ -620,34 +652,28 @@ __global__ void rah_correction_cycle_ASEBAL(Endmember *hotCandidates_d, Endmembe
         unsigned int hot_pos = hot_pixel.line * width_d + hot_pixel.col;
         unsigned int cold_pos = cold_pixel.line * width_d + cold_pixel.col;
 
-        float fc_hot = 1 - pow((ndvi_d[hot_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
-        float fc_cold = 1 - pow((ndvi_d[cold_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
-
         float rah_ini_pq_terra = rah_d[hot_pos];
         float rah_ini_pf_terra = rah_d[cold_pos];
 
-        float LEc_terra = 0.55 * fc_hot * (hot_pixel.net_radiation - hot_pixel.soil_heat_flux) * 0.78;
-        float LEc_terra_pf = 1.75 * fc_cold * (cold_pixel.net_radiation - cold_pixel.soil_heat_flux) * 0.78;
-
-        float H_pf_terra = cold_pixel.net_radiation - cold_pixel.soil_heat_flux - LEc_terra_pf;
+        float H_pf_terra = cold_pixel.net_radiation - cold_pixel.soil_heat_flux;
         float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
 
-        float H_pq_terra = hot_pixel.net_radiation - hot_pixel.soil_heat_flux - LEc_terra;
+        float H_pq_terra = hot_pixel.net_radiation - hot_pixel.soil_heat_flux;
         float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
 
         float b = (dt_pq_terra - dt_pf_terra) / (surf_temp_d[hot_pos] - surf_temp_d[cold_pos]);
-        float a = dt_pf_terra - (b * (surf_temp_d[cold_pos] - 273.15));
+        float a = dt_pf_terra - (b * (surf_temp_d[cold_pos]));
 
         b_d = b;
         a_d = a;
 
-        float dT_ini_terra = a + b * (surf_temp_d[pos] - 273.15);
+        float dT_ini_terra = a + b * (surf_temp_d[pos]);
 
         float sensibleHeatFlux = RHO * SPECIFIC_HEAT_AIR * (dT_ini_terra) / rah_d[pos];
         float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_d[pos], 3) * surf_temp_d[pos]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
 
-        float y1 = pow((1 - (16 * 0.1) / L), 0.25);
-        float y2 = pow((1 - (16 * 2) / L), 0.25);
+        float x1 = pow((1 - (16 * 0.1) / L), 0.25);
+        float x2 = pow((1 - (16 * 2) / L), 0.25);
         float x200 = pow((1 - (16 * 200) / L), 0.25);
 
         float psi1, psi2, psi200;
@@ -656,33 +682,36 @@ __global__ void rah_correction_cycle_ASEBAL(Endmember *hotCandidates_d, Endmembe
             psi2 = -5 * (2 / L);
             psi200 = -5 * (2 / L);
         } else {
-            psi1 = 2 * log((1 + y1 * y1) / 2);
-            psi2 = 2 * log((1 + y2 * y2) / 2);
+            psi1 = 2 * log((1 + x1 * x1) / 2);
+            psi2 = 2 * log((1 + x2 * x2) / 2);
             psi200 = 2 * log((1 + x200) / 2) + log((1 + x200 * x200) / 2) - 2 * atan(x200) + 0.5 * M_PI;
         }
 
         float ust = (VON_KARMAN * u200) / (log(200 / zom_d[pos]) - psi200);
         float rah = (log(2 / 0.1) - psi2 + psi1) / (ustar_d[pos] * VON_KARMAN);
 
+        if ((pos == hot_pos) && (fabsf(1 - (rah_ini_pq_terra / rah)) < 0.05)) {
+            atomicExch(stop_condition, 1);
+        }
+
         ustar_d[pos] = ust;
         rah_d[pos] = rah;
         H_d[pos] = sensibleHeatFlux;
-
-        if ((pos == hot_pos) && (fabs(1 - rah_ini_pq_terra / rah_d[hot_pos]) < 0.05)) {
-            atomicExch(stop_condition, 1); // Set the global flag if any thread meets the condition
-        }
     }
 }
 
-__global__ void filter_valid_values(const float *target, float *filtered, int *pos)
+__global__ void filter_valid_values(const float *target, float *filtered, int *ipos)
 {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int size = height_d * width_d;
 
-    if (idx < size) {
-        float value = target[idx];
+    if (idx < height_d * width_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
+        unsigned int pos = row * width_d + col;
+
+        float value = target[pos];
         if (!isnan(value) && !isinf(value)) {
-            int position = atomicAdd(pos, 1);
+            int position = atomicAdd(ipos, 1);
             filtered[position] = value;
         }
     }
@@ -692,11 +721,10 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
 
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
         ho_d[pos] = net_radiation_d[pos] - soil_heat_d[pos];
@@ -725,11 +753,9 @@ __global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *col
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
         ho_d[pos] = net_radiation_d[pos] - soil_heat_d[pos];

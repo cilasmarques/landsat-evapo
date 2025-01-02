@@ -183,7 +183,18 @@ __global__ void d0_kernel(float *pai_d, float *d0_d, float CD1, float HGHT);
  * @param A_ZOM  The A_ZOM constant.
  * @param B_ZOM  The B_ZOM constant.
  */
-__global__ void zom_kernel(float *d0_d, float *pai_d, float *zom_d, float A_ZOM, float B_ZOM);
+__global__ void zom_kernel_STEEP(float *d0_d, float *pai_d, float *zom_d, float A_ZOM, float B_ZOM);
+
+
+/**
+ * @brief  Compute the rah of the bands.
+ *
+ * @param ndvi_d  The NDVI.
+ * @param zom_d  The ZOM.
+ * @param A_ZOM  The A_ZOM constant.
+ * @param B_ZOM  The B_ZOM constant.
+ */
+__global__ void zom_kernel_ASEBAL(float *ndvi_d, float *zom_d, float A_ZOM, float B_ZOM);
 
 /**
  * @brief  Compute the ustar of the bands.
@@ -193,7 +204,16 @@ __global__ void zom_kernel(float *d0_d, float *pai_d, float *zom_d, float A_ZOM,
  * @param ustar_d  The USTAR.
  * @param u10  The U10 constant.
  */
-__global__ void ustar_kernel(float *zom_d, float *d0_d, float *ustar_d, float u10);
+__global__ void ustar_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, float u10);
+
+/**
+ * @brief  Compute the ustar of the bands.
+ *
+ * @param zom_d  The ZOM.
+ * @param ustar_d  The USTAR.
+ * @param u10  The U10 constant.
+ */
+__global__ void ustar_kernel_ASEBAL(float *zom_d, float *ustar_d, float u200);
 
 /**
  * @brief  Compute the KB-1 stability parameter of the bands.
@@ -217,7 +237,15 @@ __global__ void kb_kernel(float *zom_d, float *ustar_d, float *pai_d, float *kb1
  * @param kb1_d  The KB-1.
  * @param rah_d  The RAH.
  */
-__global__ void aerodynamic_resistance_kernel(float *zom_d, float *d0_d, float *ustar_d, float *kb1_d, float *rah_d);
+__global__ void aerodynamic_resistance_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, float *kb1_d, float *rah_d);
+
+/**
+ * @brief  Compute the aerodynamic resistance of the bands.
+ * 
+ * @param ustar_d  The USTAR.
+ * @param rah_d  The RAH.
+ */
+__global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_d);
 
 /**
  * @brief  Compute the sensible heat flux of the bands.
