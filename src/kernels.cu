@@ -122,7 +122,7 @@ __global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, f
         if (!isnan(savi) && savi > 0.687)
             lai_d[pos] = 6;
         if (!isnan(savi) && savi <= 0.687)
-            lai_d[pos] = -log((0.69 - savi) / 0.59) / 0.91;
+            lai_d[pos] = -logf((0.69 - savi) / 0.59) / 0.91;
         if (!isnan(savi) && savi < 0.1)
             lai_d[pos] = 0;
 
@@ -135,17 +135,17 @@ __global__ void enb_kernel(float *lai_d, float *ndvi_d, float *enb_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
         if (ndvi_d[pos] > 0)
             enb_d[pos] = (lai_d[pos] < 3) ? 0.97 + 0.0033 * lai_d[pos] : 0.98;            
-        else
+        else if (ndvi_d[pos] < 0)
             enb_d[pos] = 0.99;
+        else
+            enb_d[pos] = NAN;
     }
 }
 
@@ -153,17 +153,17 @@ __global__ void eo_kernel(float *lai_d, float *ndvi_d, float *eo_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
         if (ndvi_d[pos] > 0)
             eo_d[pos] = (lai_d[pos] < 3) ? 0.95 + 0.01 * lai_d[pos] : 0.98;            
-        else
+        else if (ndvi_d[pos] < 0)
             eo_d[pos] = 0.985;
+        else
+            eo_d[pos] = NAN;
     }
 }
 
@@ -177,7 +177,7 @@ __global__ void ea_kernel(float *tal_d, float *ea_d)
 
     if (idx < width_d * height_d) {
         unsigned int pos = row * width_d + col;
-        ea_d[pos] = 0.85 * pow((-1 * log(tal_d[pos])), 0.09);
+        ea_d[pos] = 0.85 * pow((-1 * logf(tal_d[pos])), 0.09);
     }
 }
 
@@ -191,7 +191,7 @@ __global__ void surface_temperature_kernel(float *enb_d, float *radiance_termal_
 
     if (idx < width_d * height_d) {
         unsigned int pos = row * width_d + col;
-        surface_temperature_d[pos] = k2 / (log((enb_d[pos] * k1 / radiance_termal_d[pos]) + 1));
+        surface_temperature_d[pos] = k2 / (logf((enb_d[pos] * k1 / radiance_termal_d[pos]) + 1));
 
         if (surface_temperature_d[pos] < 0)
             surface_temperature_d[pos] = 0;
@@ -316,7 +316,7 @@ __global__ void ustar_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, fl
     float zu = 10;
     if (idx < width_d * height_d) {
         unsigned int pos = row * width_d + col;
-        ustar_d[pos] = (u10 * VON_KARMAN) / log((zu - d0_d[pos]) / zom_d[pos]);
+        ustar_d[pos] = (u10 * VON_KARMAN) / logf((zu - d0_d[pos]) / zom_d[pos]);
     }
 }
 
@@ -330,7 +330,7 @@ __global__ void ustar_kernel_ASEBAL(float *zom_d, float *ustar_d, float u200)
 
     if (idx < width_d * height_d) {
         unsigned int pos = row * width_d + col;
-        ustar_d[pos] = (u200 * VON_KARMAN) / log(200 / zom_d[pos]);
+        ustar_d[pos] = (u200 * VON_KARMAN) / logf(200 / zom_d[pos]);
     }
 }
 
@@ -430,9 +430,9 @@ __global__ void aerodynamic_resistance_kernel_STEEP(float *zom_d, float *d0_d, f
         float zom = zom_d[pos];
         float zoh_terra = zom / pow(exp(1.0), (kb1_d[pos]));
 
-        float temp_kb_1_terra = log(zom / zoh_terra);
+        float temp_kb_1_terra = logf(zom / zoh_terra);
         float temp_rah1_terra = (1 / (ustar_d[pos] * VON_KARMAN));
-        float temp_rah2 = log(((zu - DISP) / zom));
+        float temp_rah2 = logf(((zu - DISP) / zom));
         float temp_rah3_terra = temp_rah1_terra * temp_kb_1_terra;
 
         rah_d[pos] = temp_rah1_terra * temp_rah2 + temp_rah3_terra;
@@ -447,7 +447,7 @@ __global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_
         unsigned int row = idx / width_d;
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
-        rah_d[pos] =  log10f(2.0/ 0.1) / (ustar_d[col] * VON_KARMAN);
+        rah_d[pos] =  logf(2.0/ 0.1) / (ustar_d[col] * VON_KARMAN);
     }
 }
 
@@ -619,16 +619,16 @@ __global__ void rah_correction_cycle_STEEP(Endmember *hotCandidates_d, Endmember
             psi2 = -5 * ((10 - DISP) / L);
             psi200 = -5 * ((10 - DISP) / L);
         } else {
-            psi2 = 2 * log((1 + y2 * y2) / 2);
-            psi200 = 2 * log((1 + x200) / 2) + log((1 + x200 * x200) / 2) - 2 * atan(x200) + 0.5 * M_PI;
+            psi2 = 2 * logf((1 + y2 * y2) / 2);
+            psi200 = 2 * logf((1 + x200) / 2) + logf((1 + x200 * x200) / 2) - 2 * atan(x200) + 0.5 * M_PI;
         }
 
-        float ust = (VON_KARMAN * ustar_d[pos]) / (log((10 - DISP) / zom_d[pos]) - psi200);
+        float ust = (VON_KARMAN * ustar_d[pos]) / (logf((10 - DISP) / zom_d[pos]) - psi200);
 
         float zoh_terra = zom_d[pos] / pow(exp(1.0), (kb1_d[pos]));
         float temp_rah1_corr_terra = (ust * VON_KARMAN);
-        float temp_rah2_corr_terra = log((10 - DISP) / zom_d[pos]) - psi2;
-        float temp_rah3_corr_terra = temp_rah1_corr_terra * log(zom_d[pos] / zoh_terra);
+        float temp_rah2_corr_terra = logf((10 - DISP) / zom_d[pos]) - psi2;
+        float temp_rah3_corr_terra = temp_rah1_corr_terra * logf(zom_d[pos] / zoh_terra);
         float rah = (temp_rah1_corr_terra * temp_rah2_corr_terra) + temp_rah3_corr_terra;
 
         ustar_d[pos] = ust;
@@ -682,13 +682,13 @@ __global__ void rah_correction_cycle_ASEBAL(Endmember *hotCandidates_d, Endmembe
             psi2 = -5 * (2 / L);
             psi200 = -5 * (2 / L);
         } else {
-            psi1 = 2 * log((1 + x1 * x1) / 2);
-            psi2 = 2 * log((1 + x2 * x2) / 2);
-            psi200 = 2 * log((1 + x200) / 2) + log((1 + x200 * x200) / 2) - 2 * atan(x200) + 0.5 * M_PI;
+            psi1 = 2 * logf((1 + x1 * x1) / 2);
+            psi2 = 2 * logf((1 + x2 * x2) / 2);
+            psi200 = 2 * logf((1 + x200) / 2) + logf((1 + x200 * x200) / 2) - 2 * atan(x200) + 0.5 * M_PI;
         }
 
-        float ust = (VON_KARMAN * u200) / (log(200 / zom_d[pos]) - psi200);
-        float rah = (log(2 / 0.1) - psi2 + psi1) / (ustar_d[pos] * VON_KARMAN);
+        float ust = (VON_KARMAN * u200) / (logf(200 / zom_d[pos]) - psi200);
+        float rah = (logf(2 / 0.1) - psi2 + psi1) / (ustar_d[pos] * VON_KARMAN);
 
         if ((pos == hot_pos) && (fabsf(1 - (rah_ini_pq_terra / rah)) < 0.05)) {
             atomicExch(stop_condition, 1);
@@ -734,8 +734,13 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
         bool hotTS = !isnan(surf_temp_d[pos]) && surf_temp_d[pos] > tsQuartileMid && surf_temp_d[pos] < tsQuartileHigh;
 
         bool coldNDVI = !isnan(ndvi_d[pos]) && ndvi_d[pos] > ndviQuartileHigh;
-        bool coldAlbedo = !isnan(surf_temp_d[pos]) && albedo_d[pos] > albedoQuartileLow && albedo_d[pos] < albedoQuartileMid;
-        bool coldTS = !isnan(albedo_d[pos]) && surf_temp_d[pos] < tsQuartileLow;
+        bool coldAlbedo = !isnan(albedo_d[pos]) && albedo_d[pos] > albedoQuartileLow && albedo_d[pos] < albedoQuartileMid;
+        bool coldTS = !isnan(surf_temp_d[pos]) && surf_temp_d[pos] < tsQuartileLow;
+
+        if (coldNDVI && coldAlbedo) {
+            printf("TSQuartileLow: %f, TSQuartileMid: %f, TSQuartileHigh: %f\n", tsQuartileLow, tsQuartileMid, tsQuartileHigh);
+            printf("Cold NDVI: %f, Cold Albedo: %f, Cold TS: %f\n", ndvi_d[pos], albedo_d[pos], surf_temp_d[pos]);
+        }
 
         if (hotAlbedo && hotNDVI && hotTS) {
             int ih = atomicAdd(&indexes_d[0], 1);
@@ -765,8 +770,8 @@ __global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *col
         bool hotTS = !isnan(surf_temp_d[pos]) && surf_temp_d[pos] > tsHOTQuartile;
 
         bool coldNDVI = !isnan(ndvi_d[pos]) && ndvi_d[pos] > ndviCOLDQuartile;
-        bool coldAlbedo = !isnan(surf_temp_d[pos]) && albedo_d[pos] < albedoCOLDQuartile;
-        bool coldTS = !isnan(albedo_d[pos]) && surf_temp_d[pos] < tsCOLDQuartile;
+        bool coldAlbedo = !isnan(albedo_d[pos]) && albedo_d[pos] < albedoCOLDQuartile;
+        bool coldTS = !isnan(surf_temp_d[pos]) && surf_temp_d[pos] < tsCOLDQuartile;
 
         if (hotAlbedo && hotNDVI && hotTS) {
             int ih = atomicAdd(&indexes_d[0], 1);

@@ -156,7 +156,7 @@ string getEndmembersASEBAL(Products products)
         get_quartiles_cuda(products.albedo_d, albedoQuartile.data(), products.height_band, products.width_band, 0.25, 0.50, 0.75, blocks_n, threads_n);
         get_quartiles_cuda(products.surface_temperature_d, tsQuartile.data(), products.height_band, products.width_band, 0.25, 0.50, 0.75, blocks_n, threads_n);
 
-        process_pixels_ASEBAL<<<blocks_n, threads_n>>>(products.hotCandidates_d, products.coldCandidates_d, indexes_d, products.ndvi_d, products.surface_temperature_d, products.albedo_d, products.net_radiation_d, products.soil_heat_d, d_ho, ndviQuartile[0], ndviQuartile[2], tsQuartile[1], tsQuartile[0], albedoQuartile[1], albedoQuartile[1]);
+        process_pixels_ASEBAL<<<blocks_n, threads_n>>>(products.hotCandidates_d, products.coldCandidates_d, indexes_d, products.ndvi_d, products.surface_temperature_d, products.albedo_d, products.net_radiation_d, products.soil_heat_d, d_ho, ndviQuartile[0], ndviQuartile[2], tsQuartile[2], tsQuartile[0], albedoQuartile[2], albedoQuartile[1]);
         cudaEventRecord(stop);
 
         cudaMemcpy(&indexes, indexes_d, sizeof(int) * 2, cudaMemcpyDeviceToHost);
