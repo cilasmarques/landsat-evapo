@@ -97,7 +97,6 @@ struct Products
   float *ndvi;
   float *savi;
   float *lai;
-  float *evi;
   float *pai;
 
   float *soil_heat;
@@ -157,7 +156,6 @@ struct Products
   float *pai_d;
   float *savi_d;
   float *lai_d;
-  float *evi_d;
 
   float *soil_heat_d;
   float *net_radiation_d;

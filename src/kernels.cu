@@ -131,24 +131,6 @@ __global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, f
     }
 }
 
-__global__ void evi_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *reflectance_blue_d, float *evi_d)
-{
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
-
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
-    if (idx < width_d * height_d) {
-        unsigned int pos = row * width_d + col;
-
-        evi_d[pos] = 2.5 * ((reflectance_nir_d[pos] - reflectance_red_d[pos]) / (reflectance_nir_d[pos] + (6 * reflectance_red_d[pos]) - (7.5 * reflectance_blue_d[pos]) + 1));
-
-        if (evi_d[pos] < 0)
-            evi_d[pos] = 0;
-    }
-}
-
 __global__ void enb_kernel(float *lai_d, float *ndvi_d, float *enb_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -279,7 +261,7 @@ __global__ void net_radiation_kernel(float *short_wave_radiation_d, float *albed
 
     if (idx < width_d * height_d) {
         unsigned int pos = row * width_d + col;
-        net_radiation_d[pos] = short_wave_radiation_d[pos] - (short_wave_radiation_d[pos] * albedo_d[pos]) + large_wave_radiation_atmosphere_d[pos] - large_wave_radiation_surface_d[pos] - (1 - eo_d[pos]) * large_wave_radiation_atmosphere_d[pos];
+        net_radiation_d[pos] = (1 - albedo_d[pos]) * short_wave_radiation_d[pos] + large_wave_radiation_atmosphere_d[pos] - large_wave_radiation_surface_d[pos] - (1 - eo_d[pos]) * large_wave_radiation_atmosphere_d[pos];
 
         if (net_radiation_d[pos] < 0)
             net_radiation_d[pos] = 0;
@@ -297,7 +279,7 @@ __global__ void soil_heat_kernel(float *ndvi_d, float *albedo_d, float *surface_
     if (idx < width_d * height_d) {
         unsigned int pos = row * width_d + col;
 
-        if ((ndvi_d[pos] < 0) || (ndvi_d[pos] > 0)) {
+        if (ndvi_d[pos] >= 0) {
             float ndvi_pixel_pow_4 = ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos];
             soil_heat_d[pos] = (surface_temperature_d[pos] - 273.15) * (0.0038 + 0.0074 * albedo_d[pos]) * (1 - 0.98 * ndvi_pixel_pow_4) * net_radiation_d[pos];
         } else

@@ -76,16 +76,6 @@ __global__ void pai_kernel(float *reflectance_nir_d, float *reflectance_red_d, f
 __global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *lai_d);
 
 /**
- * @brief  Compute the EVI of the bands.
- *
- * @param reflectance_nir_d  The NIR reflectance.
- * @param reflectance_red_d  The red reflectance.
- * @param reflectance_blue_d  The blue reflectance.
- * @param evi_d  The EVI.
- */
-__global__ void evi_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *reflectance_blue_d, float *evi_d);
-
-/**
  * @brief  Compute the ENV of the bands.
  *
  * @param lai_d  The LAI.

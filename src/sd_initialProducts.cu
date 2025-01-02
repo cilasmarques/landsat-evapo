@@ -144,27 +144,6 @@ string lai_function(Products products)
     return "KERNELS,LAI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string evi_function(Products products)
-{
-    int64_t initial_time, final_time;
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-
-    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-    cudaEventRecord(start);
-    evi_kernel<<<blocks_n, threads_n>>>(products.reflectance_nir_d, products.reflectance_red_d, products.reflectance_blue_d, products.evi_d);
-    cudaEventRecord(stop);
-
-    float cuda_time = 0;
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&cuda_time, start, stop);
-    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-    return "KERNELS,EVI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
-};
-
 string enb_emissivity_function(Products products)
 {
     int64_t initial_time, final_time;
@@ -395,7 +374,6 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
     result += ndvi_function(products);
     result += pai_function(products);
     result += lai_function(products);
-    result += evi_function(products);
 
     // Emissivity indices
     result += enb_emissivity_function(products);

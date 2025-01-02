@@ -40,7 +40,6 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     this->net_radiation = (float *)malloc(band_bytes);
     this->lai = (float *)malloc(band_bytes);
     this->savi = (float *)malloc(band_bytes);
-    this->evi = (float *)malloc(band_bytes);
     this->pai = (float *)malloc(band_bytes);
     this->enb_emissivity = (float *)malloc(band_bytes);
     this->eo_emissivity = (float *)malloc(band_bytes);
@@ -104,7 +103,6 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMalloc((void **)&this->ndvi_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->pai_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->lai_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->evi_d, band_bytes));
 
     HANDLE_ERROR(cudaMalloc((void **)&this->enb_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->eo_d, band_bytes));
@@ -245,7 +243,6 @@ string Products::host_data()
     HANDLE_ERROR(cudaMemcpy(ndvi, ndvi_d, band_bytes, cudaMemcpyDeviceToHost));
     HANDLE_ERROR(cudaMemcpy(pai, pai_d, band_bytes, cudaMemcpyDeviceToHost));
     HANDLE_ERROR(cudaMemcpy(lai, lai_d, band_bytes, cudaMemcpyDeviceToHost));
-    HANDLE_ERROR(cudaMemcpy(evi, evi_d, band_bytes, cudaMemcpyDeviceToHost));
     HANDLE_ERROR(cudaMemcpy(enb_emissivity, enb_d, band_bytes, cudaMemcpyDeviceToHost));
     HANDLE_ERROR(cudaMemcpy(eo_emissivity, eo_d, band_bytes, cudaMemcpyDeviceToHost));
     HANDLE_ERROR(cudaMemcpy(ea_emissivity, ea_d, band_bytes, cudaMemcpyDeviceToHost));
@@ -259,6 +256,7 @@ string Products::host_data()
     HANDLE_ERROR(cudaMemcpy(zom, zom_d, band_bytes, cudaMemcpyDeviceToHost));
     HANDLE_ERROR(cudaMemcpy(ustar, ustar_d, band_bytes, cudaMemcpyDeviceToHost));
     HANDLE_ERROR(cudaMemcpy(kb1, kb1_d, band_bytes, cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(aerodynamic_resistance, rah_d, band_bytes, cudaMemcpyDeviceToHost));
     HANDLE_ERROR(cudaMemcpy(sensible_heat_flux, sensible_heat_flux_d, band_bytes, cudaMemcpyDeviceToHost));
     HANDLE_ERROR(cudaMemcpy(latent_heat_flux, latent_heat_flux_d, band_bytes, cudaMemcpyDeviceToHost));
     HANDLE_ERROR(cudaMemcpy(net_radiation_24h, net_radiation_24h_d, band_bytes, cudaMemcpyDeviceToHost));
@@ -288,7 +286,6 @@ string Products::save_products(string output_path)
     saveTiff(output_path + "/ndvi.tif", ndvi, height_band, width_band);
     saveTiff(output_path + "/pai.tif", pai, height_band, width_band);
     saveTiff(output_path + "/lai.tif", lai, height_band, width_band);
-    saveTiff(output_path + "/evi.tif", evi, height_band, width_band);
     saveTiff(output_path + "/enb_emissivity.tif", enb_emissivity, height_band, width_band);
     saveTiff(output_path + "/eo_emissivity.tif", eo_emissivity, height_band, width_band);
     saveTiff(output_path + "/ea_emissivity.tif", ea_emissivity, height_band, width_band);
@@ -341,9 +338,6 @@ string Products::print_products(string output_path)
 
     std::cout << "==== LAI" << std::endl;
     printLinearPointer(lai, height_band, width_band);
-
-    std::cout << "==== EVI" << std::endl;
-    printLinearPointer(evi, height_band, width_band);
 
     std::cout << "==== ENB Emissivity" << std::endl;
     printLinearPointer(enb_emissivity, height_band, width_band);
@@ -443,7 +437,6 @@ void Products::close(TIFF **landsat_bands)
     free(this->albedo);
     free(this->ndvi);
     free(this->lai);
-    free(this->evi);
     free(this->pai);
 
     free(this->enb_emissivity);
@@ -501,7 +494,6 @@ void Products::close(TIFF **landsat_bands)
     HANDLE_ERROR(cudaFree(this->ndvi_d));
     HANDLE_ERROR(cudaFree(this->pai_d));
     HANDLE_ERROR(cudaFree(this->lai_d));
-    HANDLE_ERROR(cudaFree(this->evi_d));
 
     HANDLE_ERROR(cudaFree(this->enb_d));
     HANDLE_ERROR(cudaFree(this->eo_d));
