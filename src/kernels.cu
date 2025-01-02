@@ -737,11 +737,6 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
         bool coldAlbedo = !isnan(albedo_d[pos]) && albedo_d[pos] > albedoQuartileLow && albedo_d[pos] < albedoQuartileMid;
         bool coldTS = !isnan(surf_temp_d[pos]) && surf_temp_d[pos] < tsQuartileLow;
 
-        if (coldNDVI && coldAlbedo) {
-            printf("TSQuartileLow: %f, TSQuartileMid: %f, TSQuartileHigh: %f\n", tsQuartileLow, tsQuartileMid, tsQuartileHigh);
-            printf("Cold NDVI: %f, Cold Albedo: %f, Cold TS: %f\n", ndvi_d[pos], albedo_d[pos], surf_temp_d[pos]);
-        }
-
         if (hotAlbedo && hotNDVI && hotTS) {
             int ih = atomicAdd(&indexes_d[0], 1);
             hotCandidates_d[ih] = Endmember(ndvi_d[pos], surf_temp_d[pos], net_radiation_d[pos], soil_heat_d[pos], ho_d[pos], row, col);
