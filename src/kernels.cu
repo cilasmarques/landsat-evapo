@@ -447,7 +447,7 @@ __global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_
         unsigned int row = idx / width_d;
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
-        rah_d[pos] =  logf(2.0/ 0.1) / (ustar_d[col] * VON_KARMAN);
+        rah_d[pos] =  logf(2.0/ 0.1) / (ustar_d[pos] * VON_KARMAN);
     }
 }
 
