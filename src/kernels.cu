@@ -236,8 +236,7 @@ __global__ void large_wave_radiation_atmosphere_kernel(float *ea_d, float *large
     unsigned int row = idx / width_d;
     unsigned int col = idx % width_d;
 
-    float temperature_kelvin = temperature + 273.15;
-    float temperature_kelvin_pow_4 = temperature_kelvin * temperature_kelvin * temperature_kelvin * temperature_kelvin;
+    float temperature_kelvin_pow_4 = temperature * temperature * temperature * temperature;
 
     if (idx < width_d * height_d) {
         unsigned int pos = row * width_d + col;
@@ -274,8 +273,9 @@ __global__ void soil_heat_kernel(float *ndvi_d, float *albedo_d, float *surface_
         unsigned int pos = row * width_d + col;
 
         if (ndvi_d[pos] >= 0) {
+            float temperature_celcius = surface_temperature_d[pos] - 273.15;
             float ndvi_pixel_pow_4 = ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos];
-            soil_heat_d[pos] = (surface_temperature_d[pos] - 273.15) * (0.0038 + 0.0074 * albedo_d[pos]) * (1 - 0.98 * ndvi_pixel_pow_4) * net_radiation_d[pos];
+            soil_heat_d[pos] = temperature_celcius * (0.0038 + 0.0074 * albedo_d[pos]) * (1 - 0.98 * ndvi_pixel_pow_4) * net_radiation_d[pos];
         } else
             soil_heat_d[pos] = 0.5 * net_radiation_d[pos];
 
@@ -296,12 +296,7 @@ __global__ void d0_kernel(float *pai_d, float *d0_d, float CD1, float HGHT)
         unsigned int pos = row * width_d + col;
         float cd1_pai_root = sqrt(CD1 * pai_d[pos]);
 
-        float DISP = HGHT * ((1 - (1 / cd1_pai_root)) + (pow(exp(1.0), -cd1_pai_root) / cd1_pai_root));
-        if (pai_d[pos] < 0) {
-            DISP = 0;
-        }
-
-        d0_d[pos] = DISP;
+        d0_d[pos] = HGHT * ((1 - (1 / cd1_pai_root)) + (pow(exp(1.0), -cd1_pai_root) / cd1_pai_root));
     }
 }
 
@@ -427,15 +422,12 @@ __global__ void aerodynamic_resistance_kernel_STEEP(float *zom_d, float *d0_d, f
         unsigned int pos = row * width_d + col;
 
         float DISP = d0_d[pos];
-        float zom = zom_d[pos];
-        float zoh_terra = zom / pow(exp(1.0), (kb1_d[pos]));
+        float zoh_terra = zom_d[pos] / pow(exp(1.0), (kb1_d[pos]));
+        float temp_rah1_corr_terra = 1 / (ustar_d[pos] * VON_KARMAN);
+        float temp_rah2_corr_terra = logf((zu - DISP) / zom_d[pos]);
+        float temp_rah3_corr_terra = temp_rah1_corr_terra * logf(zom_d[pos] / zoh_terra);
 
-        float temp_kb_1_terra = logf(zom / zoh_terra);
-        float temp_rah1_terra = (1 / (ustar_d[pos] * VON_KARMAN));
-        float temp_rah2 = logf(((zu - DISP) / zom));
-        float temp_rah3_terra = temp_rah1_terra * temp_kb_1_terra;
-
-        rah_d[pos] = temp_rah1_terra * temp_rah2 + temp_rah3_terra;
+        rah_d[pos] = (temp_rah1_corr_terra * temp_rah2_corr_terra) + temp_rah3_corr_terra;
     }
 }
 
@@ -462,7 +454,7 @@ __global__ void sensible_heat_flux_kernel(Endmember *hotCandidates_d, Endmember 
     if (idx < width_d * height_d) {
         unsigned int pos = row * width_d + col;
 
-        sensible_heat_flux_d[pos] = RHO * SPECIFIC_HEAT_AIR * (a_d + b_d * (surface_temperature_d[pos] - 273.15)) / rah_d[pos];
+        sensible_heat_flux_d[pos] = RHO * SPECIFIC_HEAT_AIR * (a_d + b_d * (surface_temperature_d[pos])) / rah_d[pos];
         if (!isnan(sensible_heat_flux_d[pos]) && sensible_heat_flux_d[pos] > (net_radiation_d[pos] - soil_heat_d[pos])) {
             sensible_heat_flux_d[pos] = net_radiation_d[pos] - soil_heat_d[pos];
         }
@@ -600,13 +592,13 @@ __global__ void rah_correction_cycle_STEEP(Endmember *hotCandidates_d, Endmember
         float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
 
         float b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
-        float a = dt_pf_terra - (b * (cold_pixel.temperature - 273.15));
+        float a = dt_pf_terra - (b * (cold_pixel.temperature));
 
         b_d = b;
         a_d = a;
 
         float DISP = d0_d[pos];
-        float dT_ini_terra = a + b * (surf_temp_d[pos] - 273.15);
+        float dT_ini_terra = a + b * (surf_temp_d[pos]);
 
         float sensibleHeatFlux = RHO * SPECIFIC_HEAT_AIR * (dT_ini_terra) / rah_d[pos];
         float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_d[pos], 3) * surf_temp_d[pos]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
@@ -625,8 +617,8 @@ __global__ void rah_correction_cycle_STEEP(Endmember *hotCandidates_d, Endmember
 
         float ust = (VON_KARMAN * ustar_d[pos]) / (logf((10 - DISP) / zom_d[pos]) - psi200);
 
-        float zoh_terra = zom_d[pos] / pow(exp(1.0), (kb1_d[pos]));
-        float temp_rah1_corr_terra = (ust * VON_KARMAN);
+        float zoh_terra = zom_d[pos] / pow(exp(1.0), (kb1_d[pos] + psi200));
+        float temp_rah1_corr_terra = 1 / (ustar_d[pos] * VON_KARMAN);
         float temp_rah2_corr_terra = logf((10 - DISP) / zom_d[pos]) - psi2;
         float temp_rah3_corr_terra = temp_rah1_corr_terra * logf(zom_d[pos] / zoh_terra);
         float rah = (temp_rah1_corr_terra * temp_rah2_corr_terra) + temp_rah3_corr_terra;
