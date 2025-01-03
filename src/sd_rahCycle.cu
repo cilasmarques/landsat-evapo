@@ -60,7 +60,7 @@ string zom_fuction(Products products, float A_ZOM, float B_ZOM)
     cudaEventRecord(start);
     if (model_method == 0)
         zom_kernel_STEEP<<<blocks_n, threads_n>>>(products.d0_d, products.pai_d, products.zom_d, A_ZOM, B_ZOM);
-    else 
+    else
         zom_kernel_ASEBAL<<<blocks_n, threads_n>>>(products.ndvi_d, products.zom_d, A_ZOM, B_ZOM);
     cudaEventRecord(stop);
 
@@ -84,7 +84,7 @@ string ustar_fuction(Products products, float u_const)
     cudaEventRecord(start);
     if (model_method == 0)
         ustar_kernel_STEEP<<<blocks_n, threads_n>>>(products.zom_d, products.d0_d, products.ustar_d, u_const);
-    else 
+    else
         ustar_kernel_ASEBAL<<<blocks_n, threads_n>>>(products.zom_d, products.ustar_d, u_const);
     cudaEventRecord(stop);
 
@@ -108,7 +108,7 @@ string aerodynamic_resistance_fuction(Products products)
     cudaEventRecord(start);
     if (model_method == 0)
         aerodynamic_resistance_kernel_STEEP<<<blocks_n, threads_n>>>(products.zom_d, products.d0_d, products.ustar_d, products.kb1_d, products.rah_d);
-    else 
+    else
         aerodynamic_resistance_kernel_ASEBAL<<<blocks_n, threads_n>>>(products.ustar_d, products.rah_d);
     cudaEventRecord(stop);
 
@@ -221,8 +221,7 @@ string Products::converge_rah_cycle(Products products, Station station)
         result += kb_function(products, ndvi_max, ndvi_min);
         result += aerodynamic_resistance_fuction(products);
         result += rah_correction_function_blocks_STEEP(products, ndvi_min, ndvi_max);
-    }
-    else { // ASEBAL
+    } else { // ASEBAL
         result += zom_fuction(products, station.A_ZOM, station.B_ZOM);
         result += ustar_fuction(products, u200);
         result += aerodynamic_resistance_fuction(products);

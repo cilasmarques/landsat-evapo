@@ -59,7 +59,7 @@ __global__ void ndvi_kernel(float *reflectance_nir_d, float *reflectance_red_d, 
 
 /**
  * @brief  Compute the TAL of the bands.
- * 
+ *
  * @param reflectance_nir_d  The NIR reflectance.
  * @param reflectance_red_d  The red reflectance.
  * @param pai_d The PAI.
@@ -185,7 +185,6 @@ __global__ void d0_kernel(float *pai_d, float *d0_d, float CD1, float HGHT);
  */
 __global__ void zom_kernel_STEEP(float *d0_d, float *pai_d, float *zom_d, float A_ZOM, float B_ZOM);
 
-
 /**
  * @brief  Compute the rah of the bands.
  *
@@ -241,7 +240,7 @@ __global__ void aerodynamic_resistance_kernel_STEEP(float *zom_d, float *d0_d, f
 
 /**
  * @brief  Compute the aerodynamic resistance of the bands.
- * 
+ *
  * @param ustar_d  The USTAR.
  * @param rah_d  The RAH.
  */

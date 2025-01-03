@@ -1,26 +1,26 @@
 #pragma once
 
-#include <tiffio.h>
-#include <math.h>
-#include <iostream>
-#include <string.h>
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <map>
-#include <vector>
 #include <algorithm>
-#include <time.h>
+#include <assert.h>
 #include <chrono>
-#include <stdlib.h>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <math.h>
 #include <queue>
 #include <set>
+#include <sstream>
+#include <stdlib.h>
+#include <string.h>
+#include <string>
 #include <thread>
-#include <assert.h>
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
+#include <tiffio.h>
+#include <time.h>
+#include <vector>
 
-// NAMESPACES 
+// NAMESPACES
 using namespace std;
 using namespace std::chrono;
 
@@ -30,20 +30,20 @@ extern int threads_n;
 extern int blocks_n;
 
 // CONSTANTS DECLARATION
-#define PARAM_BAND_BLUE_INDEX       0
-#define PARAM_BAND_GREEN_INDEX      1
-#define PARAM_BAND_RED_INDEX        2
-#define PARAM_BAND_NIR_INDEX        3
-#define PARAM_BAND_SWIR1_INDEX      4
-#define PARAM_BAND_TERMAL_INDEX     5
-#define PARAM_BAND_SWIR2_INDEX      6
+#define PARAM_BAND_BLUE_INDEX 0
+#define PARAM_BAND_GREEN_INDEX 1
+#define PARAM_BAND_RED_INDEX 2
+#define PARAM_BAND_NIR_INDEX 3
+#define PARAM_BAND_SWIR1_INDEX 4
+#define PARAM_BAND_TERMAL_INDEX 5
+#define PARAM_BAND_SWIR2_INDEX 6
 
-#define INPUT_BAND_ELEV_INDEX       8
-#define INPUT_MTL_DATA_INDEX        9
-#define INPUT_STATION_DATA_INDEX    10
-#define OUTPUT_FOLDER               11
-#define METHOD_INDEX                12
-#define THREADS_INDEX               13
+#define INPUT_BAND_ELEV_INDEX 8
+#define INPUT_MTL_DATA_INDEX 9
+#define INPUT_STATION_DATA_INDEX 10
+#define OUTPUT_FOLDER 11
+#define METHOD_INDEX 12
+#define THREADS_INDEX 13
 
 // Epsilon
 const float EPS = 1e-7;

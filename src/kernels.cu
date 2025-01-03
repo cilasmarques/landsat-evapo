@@ -439,7 +439,7 @@ __global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_
         unsigned int row = idx / width_d;
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
-        rah_d[pos] =  logf(2.0/ 0.1) / (ustar_d[pos] * VON_KARMAN);
+        rah_d[pos] = logf(2.0 / 0.1) / (ustar_d[pos] * VON_KARMAN);
     }
 }
 
@@ -712,7 +712,6 @@ __global__ void filter_valid_values(const float *target, float *filtered, int *i
 __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surf_temp_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
-
 
     if (idx < width_d * height_d) {
         unsigned int row = idx / width_d;

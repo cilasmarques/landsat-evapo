@@ -4,20 +4,20 @@
 #include <stdlib.h>
 
 #ifdef __has_include
-  #if __has_include(<cuda.h>)
-    #include <cuda.h>
-    #define CUDA_AVAILABLE
-  #endif
+#if __has_include(<cuda.h>)
+#include <cuda.h>
+#define CUDA_AVAILABLE
+#endif
 
-  #if __has_include(<cuda_runtime_api.h>)
-    #include <cuda_runtime_api.h>
-    #define CUDA_RUNTIME_API_AVAILABLE
-  #endif
+#if __has_include(<cuda_runtime_api.h>)
+#include <cuda_runtime_api.h>
+#define CUDA_RUNTIME_API_AVAILABLE
+#endif
 
-  #if __has_include(<cuda_profiler_api.h>)
-    #include <cuda_profiler_api.h>
-    #define CUDA_PROFILER_API_AVAILABLE
-  #endif
+#if __has_include(<cuda_profiler_api.h>)
+#include <cuda_profiler_api.h>
+#define CUDA_PROFILER_API_AVAILABLE
+#endif
 #endif
 
 #ifdef CUDA_RUNTIME_API_AVAILABLE
@@ -31,11 +31,10 @@
  */
 static void HandleError(cudaError_t err, const char *file, int line)
 {
-  if (err != cudaSuccess)
-  {
-    printf("%s in %s at line %d\n", cudaGetErrorString(err), file, line);
-    exit(EXIT_FAILURE);
-  }
+    if (err != cudaSuccess) {
+        printf("%s in %s at line %d\n", cudaGetErrorString(err), file, line);
+        exit(EXIT_FAILURE);
+    }
 }
 
 /**
@@ -52,14 +51,12 @@ static void HandleError(cudaError_t err, const char *file, int line)
  *
  * See cuda.h for error code descriptions.
  */
-#define CHECK_CUDA_RESULT(N)                                       \
-  {                                                                \
-    CUresult result = N;                                           \
-    if (result != 0)                                               \
-    {                                                              \
-      printf("CUDA call on line %d returned error %d\n", __LINE__, \
-             result);                                              \
-      exit(1);                                                     \
-    }                                                              \
-  }
+#define CHECK_CUDA_RESULT(N)                                                      \
+    {                                                                             \
+        CUresult result = N;                                                      \
+        if (result != 0) {                                                        \
+            printf("CUDA call on line %d returned error %d\n", __LINE__, result); \
+            exit(1);                                                              \
+        }                                                                         \
+    }
 #endif

@@ -5,8 +5,7 @@
 /**
  * @brief  Struct to hold some metadata informations.
  */
-struct MTL
-{
+struct MTL {
     float image_hour;
     int number_sensor, julian_day, year;
     float sun_elevation, distance_earth_sun;
@@ -38,8 +37,7 @@ struct MTL
 /**
  * @brief  Struct to hold the weather station data.
  */
-struct Station
-{
+struct Station {
     vector<vector<string>> info;
     float temperature_image;
     float v6, v7_max, v7_min;
@@ -67,8 +65,7 @@ struct Station
 /**
  * @brief  Struct to manage the products calculation.
  */
-struct Landsat
-{
+struct Landsat {
     TIFF *landsat_bands[9];
     uint16_t sample_bands;
     uint32_t height_band;
@@ -90,7 +87,7 @@ struct Landsat
 
 /**
  * @brief  Prints a pointer.
- * 
+ *
  * @param pointer: Pointer to be printed.
  * @param height: Height of the pointer.
  * @param width: Width of the pointer.
@@ -99,7 +96,7 @@ void printLinearPointer(float *pointer, int height, int width);
 
 /**
  * @brief  Saves a TIFF file.
- * 
+ *
  * @param path: Path to save the TIFF file.
  * @param data: Data to be saved.
  * @param height: Height of the data.

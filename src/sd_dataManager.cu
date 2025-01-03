@@ -1,6 +1,6 @@
 #include "cuda_utils.h"
-#include "surfaceData.cuh"
 #include "kernels.cuh"
+#include "surfaceData.cuh"
 
 Products::Products(uint32_t width_band, uint32_t height_band)
 {

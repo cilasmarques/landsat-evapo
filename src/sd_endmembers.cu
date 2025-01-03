@@ -99,7 +99,7 @@ string getEndmembersSTEEP(Products products)
         int hot_pos = static_cast<unsigned int>(std::floor(indexes[0] * 0.5));
         int cold_pos = static_cast<unsigned int>(std::floor(indexes[1] * 0.5));
 
-        if (indexes[0] == 0) 
+        if (indexes[0] == 0)
             throw std::runtime_error("No hot candidates found");
         if (indexes[1] == 0)
             throw std::runtime_error("No cold candidates found");
@@ -163,7 +163,7 @@ string getEndmembersASEBAL(Products products)
         int hot_pos = static_cast<unsigned int>(std::floor(indexes[0] * 0.5));
         int cold_pos = static_cast<unsigned int>(std::floor(indexes[1] * 0.5));
 
-        if (indexes[0] == 0) 
+        if (indexes[0] == 0)
             throw std::runtime_error("No hot candidates found");
         if (indexes[1] == 0)
             throw std::runtime_error("No cold candidates found");
