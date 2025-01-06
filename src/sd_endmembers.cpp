@@ -5,26 +5,16 @@ Endmember::Endmember()
 {
     this->ndvi = 0;
     this->temperature = 0;
-    this->net_radiation = 0;
-    this->soil_heat_flux = 0;
-    this->ho = 0;
     this->line = 0;
     this->col = 0;
-    this->zom = 0;
-    this->ustar = 0;
 }
 
-Endmember::Endmember(float ndvi, float temperature, float net_radiation, float soil_heat_flux, float ho, int line, int col)
+Endmember::Endmember(float ndvi, float temperature, int line, int col)
 {
     this->ndvi = ndvi;
     this->temperature = temperature;
-    this->net_radiation = net_radiation;
-    this->soil_heat_flux = soil_heat_flux;
-    this->ho = ho;
     this->line = line;
     this->col = col;
-    this->zom = 0;
-    this->ustar = 0;
 }
 
 void get_quartiles(float *target, float *v_quartile, int height_band, int width_band, float first_interval, float middle_interval, float last_interval)
@@ -97,10 +87,10 @@ string getEndmembersSTEEP(Products products)
             int col = i % products.width_band;
 
             if (hotAlbedo && hotNDVI && hotTS) 
-                hotCandidates.emplace_back(products.ndvi[i], products.surface_temperature[i], products.net_radiation[i], products.soil_heat[i], ho[i], line, col);
+                hotCandidates.emplace_back(products.ndvi[i], products.surface_temperature[i], line, col);
 
             if (coldNDVI && coldAlbedo && coldTS) 
-                coldCandidates.emplace_back(products.ndvi[i], products.surface_temperature[i], products.net_radiation[i], products.soil_heat[i], ho[i], line, col);
+                coldCandidates.emplace_back(products.ndvi[i], products.surface_temperature[i], line, col);
         }
         end = system_clock::now();
 
@@ -171,10 +161,10 @@ string getEndmembersASEBAL(Products products)
             int col = i % products.width_band;
 
             if (hotAlbedo && hotNDVI && hotTS) 
-                hotCandidates.emplace_back(products.ndvi[i], products.surface_temperature[i], products.net_radiation[i], products.soil_heat[i], ho[i], line, col);
+                hotCandidates.emplace_back(products.ndvi[i], products.surface_temperature[i], line, col);
 
             if (coldNDVI && coldAlbedo && coldTS) 
-                coldCandidates.emplace_back(products.ndvi[i], products.surface_temperature[i], products.net_radiation[i], products.soil_heat[i], ho[i], line, col);
+                coldCandidates.emplace_back(products.ndvi[i], products.surface_temperature[i], line, col);
         }
         end = system_clock::now();
 

@@ -7,8 +7,7 @@
  */
 struct Endmember {
     int line, col = 0;
-    float ndvi, temperature, ustar = 0;
-    float net_radiation, soil_heat_flux, ho, zom = 0;
+    float ndvi, temperature;
 
     /**
      * @brief  Empty constructor, all attributes are initialized with 0.
@@ -19,13 +18,10 @@ struct Endmember {
      * @brief  Constructor with initialization values to attributes.
      * @param  ndvi: Pixel's NDVI.
      * @param  temperature: Pixel's surface temperature.
-     * @param  net_radiation: Pixel's net radiation.
-     * @param  soil_heat_flux: Pixel's soil heat flux.
-     * @param  ho: Pixel's ho.
      * @param  line: Pixel's line on TIFF.
      * @param  col: Pixel's column on TIFF.
      */
-    Endmember(float ndvi, float temperature, float net_radiation, float soil_heat_flux, float ho, int line, int col);
+    Endmember(float ndvi, float temperature, int line, int col);
 };
 
 /**
