@@ -1,5 +1,4 @@
-#include "cuda_utils.h"
-#include "sensors.cuh"
+#include "sensors.h"
 
 MTL::MTL()
 {
@@ -65,12 +64,6 @@ MTL::MTL(string metadata_path)
     this->ref_add = (float *)malloc(7 * sizeof(float));
     this->ref_mult = (float *)malloc(7 * sizeof(float));
     this->ref_w_coeff = (float *)malloc(7 * sizeof(float));
-
-    HANDLE_ERROR(cudaMalloc((void **)&this->rad_add_d, (7 * sizeof(float))));
-    HANDLE_ERROR(cudaMalloc((void **)&this->rad_mult_d, (7 * sizeof(float))));
-    HANDLE_ERROR(cudaMalloc((void **)&this->ref_add_d, (7 * sizeof(float))));
-    HANDLE_ERROR(cudaMalloc((void **)&this->ref_mult_d, (7 * sizeof(float))));
-    HANDLE_ERROR(cudaMalloc((void **)&this->ref_w_coeff_d, (7 * sizeof(float))));
 
     if (this->number_sensor == 8) {
         this->ref_w_coeff[PARAM_BAND_BLUE_INDEX] = 0.257048331;
@@ -153,12 +146,6 @@ MTL::MTL(string metadata_path)
         this->ref_add[PARAM_BAND_TERMAL_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_6"].c_str());
         this->ref_add[PARAM_BAND_SWIR2_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_7"].c_str());
     }
-
-    HANDLE_ERROR(cudaMemcpy(this->rad_add_d, this->rad_add, 7 * sizeof(float), cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(this->rad_mult_d, this->rad_mult, 7 * sizeof(float), cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(this->ref_add_d, this->ref_add, 7 * sizeof(float), cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(this->ref_mult_d, this->ref_mult, 7 * sizeof(float), cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(this->ref_w_coeff_d, this->ref_w_coeff, 7 * sizeof(float), cudaMemcpyHostToDevice));
 };
 
 Station::Station()
@@ -202,8 +189,8 @@ Station::Station(string station_data_path, float image_hour)
     this->longitude = atof(this->info[0][4].c_str());
 
     for (int i = 1; i < this->info.size(); i++) {
-        v7_max = max(v7_max, atof(this->info[i][6].c_str()));
-        v7_min = min(v7_min, atof(this->info[i][6].c_str()));
+        v7_max = static_cast<float>(std::max(static_cast<double>(v7_max), atof(this->info[i][6].c_str())));
+        v7_min = static_cast<float>(std::min(static_cast<double>(v7_min), atof(this->info[i][6].c_str())));
 
         if (fabs(atof(this->info[i][2].c_str()) - image_hour) < diff) {
             diff = fabs(atof(this->info[i][2].c_str()) - image_hour);

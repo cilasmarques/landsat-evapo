@@ -1,6 +1,6 @@
 #include "constants.h"
-#include "sensors.cuh"
-#include "surfaceData.cuh"
+#include "sensors.h"
+#include "surfaceData.h"
 
 int blocks_n;
 int threads_n;
@@ -74,8 +74,7 @@ int main(int argc, char *argv[])
     blocks_n = (landsat.width_band * landsat.height_band + threads_n - 1) / threads_n;
 
     // ===== RUN ALGORITHM =====
-    begin = system_clock::now();
-    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    begin = system_clock::now();    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     time_output << "STRATEGY,PHASE,TIMESTAMP,START_TIME,END_TIME" << std::endl;
 
     // process products
@@ -86,15 +85,14 @@ int main(int argc, char *argv[])
     time_output << products.compute_H_ET(products, station, mtl);
 
     // save products
-    // time_output << products.host_data();
     // time_output << products.save_products(output_folder);
     // time_output << products.print_products(output_folder);
     // products.close(landsat.landsat_bands);
 
     end = system_clock::now();
-    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
-    time_output << "KERNELS,P_TOTAL," << general_time << "," << initial_time << "," << final_time << std::endl;
+    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    time_output << "SERIAL,P_TOTAL," << general_time << "," << initial_time << "," << final_time << std::endl;
 
     time_output.close();
 

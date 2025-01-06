@@ -25,8 +25,8 @@ clean:
 clean-all:
 	rm -rf $(OUTPUT_DATA_PATH)/*
 
-build-cores:
-	nvcc -arch=sm_86 -I ./include -g ./src/*.cu -o ./main -std=c++14 -ltiff -lcutensor -rdc=true
+build-cpp:
+	g++ -I./include -g ./src/*.cpp -o ./main -std=c++14 -ltiff
 
 fix-permissions:
 	sudo chmod -R 755 $(INPUT_DATA_PATH)/*
