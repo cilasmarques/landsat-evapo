@@ -138,7 +138,7 @@ string rah_correction_function_blocks_STEEP(Products products, float ndvi_min, f
 
     cudaEventRecord(start);
     for (int i = 0; i < 2; i++) {
-        rah_correction_cycle_STEEP<<<blocks_n, threads_n>>>(products.hotCandidates_d, products.coldCandidates_d, products.ndvi_d, products.surface_temperature_d, products.d0_d, products.kb1_d, products.zom_d, products.ustar_d, products.rah_d, products.sensible_heat_flux_d, ndvi_max, ndvi_min);
+        rah_correction_cycle_STEEP<<<blocks_n, threads_n>>>(products.net_radiation_d, products.soil_heat_d, products.ndvi_d, products.surface_temperature_d, products.d0_d, products.kb1_d, products.zom_d, products.ustar_d, products.rah_d, products.sensible_heat_flux_d, ndvi_max, ndvi_min);
     }
     cudaEventRecord(stop);
 
@@ -168,7 +168,7 @@ string rah_correction_function_blocks_ASEBAL(Products products, float ndvi_min, 
     cudaEventRecord(start);
     int i = 0;
     while (true) {
-        rah_correction_cycle_ASEBAL<<<blocks_n, threads_n>>>(products.hotCandidates_d, products.coldCandidates_d, products.ndvi_d, products.surface_temperature_d, products.kb1_d, products.zom_d, products.ustar_d, products.rah_d, products.sensible_heat_flux_d, ndvi_max, ndvi_min, u200, products.stop_condition_d);
+        rah_correction_cycle_ASEBAL<<<blocks_n, threads_n>>>(products.net_radiation_d, products.soil_heat_d, products.ndvi_d, products.surface_temperature_d, products.kb1_d, products.zom_d, products.ustar_d, products.rah_d, products.sensible_heat_flux_d, ndvi_max, ndvi_min, u200, products.stop_condition_d);
 
         HANDLE_ERROR(cudaMemcpy(products.stop_condition, products.stop_condition_d, sizeof(int), cudaMemcpyDeviceToHost));
 
@@ -177,7 +177,6 @@ string rah_correction_function_blocks_ASEBAL(Products products, float ndvi_min, 
         else
             i++;
     }
-
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -186,6 +185,28 @@ string rah_correction_function_blocks_ASEBAL(Products products, float ndvi_min, 
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     return "KERNELS,RAH_CYCLE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
+
+
+string sensible_heat_flux_function(Products products)
+{
+    int64_t initial_time, final_time;
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
+    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+    cudaEventRecord(start);
+    sensible_heat_flux_kernel<<<blocks_n, threads_n>>>(products.surface_temperature_d, products.rah_d, products.net_radiation_d, products.soil_heat_d, products.sensible_heat_flux_d);
+    cudaEventRecord(stop);
+
+    float cuda_time = 0;
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&cuda_time, start, stop);
+    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+    return "KERNELS,SENSIBLE_HEAT_FLUX," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+};
 
 string Products::converge_rah_cycle(Products products, Station station)
 {
@@ -221,11 +242,13 @@ string Products::converge_rah_cycle(Products products, Station station)
         result += kb_function(products, ndvi_max, ndvi_min);
         result += aerodynamic_resistance_fuction(products);
         result += rah_correction_function_blocks_STEEP(products, ndvi_min, ndvi_max);
+        result += sensible_heat_flux_function(products);
     } else { // ASEBAL
         result += zom_fuction(products, station.A_ZOM, station.B_ZOM);
         result += ustar_fuction(products, u200);
         result += aerodynamic_resistance_fuction(products);
         result += rah_correction_function_blocks_ASEBAL(products, ndvi_min, ndvi_max, u200);
+        result += sensible_heat_flux_function(products);
     }
     cudaEventRecord(stop);
 

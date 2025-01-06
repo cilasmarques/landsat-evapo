@@ -6,8 +6,10 @@ __shared__ float b_d;
 __device__ int width_d;
 __device__ int height_d;
 
-__device__ int pos_hot_d;
-__device__ int pos_cold_d;
+__device__ int hotEndmemberLine_d;
+__device__ int hotEndmemberCol_d;
+__device__ int coldEndmemberLine_d;
+__device__ int coldEndmemberCol_d;
 
 __global__ void rad_kernel(float *band_d, float *radiance_d, float *rad_add_d, float *rad_mult_d, int band_idx)
 {
@@ -443,7 +445,7 @@ __global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_
     }
 }
 
-__global__ void sensible_heat_flux_kernel(Endmember *hotCandidates_d, Endmember *coldCandidates_d, float *surface_temperature_d, float *rah_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d)
+__global__ void sensible_heat_flux_kernel(float *surface_temperature_d, float *rah_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -561,7 +563,7 @@ __global__ void evapotranspiration_kernel(float *net_radiation_24h_d, float *eva
     }
 }
 
-__global__ void rah_correction_cycle_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, float *ndvi_d, float *surf_temp_d, float *d0_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min)
+__global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surf_temp_d, float *d0_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min)
 {
     // Identify 1D position
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -571,10 +573,8 @@ __global__ void rah_correction_cycle_STEEP(Endmember *hotCandidates_d, Endmember
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
-        Endmember hot_pixel = hotCandidates_d[pos_hot_d];
-        Endmember cold_pixel = coldCandidates_d[pos_cold_d];
-        unsigned int hot_pos = hot_pixel.line * width_d + hot_pixel.col;
-        unsigned int cold_pos = cold_pixel.line * width_d + cold_pixel.col;
+        unsigned int hot_pos = hotEndmemberLine_d * width_d + hotEndmemberCol_d;
+        unsigned int cold_pos = coldEndmemberLine_d * width_d + coldEndmemberCol_d;
 
         float fc_hot = 1 - pow((ndvi_d[hot_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
         float fc_cold = 1 - pow((ndvi_d[cold_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
@@ -582,17 +582,17 @@ __global__ void rah_correction_cycle_STEEP(Endmember *hotCandidates_d, Endmember
         float rah_ini_pq_terra = rah_d[hot_pos];
         float rah_ini_pf_terra = rah_d[cold_pos];
 
-        float LEc_terra = 0.55 * fc_hot * (hot_pixel.net_radiation - hot_pixel.soil_heat_flux) * 0.78;
-        float LEc_terra_pf = 1.75 * fc_cold * (cold_pixel.net_radiation - cold_pixel.soil_heat_flux) * 0.78;
+        float LEc_terra = 0.55 * fc_hot * (net_radiation_d[hot_pos] - soil_heat_flux_d[hot_pos]) * 0.78;
+        float LEc_terra_pf = 1.75 * fc_cold * (net_radiation_d[cold_pos] - soil_heat_flux_d[cold_pos]) * 0.78;
 
-        float H_pf_terra = cold_pixel.net_radiation - cold_pixel.soil_heat_flux - LEc_terra_pf;
+        float H_pf_terra = net_radiation_d[cold_pos] - soil_heat_flux_d[cold_pos] - LEc_terra_pf;
         float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
 
-        float H_pq_terra = hot_pixel.net_radiation - hot_pixel.soil_heat_flux - LEc_terra;
+        float H_pq_terra = net_radiation_d[hot_pos] - soil_heat_flux_d[hot_pos] - LEc_terra;
         float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
 
-        float b = (dt_pq_terra - dt_pf_terra) / (hot_pixel.temperature - cold_pixel.temperature);
-        float a = dt_pf_terra - (b * (cold_pixel.temperature));
+        float b = (dt_pq_terra - dt_pf_terra) / (surf_temp_d[hot_pos] - surf_temp_d[cold_pos]);
+        float a = dt_pf_terra - (b * surf_temp_d[cold_pos]);
 
         b_d = b;
         a_d = a;
@@ -629,7 +629,7 @@ __global__ void rah_correction_cycle_STEEP(Endmember *hotCandidates_d, Endmember
     }
 }
 
-__global__ void rah_correction_cycle_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, float *ndvi_d, float *surf_temp_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min, float u200, int *stop_condition)
+__global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surf_temp_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min, float u200, int *stop_condition)
 {
     // Identify 1D position
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -639,18 +639,16 @@ __global__ void rah_correction_cycle_ASEBAL(Endmember *hotCandidates_d, Endmembe
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
-        Endmember hot_pixel = hotCandidates_d[pos_hot_d];
-        Endmember cold_pixel = coldCandidates_d[pos_cold_d];
-        unsigned int hot_pos = hot_pixel.line * width_d + hot_pixel.col;
-        unsigned int cold_pos = cold_pixel.line * width_d + cold_pixel.col;
+        unsigned int hot_pos = hotEndmemberLine_d * width_d + hotEndmemberCol_d;
+        unsigned int cold_pos = coldEndmemberLine_d * width_d + coldEndmemberCol_d;
 
         float rah_ini_pq_terra = rah_d[hot_pos];
         float rah_ini_pf_terra = rah_d[cold_pos];
 
-        float H_pf_terra = cold_pixel.net_radiation - cold_pixel.soil_heat_flux;
+        float H_pf_terra = net_radiation_d[cold_pos] - soil_heat_flux_d[cold_pos];
         float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
 
-        float H_pq_terra = hot_pixel.net_radiation - hot_pixel.soil_heat_flux;
+        float H_pq_terra = net_radiation_d[hot_pos] - soil_heat_flux_d[hot_pos];
         float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
 
         float b = (dt_pq_terra - dt_pf_terra) / (surf_temp_d[hot_pos] - surf_temp_d[cold_pos]);
@@ -730,12 +728,12 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
 
         if (hotAlbedo && hotNDVI && hotTS) {
             int ih = atomicAdd(&indexes_d[0], 1);
-            hotCandidates_d[ih] = Endmember(ndvi_d[pos], surf_temp_d[pos], net_radiation_d[pos], soil_heat_d[pos], ho_d[pos], row, col);
+            hotCandidates_d[ih] = Endmember(ndvi_d[pos], surf_temp_d[pos], row, col);
         }
 
         if (coldNDVI && coldAlbedo && coldTS) {
             int ic = atomicAdd(&indexes_d[1], 1);
-            coldCandidates_d[ic] = Endmember(ndvi_d[pos], surf_temp_d[pos], net_radiation_d[pos], soil_heat_d[pos], ho_d[pos], row, col);
+            coldCandidates_d[ic] = Endmember(ndvi_d[pos], surf_temp_d[pos], row, col);
         }
     }
 }
@@ -761,12 +759,12 @@ __global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *col
 
         if (hotAlbedo && hotNDVI && hotTS) {
             int ih = atomicAdd(&indexes_d[0], 1);
-            hotCandidates_d[ih] = Endmember(ndvi_d[pos], surf_temp_d[pos], net_radiation_d[pos], soil_heat_d[pos], ho_d[pos], row, col);
+            hotCandidates_d[ih] = Endmember(ndvi_d[pos], surf_temp_d[pos], row, col);
         }
 
         if (coldNDVI && coldAlbedo && coldTS) {
             int ic = atomicAdd(&indexes_d[1], 1);
-            coldCandidates_d[ic] = Endmember(ndvi_d[pos], surf_temp_d[pos], net_radiation_d[pos], soil_heat_d[pos], ho_d[pos], row, col);
+            coldCandidates_d[ic] = Endmember(ndvi_d[pos], surf_temp_d[pos], row, col);
         }
     }
 }

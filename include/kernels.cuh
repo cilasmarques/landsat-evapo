@@ -4,11 +4,13 @@
 #include "cuda_utils.h"
 #include "surfaceData.cuh"
 
-extern __device__ int pos_hot_d;
-extern __device__ int pos_cold_d;
-
 extern __device__ int width_d;
 extern __device__ int height_d;
+
+extern __device__ int hotEndmemberLine_d;
+extern __device__ int hotEndmemberCol_d;
+extern __device__ int coldEndmemberLine_d;
+extern __device__ int coldEndmemberCol_d;
 
 /**
  * @brief  Compute the radiance of the bands.
@@ -249,17 +251,13 @@ __global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_
 /**
  * @brief  Compute the sensible heat flux of the bands.
  *
- * @param hotCandidates_d  Hot candidates
- * @param coldCandidates_d  Cold candidates
- * @param hot_pos  Hot position
- * @param cold_pos  Cold position
  * @param surface_temperature_d  The surface temperature.
  * @param rah_d  The RAH.
  * @param net_radiation_d  The net radiation.
  * @param soil_heat_d  The soil heat.
  * @param sensible_heat_flux_d  The sensible heat flux.
  */
-__global__ void sensible_heat_flux_kernel(Endmember *hotCandidates_d, Endmember *coldCandidates_d, float *surface_temperature_d, float *rah_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d);
+__global__ void sensible_heat_flux_kernel(float *surface_temperature_d, float *rah_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d);
 
 /**
  * @brief  Compute the latent heat flux of the bands.
@@ -331,10 +329,8 @@ __global__ void evapotranspiration_kernel(float *net_radiation_24h_d, float *eva
 /**
  * @brief  Compute the rah correction cycle. (STEEP algorithm)
  *
- * @param hotCandidates_d  Hot candidates
- * @param coldCandidates_d  Cold candidates
- * @param hot_pos  Hot position
- * @param cold_pos  Cold position
+ * @param net_radiation_d  Net radiation
+ * @param soil_heat_flux_d  Soil heat flux
  * @param ndvi_pointer  NDVI
  * @param surf_temp_pointer  Surface temperature
  * @param d0_pointer  Zero plane displacement height_d
@@ -346,15 +342,13 @@ __global__ void evapotranspiration_kernel(float *net_radiation_24h_d, float *eva
  * @param ndvi_max  NDVI max value
  * @param ndvi_min  NDVI min value
  */
-__global__ void rah_correction_cycle_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, float *ndvi_pointer, float *surf_temp_pointer, float *d0_pointer, float *kb1_pointer, float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer, float ndvi_max, float ndvi_min);
+__global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surf_temp_d, float *d0_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min);
 
 /**
  * @brief  Compute the rah correction cycle. (STEEP algorithm)
  *
- * @param hotCandidates_d  Hot candidates
- * @param coldCandidates_d  Cold candidates
- * @param hot_pos  Hot position
- * @param cold_pos  Cold position
+ * @param net_radiation_d  Net radiation
+ * @param soil_heat_flux_d  Soil heat flux
  * @param ndvi_pointer  NDVI
  * @param surf_temp_pointer  Surface temperature
  * @param kb1_pointer  KB-1 stability parameter
@@ -366,7 +360,7 @@ __global__ void rah_correction_cycle_STEEP(Endmember *hotCandidates_d, Endmember
  * @param ndvi_min  NDVI min value
  * @param u200 U200
  */
-__global__ void rah_correction_cycle_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, float *ndvi_pointer, float *surf_temp_pointer, float *kb1_pointer, float *zom_pointer, float *ustar_pointer, float *rah_pointer, float *H_pointer, float ndvi_max, float ndvi_min, float u200, int *stop_condition);
+__global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surf_temp_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min, float u200, int *stop_condition);
 
 /**
  * @brief Filter values that are not NaN or Inf.
@@ -398,7 +392,7 @@ __global__ void filter_valid_values(const float *target, float *filtered, int *p
  * @param albedoQuartileMid The albedo mid quartile.
  * @param albedoQuartileHigh The albedo high quartile.
  */
-__global__ void process_pixels_STEEP(Endmember *hotCandidates, Endmember *coldCandidates, int *indexes_d, float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, float *ho, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh);
+__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surf_temp_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh);
 
 /**
  * @brief Process the pixels of the target arrays and store the candidates in the hot and cold arrays.
@@ -419,4 +413,4 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates, Endmember *coldCa
  * @param albedo2ndQuartile The albedo 2nd quartile.
  * @param albedo3rdQuartile The albedo 3rd quartile.
  */
-__global__ void process_pixels_ASEBAL(Endmember *hotCandidates, Endmember *coldCandidates, int *indexes_d, float *ndvi, float *surface_temperature, float *albedo, float *net_radiation, float *soil_heat, float *ho, float ndvi1stQuartile, float ndvi4stQuartile, float ts1stQuartile, float ts3stQuartile, float albedo2ndQuartile, float albedo3rdQuartile);
+__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surf_temp_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile);

@@ -3,28 +3,6 @@
 #include "sensors.cuh"
 #include "surfaceData.cuh"
 
-string sensible_heat_flux_function(Products products)
-{
-    int64_t initial_time, final_time;
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-
-    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-    cudaEventRecord(start);
-    sensible_heat_flux_kernel<<<blocks_n, threads_n>>>(products.hotCandidates_d, products.coldCandidates_d, products.surface_temperature_d, products.rah_d, products.net_radiation_d, products.soil_heat_d, products.sensible_heat_flux_d);
-
-    cudaEventRecord(stop);
-
-    float cuda_time = 0;
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&cuda_time, start, stop);
-    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-    return "KERNELS,SENSIBLE_HEAT_FLUX," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
-};
-
 string latent_heat_flux_function(Products products)
 {
     int64_t initial_time, final_time;
@@ -190,7 +168,6 @@ string Products::compute_H_ET(Products products, Station station, MTL mtl)
     float Ra24h = (((24 * 60 / PI) * GSC * dr) * (omegas * sin(phi) * sin(sigma) + cos(phi) * cos(sigma) * sin(omegas))) * (1000000 / 86400.0);
     float Rs24h = station.INTERNALIZATION_FACTOR * sqrt(station.v7_max - station.v7_min) * Ra24h;
 
-    result += sensible_heat_flux_function(products);
     result += latent_heat_flux_function(products);
     result += net_radiation_24h_function(products, Ra24h, Rs24h);
     result += evapotranspiration_fraction_fuction(products);

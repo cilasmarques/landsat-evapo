@@ -7,9 +7,7 @@
  */
 struct Endmember {
     int line, col;
-    float aerodynamic_resistance;
-    float ndvi, temperature, ustar;
-    float net_radiation, soil_heat_flux, ho, zom;
+    float ndvi, temperature;
 
     /**
      * @brief  Empty constructor, all attributes are initialized with 0.
@@ -26,13 +24,7 @@ struct Endmember {
      * @param  line: Pixel's line on TIFF.
      * @param  col: Pixel's column on TIFF.
      */
-    __host__ __device__ Endmember(float ndvi, float temperature, float net_radiation, float soil_heat_flux, float ho, int line, int col);
-
-    /**
-     * @brief  Update Pixel's aerodynamic resistance for a new value.
-     * @param  newRah: new value of aerodynamic resistance.
-     */
-    void setAerodynamicResistance(float newRah);
+    __host__ __device__ Endmember(float ndvi, float temperature, int line, int col);
 };
 
 /**

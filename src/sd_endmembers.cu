@@ -6,31 +6,16 @@ __host__ __device__ Endmember::Endmember()
 {
     this->ndvi = 0;
     this->temperature = 0;
-    this->net_radiation = 0;
-    this->soil_heat_flux = 0;
-    this->ho = 0;
     this->line = 0;
     this->col = 0;
-    this->zom = 0;
-    this->ustar = 0;
 }
 
-__host__ __device__ Endmember::Endmember(float ndvi, float temperature, float net_radiation, float soil_heat_flux, float ho, int line, int col)
+__host__ __device__ Endmember::Endmember(float ndvi, float temperature, int line, int col)
 {
     this->ndvi = ndvi;
     this->temperature = temperature;
-    this->net_radiation = net_radiation;
-    this->soil_heat_flux = soil_heat_flux;
-    this->ho = ho;
     this->line = line;
     this->col = col;
-    this->zom = 0;
-    this->ustar = 0;
-}
-
-void Endmember::setAerodynamicResistance(float newRah)
-{
-    this->aerodynamic_resistance = newRah;
 }
 
 void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int width_band, float first_interval, float middle_interval, float last_interval, int blocks_n, int threads_n)
@@ -112,8 +97,16 @@ string getEndmembersSTEEP(Products products)
         thrust::device_ptr<Endmember> dev_ptr_cold(products.coldCandidates_d);
         thrust::sort(dev_ptr_cold, dev_ptr_cold + indexes[1], CompareEndmemberTemperature());
 
-        cudaMemcpyToSymbol(pos_hot_d, &hot_pos, sizeof(int), 0, cudaMemcpyHostToDevice);
-        cudaMemcpyToSymbol(pos_cold_d, &cold_pos, sizeof(int), 0, cudaMemcpyHostToDevice);
+        Endmember hotCandidate = Endmember();
+        Endmember coldCandidate = Endmember();
+
+        cudaMemcpy(&hotCandidate, products.hotCandidates_d + hot_pos, sizeof(Endmember), cudaMemcpyDeviceToHost);
+        cudaMemcpy(&coldCandidate, products.coldCandidates_d + cold_pos, sizeof(Endmember), cudaMemcpyDeviceToHost);
+
+        cudaMemcpyToSymbol(hotEndmemberLine_d, &hotCandidate.line, sizeof(int), 0, cudaMemcpyHostToDevice);
+        cudaMemcpyToSymbol(hotEndmemberCol_d, &hotCandidate.col, sizeof(int), 0, cudaMemcpyHostToDevice);
+        cudaMemcpyToSymbol(coldEndmemberLine_d, &coldCandidate.line, sizeof(int), 0, cudaMemcpyHostToDevice);
+        cudaMemcpyToSymbol(coldEndmemberCol_d, &coldCandidate.col, sizeof(int), 0, cudaMemcpyHostToDevice);
 
         float cuda_time = 0;
         cudaEventSynchronize(stop);
@@ -176,9 +169,17 @@ string getEndmembersASEBAL(Products products)
         thrust::device_ptr<Endmember> dev_ptr_cold(products.coldCandidates_d);
         thrust::sort(dev_ptr_cold, dev_ptr_cold + indexes[1], CompareEndmemberTemperature());
 
-        cudaMemcpyToSymbol(pos_hot_d, &hot_pos, sizeof(int), 0, cudaMemcpyHostToDevice);
-        cudaMemcpyToSymbol(pos_cold_d, &cold_pos, sizeof(int), 0, cudaMemcpyHostToDevice);
+        Endmember hotCandidate = Endmember();
+        Endmember coldCandidate = Endmember();
 
+        cudaMemcpy(&hotCandidate, products.hotCandidates_d + hot_pos, sizeof(Endmember), cudaMemcpyDeviceToHost);
+        cudaMemcpy(&coldCandidate, products.coldCandidates_d + cold_pos, sizeof(Endmember), cudaMemcpyDeviceToHost);
+
+        cudaMemcpyToSymbol(hotEndmemberLine_d, &hotCandidate.line, sizeof(int), 0, cudaMemcpyHostToDevice);
+        cudaMemcpyToSymbol(hotEndmemberCol_d, &hotCandidate.col, sizeof(int), 0, cudaMemcpyHostToDevice);
+        cudaMemcpyToSymbol(coldEndmemberLine_d, &coldCandidate.line, sizeof(int), 0, cudaMemcpyHostToDevice);
+        cudaMemcpyToSymbol(coldEndmemberCol_d, &coldCandidate.col, sizeof(int), 0, cudaMemcpyHostToDevice);
+        
         float cuda_time = 0;
         cudaEventSynchronize(stop);
         cudaEventElapsedTime(&cuda_time, start, stop);
