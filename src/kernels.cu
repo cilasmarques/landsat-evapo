@@ -15,11 +15,9 @@ __global__ void rad_kernel(float *band_d, float *radiance_d, float *rad_add_d, f
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
         radiance_d[pos] = band_d[pos] * rad_mult_d[band_idx] + rad_add_d[band_idx];
@@ -33,11 +31,9 @@ __global__ void ref_kernel(float *band_d, float *reflectance_d, float *ref_add_d
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
         reflectance_d[pos] = (band_d[pos] * ref_mult_d[band_idx] + ref_add_d[band_idx]) / sin_sun;
@@ -51,11 +47,9 @@ __global__ void albedo_kernel(float *reflectance_blue_d, float *reflectance_gree
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
         float alb_toa = reflectance_blue_d[pos] * ref_w_coeff_d[PARAM_BAND_BLUE_INDEX] +
@@ -76,11 +70,9 @@ __global__ void ndvi_kernel(float *reflectance_nir_d, float *reflectance_red_d, 
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
         ndvi_d[pos] = (reflectance_nir_d[pos] - reflectance_red_d[pos]) / (reflectance_nir_d[pos] + reflectance_red_d[pos]);
@@ -94,11 +86,9 @@ __global__ void pai_kernel(float *reflectance_nir_d, float *reflectance_red_d, f
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
         pai_d[pos] = 10.1 * (reflectance_nir_d[pos] - sqrt(reflectance_red_d[pos])) + 3.1;
@@ -112,11 +102,9 @@ __global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, f
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
         float savi = ((1 + 0.5) * (reflectance_nir_d[pos] - reflectance_red_d[pos])) / (0.5 + (reflectance_nir_d[pos] + reflectance_red_d[pos]));
@@ -173,11 +161,9 @@ __global__ void ea_kernel(float *tal_d, float *ea_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
         ea_d[pos] = 0.85 * pow((-1 * logf(tal_d[pos])), 0.09);
     }
@@ -187,11 +173,9 @@ __global__ void surface_temperature_kernel(float *enb_d, float *radiance_termal_
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
         surface_temperature_d[pos] = k2 / (logf((enb_d[pos] * k1 / radiance_termal_d[pos]) + 1));
 
@@ -204,11 +188,9 @@ __global__ void short_wave_radiation_kernel(float *tal_d, float *short_wave_radi
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
         short_wave_radiation_d[pos] = (1367 * sin(sun_elevation * pi / 180) * tal_d[pos]) / (distance_earth_sun * distance_earth_sun);
     }
@@ -218,11 +200,9 @@ __global__ void large_wave_radiation_surface_kernel(float *surface_temperature_d
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
         float temperature_pixel = surface_temperature_d[pos];
         float surface_temperature_pow_4 = temperature_pixel * temperature_pixel * temperature_pixel * temperature_pixel;
@@ -234,13 +214,10 @@ __global__ void large_wave_radiation_atmosphere_kernel(float *ea_d, float *large
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     float temperature_kelvin_pow_4 = temperature * temperature * temperature * temperature;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
         large_wave_radiation_atmosphere_d[pos] = ea_d[pos] * 5.67 * 1e-8 * temperature_kelvin_pow_4;
     }
@@ -250,11 +227,9 @@ __global__ void net_radiation_kernel(float *short_wave_radiation_d, float *albed
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
         net_radiation_d[pos] = (1 - albedo_d[pos]) * short_wave_radiation_d[pos] + large_wave_radiation_atmosphere_d[pos] - large_wave_radiation_surface_d[pos] - (1 - eo_d[pos]) * large_wave_radiation_atmosphere_d[pos];
 
@@ -267,11 +242,9 @@ __global__ void soil_heat_kernel(float *ndvi_d, float *albedo_d, float *surface_
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
         if (ndvi_d[pos] >= 0) {
@@ -290,11 +263,9 @@ __global__ void d0_kernel(float *pai_d, float *d0_d, float CD1, float HGHT)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
         float cd1_pai_root = sqrt(CD1 * pai_d[pos]);
 
@@ -306,12 +277,10 @@ __global__ void ustar_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, fl
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     float zu = 10;
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
         ustar_d[pos] = (u10 * VON_KARMAN) / logf((zu - d0_d[pos]) / zom_d[pos]);
     }
@@ -321,11 +290,9 @@ __global__ void ustar_kernel_ASEBAL(float *zom_d, float *ustar_d, float u200)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
         ustar_d[pos] = (u200 * VON_KARMAN) / logf(200 / zom_d[pos]);
     }
@@ -335,16 +302,14 @@ __global__ void zom_kernel_STEEP(float *d0_d, float *pai_d, float *zom_d, float 
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     float HGHT = 4;
     float CD = 0.01;
     float CR = 0.35;
     float PSICORR = 0.2;
 
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
         float gama = pow((CD + CR * (pai_d[pos] / 2)), -0.5);
@@ -373,10 +338,6 @@ __global__ void kb_kernel(float *zom_d, float *ustar_d, float *pai_d, float *kb1
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     float HGHT = 4;
 
     float VON_KARMAN = 0.41;
@@ -393,6 +354,8 @@ __global__ void kb_kernel(float *zom_d, float *ustar_d, float *pai_d, float *kb1
     float soil_moisture_day_rel = 0.33;
 
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
         float Re_star = (ustar_d[pos] * 0.009) / visc;
@@ -449,11 +412,9 @@ __global__ void sensible_heat_flux_kernel(float *surface_temperature_d, float *r
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
         sensible_heat_flux_d[pos] = RHO * SPECIFIC_HEAT_AIR * (a_d + b_d * (surface_temperature_d[pos])) / rah_d[pos];
@@ -467,11 +428,9 @@ __global__ void latent_heat_flux_kernel(float *net_radiation_d, float *soil_heat
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
         latent_heat_flux_d[pos] = net_radiation_d[pos] - soil_heat_d[pos] - sensible_heat_flux_d[pos];
     }
@@ -481,13 +440,10 @@ __global__ void net_radiation_24h_kernel(float *albedo_d, float Rs24h, float Ra2
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     int FL = 110;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
         net_radiation_24h_d[pos] = (1 - albedo_d[pos]) * Rs24h - FL * Rs24h / Ra24h;
     }
@@ -497,11 +453,9 @@ __global__ void evapotranspiration_fraction_kernel(float *net_radiation_d, float
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
         evapotranspiration_fraction_d[pos] = latent_heat_flux_d[pos] / (net_radiation_d[pos] - soil_heat_d[pos]);
     }
@@ -511,11 +465,9 @@ __global__ void sensible_heat_flux_24h_kernel(float *net_radiation_24h_d, float 
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
         sensible_heat_flux_24h_d[pos] = (1 - evapotranspiration_fraction_d[pos]) * net_radiation_24h_d[pos];
     }
@@ -525,11 +477,9 @@ __global__ void latent_heat_flux_24h_kernel(float *net_radiation_24h_d, float *e
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
         latent_heat_flux_24h_d[pos] = evapotranspiration_fraction_d[pos] * net_radiation_24h_d[pos];
     }
@@ -539,11 +489,9 @@ __global__ void evapotranspiration_24h_kernel(float *latent_heat_flux_24h_d, flo
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
         evapotranspiration_24h_d[pos] = (latent_heat_flux_24h_d[pos] * 86400) / ((2.501 - 0.00236 * (v7_max + v7_min) / 2) * 1e+6);
     }
@@ -553,11 +501,9 @@ __global__ void evapotranspiration_kernel(float *net_radiation_24h_d, float *eva
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Map 1D position to 2D grid
-    unsigned int row = idx / width_d;
-    unsigned int col = idx % width_d;
-
     if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
         evapotranspiration_d[pos] = net_radiation_24h_d[pos] * evapotranspiration_fraction_d[pos] * 0.035;
     }
@@ -565,7 +511,6 @@ __global__ void evapotranspiration_kernel(float *net_radiation_24h_d, float *eva
 
 __global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surf_temp_d, float *d0_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min)
 {
-    // Identify 1D position
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (idx < width_d * height_d) {
@@ -631,7 +576,6 @@ __global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_h
 
 __global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surf_temp_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min, float u200, int *stop_condition)
 {
-    // Identify 1D position
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (idx < width_d * height_d) {
