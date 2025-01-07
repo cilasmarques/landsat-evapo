@@ -115,11 +115,31 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMalloc((void **)&this->kb1_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->ustar_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->rah_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->a_d, sizeof(float)));
+    HANDLE_ERROR(cudaMalloc((void **)&this->b_d, sizeof(float)));
     HANDLE_ERROR(cudaMalloc((void **)&this->sensible_heat_flux_d, band_bytes));
 
     HANDLE_ERROR(cudaMalloc((void **)&this->latent_heat_flux_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->net_radiation_24h_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_24h_d, band_bytes));
+
+    // === Tensor
+    this->only1 = (float *)malloc(band_bytes);
+    HANDLE_ERROR(cudaMalloc((void **)&this->only1_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->tensor_aux1_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->tensor_aux2_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->tensor_aux3_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->tensor_aux4_d, band_bytes));
+
+    HANDLE_ERROR(cudaMalloc((void **)&this->beta_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->nec_terra_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->kb1_fst_part_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->kb1_sec_part_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->kb1s_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->fc_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->fs_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->fspow_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->fcpow_d, band_bytes));
 };
 
 string Products::read_data(TIFF **landsat_bands)
@@ -131,15 +151,6 @@ string Products::read_data(TIFF **landsat_bands)
     begin = system_clock::now();
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    band_blue = (float *)malloc(band_bytes);
-    band_green = (float *)malloc(band_bytes);
-    band_red = (float *)malloc(band_bytes);
-    band_nir = (float *)malloc(band_bytes);
-    band_swir1 = (float *)malloc(band_bytes);
-    band_termal = (float *)malloc(band_bytes);
-    band_swir2 = (float *)malloc(band_bytes);
-    tal = (float *)malloc(band_bytes);
-
     for (int i = 0; i < INPUT_BAND_ELEV_INDEX; i++) {
         for (int line = 0; line < height_band; line++) {
             TIFF *curr_band = landsat_bands[i];
@@ -149,6 +160,7 @@ string Products::read_data(TIFF **landsat_bands)
 
             for (int col = 0; col < width_band; col++) {
                 float value = 0;
+                only1[line * width_band + col] = 1.0f;
                 memcpy(&value, static_cast<unsigned char *>(band_line_buff) + col * curr_band_line_size, curr_band_line_size);
 
                 switch (i) {
@@ -184,15 +196,6 @@ string Products::read_data(TIFF **landsat_bands)
         }
     }
 
-    HANDLE_ERROR(cudaMalloc((void **)&(band_blue_d), band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&(band_green_d), band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&(band_red_d), band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&(band_nir_d), band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&(band_swir1_d), band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&(band_termal_d), band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&(band_swir2_d), band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&(tal_d), band_bytes));
-
     HANDLE_ERROR(cudaMemcpy(band_blue_d, band_blue, band_bytes, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpy(band_green_d, band_green, band_bytes, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpy(band_red_d, band_red, band_bytes, cudaMemcpyHostToDevice));
@@ -201,6 +204,7 @@ string Products::read_data(TIFF **landsat_bands)
     HANDLE_ERROR(cudaMemcpy(band_termal_d, band_termal, band_bytes, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpy(band_swir2_d, band_swir2, band_bytes, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpy(tal_d, tal, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(only1_d, only1, band_bytes, cudaMemcpyHostToDevice));
 
     end = system_clock::now();
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();

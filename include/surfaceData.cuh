@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sensors.cuh"
+#include "tensor.cuh"
 
 /**
  * @brief  Struct representing a hot or cold pixel candidate.
@@ -162,15 +163,27 @@ struct Products {
     float *zom_d;
     float *ustar_d;
     float *rah_d;
-
     float *sensible_heat_flux_d;
+
     float *latent_heat_flux_d;
     float *net_radiation_24h_d;
-    float *evapotranspiration_fraction_d;
-    float *sensible_heat_flux_24h_d;
-    float *latent_heat_flux_24h_d;
     float *evapotranspiration_24h_d;
-    float *evapotranspiration_d;
+
+    float *a, *b, *a_d, *b_d;
+    float *only1, *only1_d;
+    float *tensor_aux1_d;
+    float *tensor_aux2_d;
+    float *tensor_aux3_d;
+    float *tensor_aux4_d;
+    float *beta_d;
+    float *nec_terra_d;
+    float *kb1_fst_part_d;
+    float *kb1_sec_part_d;
+    float *kb1s_d;
+    float *fc_d;
+    float *fs_d;
+    float *fspow_d;
+    float *fcpow_d;
 
     /**
      * @brief  Constructor.
@@ -202,10 +215,13 @@ struct Products {
     /**
      * @brief Compute the initial products.
      *
+     * @param  products: Products struct.
      * @param  station: Station struct.
+     * @param  mtl: MTL struct.
+     * @param  tensors: Tensor struct.
      * @return string with the time spent.
      */
-    string compute_Rn_G(Products products, Station station, MTL mtl);
+    string compute_Rn_G(Products products, Station station, MTL mtl, Tensor tensors);
 
     /**
      * @brief Select the cold and hot endmembers
@@ -218,20 +234,25 @@ struct Products {
     /**
      * @brief make the rah cycle converge
      *
+     * @param  products: Products struct.
      * @param  station: Station struct.
-     * @param  model_method: Method to converge the rah cycle.
+     * @param  tensors: Tensor struct.
      *
      * @return string with the time spent.
      */
-    string converge_rah_cycle(Products products, Station station);
+    string converge_rah_cycle(Products products, Station station, Tensor tensors);
 
     /**
      * @brief Compute the final products.
      *
+     * @param  products: Products struct.
      * @param  station: Station struct.
+     * @param  mtl: MTL struct.
+     * @param  tensors: Tensor struct.
+     * 
      * @return string with the time spent.
      */
-    string compute_H_ET(Products products, Station station, MTL mtl);
+    string compute_H_ET(Products products, Station station, MTL mtl, Tensor tensors);
 
     /**
      * @brief Save the products.

@@ -1,4 +1,5 @@
 #include "constants.h"
+#include "tensor.cuh"
 #include "sensors.cuh"
 #include "surfaceData.cuh"
 
@@ -70,6 +71,7 @@ int main(int argc, char *argv[])
     MTL mtl = MTL(path_meta_file);
     Landsat landsat = Landsat(bands_paths);
     Station station = Station(station_data_path, mtl.image_hour);
+    Tensor tensors = Tensor(landsat.width_band, landsat.height_band);
     Products products = Products(landsat.width_band, landsat.height_band);
     blocks_n = (landsat.width_band * landsat.height_band + threads_n - 1) / threads_n;
 
@@ -80,10 +82,10 @@ int main(int argc, char *argv[])
 
     // process products
     time_output << products.read_data(landsat.landsat_bands);
-    time_output << products.compute_Rn_G(products, station, mtl);
+    time_output << products.compute_Rn_G(products, station, mtl, tensors);
     time_output << products.select_endmembers(products);
-    time_output << products.converge_rah_cycle(products, station);
-    time_output << products.compute_H_ET(products, station, mtl);
+    time_output << products.converge_rah_cycle(products, station, tensors);
+    time_output << products.compute_H_ET(products, station, mtl, tensors);
 
     // save products
     // time_output << products.host_data();
