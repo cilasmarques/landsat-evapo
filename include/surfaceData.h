@@ -104,11 +104,7 @@ struct Products {
 
     float *latent_heat_flux;
     float *net_radiation_24h;
-    float *evapotranspiration_fraction;
-    float *sensible_heat_flux_24h;
-    float *latent_heat_flux_24h;
     float *evapotranspiration_24h;
-    float *evapotranspiration;
 
     /**
      * @brief  Constructor.
