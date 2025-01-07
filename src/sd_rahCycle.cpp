@@ -56,7 +56,7 @@ string kb_function(Products products, float ndvi_max, float ndvi_min)
         float fs = 1 - fc;
 
         float Re = (products.ustar[i] * 0.009) / visc;
-        float Ct = pow(pr, -(2/3)) * pow(Re, -(1/2));
+        float Ct = pow(pr, -0.667) * pow(Re, -0.5);
         float ratio = c1 - c2 * (exp(cd * -c3 * products.pai[i]));
         float nec = (cd * products.pai[i]) / (ratio * ratio * 2);
         float kbs = 2.46 * pow(Re, 0.25) - 2;
