@@ -149,7 +149,7 @@ string rah_correction_function_blocks_STEEP(Products products, float ndvi_min, f
     return "KERNELS,RAH_CYCLE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
-string rah_correction_function_blocks_ASEBAL(Products products, float ndvi_min, float ndvi_max, float u200)
+string rah_correction_function_blocks_ASEBAL(Products products, float u200)
 {
     string result = "";
     cudaEvent_t start, stop;
@@ -168,7 +168,7 @@ string rah_correction_function_blocks_ASEBAL(Products products, float ndvi_min, 
     cudaEventRecord(start);
     int i = 0;
     while (true) {
-        rah_correction_cycle_ASEBAL<<<blocks_n, threads_n>>>(products.net_radiation_d, products.soil_heat_d, products.ndvi_d, products.surface_temperature_d, products.kb1_d, products.zom_d, products.ustar_d, products.rah_d, products.sensible_heat_flux_d, ndvi_max, ndvi_min, u200, products.stop_condition_d);
+        rah_correction_cycle_ASEBAL<<<blocks_n, threads_n>>>(products.net_radiation_d, products.soil_heat_d, products.ndvi_d, products.surface_temperature_d, products.kb1_d, products.zom_d, products.ustar_d, products.rah_d, products.sensible_heat_flux_d, u200, products.stop_condition_d);
 
         HANDLE_ERROR(cudaMemcpy(products.stop_condition, products.stop_condition_d, sizeof(int), cudaMemcpyDeviceToHost));
 
@@ -247,7 +247,7 @@ string Products::converge_rah_cycle(Products products, Station station)
         result += zom_fuction(products, station.A_ZOM, station.B_ZOM);
         result += ustar_fuction(products, u200);
         result += aerodynamic_resistance_fuction(products);
-        result += rah_correction_function_blocks_ASEBAL(products, ndvi_min, ndvi_max, u200);
+        result += rah_correction_function_blocks_ASEBAL(products, u200);
         result += sensible_heat_flux_function(products);
     }
     cudaEventRecord(stop);

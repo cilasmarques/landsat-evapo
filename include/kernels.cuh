@@ -297,14 +297,14 @@ __global__ void evapotranspiration_24h_kernel(float *surface_temperature_d, floa
  *
  * @param net_radiation_d  Net radiation
  * @param soil_heat_flux_d  Soil heat flux
- * @param ndvi_pointer  NDVI
- * @param surf_temp_pointer  Surface temperature
- * @param d0_pointer  Zero plane displacement height_d
- * @param kb1_pointer  KB-1 stability parameter
- * @param zom_pointer  Roughness length for momentum
- * @param ustar_pointer  Ustar pointer
- * @param rah_pointer  Rah pointer
- * @param H_pointer  Sensible heat flux
+ * @param ndvi_d  NDVI
+ * @param surf_temp_d  Surface temperature
+ * @param d0_d  Zero plane displacement height_d
+ * @param kb1_d  KB-1 stability parameter
+ * @param zom_d  Roughness length for momentum
+ * @param ustar_d  Ustar pointer
+ * @param rah_d  Rah pointer
+ * @param H_d  Sensible heat flux
  * @param ndvi_max  NDVI max value
  * @param ndvi_min  NDVI min value
  */
@@ -315,18 +315,17 @@ __global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_h
  *
  * @param net_radiation_d  Net radiation
  * @param soil_heat_flux_d  Soil heat flux
- * @param ndvi_pointer  NDVI
- * @param surf_temp_pointer  Surface temperature
- * @param kb1_pointer  KB-1 stability parameter
- * @param zom_pointer  Roughness length for momentum
- * @param ustar_pointer  Ustar pointer
- * @param rah_pointer  Rah pointer
- * @param H_pointer  Sensible heat flux
- * @param ndvi_max  NDVI max value
- * @param ndvi_min  NDVI min value
+ * @param ndvi_d  NDVI
+ * @param surf_temp_d  Surface temperature
+ * @param kb1_d  KB-1 stability parameter
+ * @param zom_d  Roughness length for momentum
+ * @param ustar_d  Ustar pointer
+ * @param rah_d  Rah pointer
+ * @param H_d  Sensible heat flux
  * @param u200 U200
+ * @param stop_condition Stop condition
  */
-__global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surf_temp_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min, float u200, int *stop_condition);
+__global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surf_temp_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float u200, int *stop_condition);
 
 /**
  * @brief Filter values that are not NaN or Inf.

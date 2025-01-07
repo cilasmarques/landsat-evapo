@@ -521,7 +521,7 @@ __global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_h
     }
 }
 
-__global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surf_temp_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min, float u200, int *stop_condition)
+__global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surf_temp_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float u200, int *stop_condition)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
