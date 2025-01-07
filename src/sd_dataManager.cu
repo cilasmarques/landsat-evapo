@@ -131,15 +131,6 @@ string Products::read_data(TIFF **landsat_bands)
     begin = system_clock::now();
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    band_blue = (float *)malloc(band_bytes);
-    band_green = (float *)malloc(band_bytes);
-    band_red = (float *)malloc(band_bytes);
-    band_nir = (float *)malloc(band_bytes);
-    band_swir1 = (float *)malloc(band_bytes);
-    band_termal = (float *)malloc(band_bytes);
-    band_swir2 = (float *)malloc(band_bytes);
-    tal = (float *)malloc(band_bytes);
-
     for (int i = 0; i < INPUT_BAND_ELEV_INDEX; i++) {
         for (int line = 0; line < height_band; line++) {
             TIFF *curr_band = landsat_bands[i];
@@ -183,15 +174,6 @@ string Products::read_data(TIFF **landsat_bands)
             _TIFFfree(band_line_buff);
         }
     }
-
-    HANDLE_ERROR(cudaMalloc((void **)&(band_blue_d), band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&(band_green_d), band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&(band_red_d), band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&(band_nir_d), band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&(band_swir1_d), band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&(band_termal_d), band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&(band_swir2_d), band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&(tal_d), band_bytes));
 
     HANDLE_ERROR(cudaMemcpy(band_blue_d, band_blue, band_bytes, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpy(band_green_d, band_green, band_bytes, cudaMemcpyHostToDevice));
