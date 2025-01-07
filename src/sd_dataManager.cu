@@ -58,11 +58,7 @@ Products::Products(uint32_t width_band, uint32_t height_band)
 
     this->latent_heat_flux = (float *)malloc(band_bytes);
     this->net_radiation_24h = (float *)malloc(band_bytes);
-    this->evapotranspiration_fraction = (float *)malloc(band_bytes);
-    this->sensible_heat_flux_24h = (float *)malloc(band_bytes);
-    this->latent_heat_flux_24h = (float *)malloc(band_bytes);
     this->evapotranspiration_24h = (float *)malloc(band_bytes);
-    this->evapotranspiration = (float *)malloc(band_bytes);
 
     HANDLE_ERROR(cudaMemcpyToSymbol(width_d, &width_band, sizeof(int), 0, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpyToSymbol(height_d, &height_band, sizeof(int), 0, cudaMemcpyHostToDevice));
@@ -123,11 +119,7 @@ Products::Products(uint32_t width_band, uint32_t height_band)
 
     HANDLE_ERROR(cudaMalloc((void **)&this->latent_heat_flux_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->net_radiation_24h_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_fraction_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->sensible_heat_flux_24h_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->latent_heat_flux_24h_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_24h_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_d, band_bytes));
 };
 
 string Products::read_data(TIFF **landsat_bands)
@@ -260,11 +252,7 @@ string Products::host_data()
     HANDLE_ERROR(cudaMemcpy(sensible_heat_flux, sensible_heat_flux_d, band_bytes, cudaMemcpyDeviceToHost));
     HANDLE_ERROR(cudaMemcpy(latent_heat_flux, latent_heat_flux_d, band_bytes, cudaMemcpyDeviceToHost));
     HANDLE_ERROR(cudaMemcpy(net_radiation_24h, net_radiation_24h_d, band_bytes, cudaMemcpyDeviceToHost));
-    HANDLE_ERROR(cudaMemcpy(evapotranspiration_fraction, evapotranspiration_fraction_d, band_bytes, cudaMemcpyDeviceToHost));
-    HANDLE_ERROR(cudaMemcpy(sensible_heat_flux_24h, sensible_heat_flux_24h_d, band_bytes, cudaMemcpyDeviceToHost));
-    HANDLE_ERROR(cudaMemcpy(latent_heat_flux_24h, latent_heat_flux_24h_d, band_bytes, cudaMemcpyDeviceToHost));
     HANDLE_ERROR(cudaMemcpy(evapotranspiration_24h, evapotranspiration_24h_d, band_bytes, cudaMemcpyDeviceToHost));
-    HANDLE_ERROR(cudaMemcpy(evapotranspiration, evapotranspiration_d, band_bytes, cudaMemcpyDeviceToHost));
 
     end = system_clock::now();
     general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
@@ -300,11 +288,7 @@ string Products::save_products(string output_path)
     saveTiff(output_path + "/sensible_heat_flux.tif", sensible_heat_flux, height_band, width_band);
     saveTiff(output_path + "/latent_heat_flux.tif", latent_heat_flux, height_band, width_band);
     saveTiff(output_path + "/net_radiation_24h.tif", net_radiation_24h, height_band, width_band);
-    saveTiff(output_path + "/evapotranspiration_fraction.tif", evapotranspiration_fraction, height_band, width_band);
-    saveTiff(output_path + "/sensible_heat_flux_24h.tif", sensible_heat_flux_24h, height_band, width_band);
-    saveTiff(output_path + "/latent_heat_flux_24h.tif", latent_heat_flux_24h, height_band, width_band);
     saveTiff(output_path + "/evapotranspiration_24h.tif", evapotranspiration_24h, height_band, width_band);
-    saveTiff(output_path + "/evapotranspiration.tif", evapotranspiration, height_band, width_band);
 
     end = system_clock::now();
     general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
@@ -381,20 +365,8 @@ string Products::print_products(string output_path)
     std::cout << "==== Net Radiation 24h" << std::endl;
     printLinearPointer(net_radiation_24h, height_band, width_band);
 
-    std::cout << "==== Evapotranspiration Fraction" << std::endl;
-    printLinearPointer(evapotranspiration_fraction, height_band, width_band);
-
-    std::cout << "==== Sensible Heat Flux 24h" << std::endl;
-    printLinearPointer(sensible_heat_flux_24h, height_band, width_band);
-
-    std::cout << "==== Latent Heat Flux 24h" << std::endl;
-    printLinearPointer(latent_heat_flux_24h, height_band, width_band);
-
     std::cout << "==== Evapotranspiration 24h" << std::endl;
     printLinearPointer(evapotranspiration_24h, height_band, width_band);
-
-    std::cout << "==== Evapotranspiration" << std::endl;
-    printLinearPointer(evapotranspiration, height_band, width_band);
 
     end = system_clock::now();
     general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
@@ -455,15 +427,11 @@ void Products::close(TIFF **landsat_bands)
     free(this->ustar);
     free(this->kb1);
     free(this->aerodynamic_resistance);
-
     free(this->sensible_heat_flux);
+
     free(this->latent_heat_flux);
     free(this->net_radiation_24h);
-    free(this->evapotranspiration_fraction);
-    free(this->sensible_heat_flux_24h);
-    free(this->latent_heat_flux_24h);
     free(this->evapotranspiration_24h);
-    free(this->evapotranspiration);
 
     HANDLE_ERROR(cudaFree(this->band_blue_d));
     HANDLE_ERROR(cudaFree(this->band_green_d));
@@ -511,13 +479,9 @@ void Products::close(TIFF **landsat_bands)
     HANDLE_ERROR(cudaFree(this->kb1_d));
     HANDLE_ERROR(cudaFree(this->ustar_d));
     HANDLE_ERROR(cudaFree(this->rah_d));
-
     HANDLE_ERROR(cudaFree(this->sensible_heat_flux_d));
+
     HANDLE_ERROR(cudaFree(this->latent_heat_flux_d));
     HANDLE_ERROR(cudaFree(this->net_radiation_24h_d));
-    HANDLE_ERROR(cudaFree(this->evapotranspiration_fraction_d));
-    HANDLE_ERROR(cudaFree(this->sensible_heat_flux_24h_d));
-    HANDLE_ERROR(cudaFree(this->latent_heat_flux_24h_d));
     HANDLE_ERROR(cudaFree(this->evapotranspiration_24h_d));
-    HANDLE_ERROR(cudaFree(this->evapotranspiration_d));
 };

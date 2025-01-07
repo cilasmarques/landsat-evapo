@@ -61,7 +61,7 @@ string zom_fuction(Products products, float A_ZOM, float B_ZOM)
     if (model_method == 0)
         zom_kernel_STEEP<<<blocks_n, threads_n>>>(products.d0_d, products.pai_d, products.zom_d, A_ZOM, B_ZOM);
     else
-        zom_kernel_ASEBAL<<<blocks_n, threads_n>>>(products.ndvi_d, products.zom_d, A_ZOM, B_ZOM);
+        zom_kernel_ASEBAL<<<blocks_n, threads_n>>>(products.ndvi_d, products.albedo_d, products.zom_d, A_ZOM, B_ZOM);
     cudaEventRecord(stop);
 
     float cuda_time = 0;

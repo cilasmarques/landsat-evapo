@@ -191,11 +191,12 @@ __global__ void zom_kernel_STEEP(float *d0_d, float *pai_d, float *zom_d, float 
  * @brief  Compute the rah of the bands.
  *
  * @param ndvi_d  The NDVI.
+ * @param albedo_d  The albedo.
  * @param zom_d  The ZOM.
  * @param A_ZOM  The A_ZOM constant.
  * @param B_ZOM  The B_ZOM constant.
  */
-__global__ void zom_kernel_ASEBAL(float *ndvi_d, float *zom_d, float A_ZOM, float B_ZOM);
+__global__ void zom_kernel_ASEBAL(float *ndvi_d, float *albedo_d,  float *zom_d, float A_ZOM, float B_ZOM);
 
 /**
  * @brief  Compute the ustar of the bands.
@@ -280,51 +281,16 @@ __global__ void latent_heat_flux_kernel(float *net_radiation_d, float *soil_heat
 __global__ void net_radiation_24h_kernel(float *albedo_d, float Rs24h, float Ra24h, float *net_radiation_24h_d);
 
 /**
- * @brief  Compute the evapotranspiration fraction of the bands.
- *
+ * @brief  Compute the evapotranspiration 24h of the bands.
+ * 
+ * @param surface_temperature_d  The surface temperature.
+ * @param latent_heat_flux_d  The latent heat flux.
  * @param net_radiation_d  The net radiation.
  * @param soil_heat_d  The soil heat.
- * @param latent_heat_flux_d  The latent heat flux.
- * @param evapotranspiration_fraction_d  The evapotranspiration fraction.
- */
-__global__ void evapotranspiration_fraction_kernel(float *net_radiation_d, float *soil_heat_d, float *latent_heat_flux_d, float *evapotranspiration_fraction_d);
-
-/**
- * @brief  Compute the sensible heat flux 24h of the bands.
- *
  * @param net_radiation_24h_d  The net radiation 24h.
- * @param evapotranspiration_fraction_d  The evapotranspiration fraction.
- * @param sensible_heat_flux_24h_d  The sensible heat flux 24h.
- */
-__global__ void sensible_heat_flux_24h_kernel(float *net_radiation_24h_d, float *evapotranspiration_fraction_d, float *sensible_heat_flux_24h_d);
-
-/**
- * @brief  Compute the latent heat flux 24h of the bands.
- *
- * @param net_radiation_24h_d  The net radiation 24h.
- * @param evapotranspiration_fraction_d  The evapotranspiration fraction.
- * @param latent_heat_flux_24h_d  The latent heat flux 24h.
- */
-__global__ void latent_heat_flux_24h_kernel(float *net_radiation_24h_d, float *evapotranspiration_fraction_d, float *latent_heat_flux_24h_d);
-
-/**
- * @brief  Compute the evapotranspiration 24h of the bands.
- *
- * @param latent_heat_flux_24h_d  The latent heat flux 24h.
  * @param evapotranspiration_24h_d  The evapotranspiration 24h.
- * @param v7_max  The V7 max value.
- * @param v7_min  The V7 min value.
  */
-__global__ void evapotranspiration_24h_kernel(float *latent_heat_flux_24h_d, float *evapotranspiration_24h_d, float v7_max, float v7_min);
-
-/**
- * @brief  Compute the evapotranspiration of the bands.
- *
- * @param net_radiation_24h_d  The net radiation 24h.
- * @param evapotranspiration_fraction_d  The evapotranspiration fraction.
- * @param evapotranspiration_d  The evapotranspiration.
- */
-__global__ void evapotranspiration_kernel(float *net_radiation_24h_d, float *evapotranspiration_fraction_d, float *evapotranspiration_d);
+__global__ void evapotranspiration_24h_kernel(float *surface_temperature_d, float *latent_heat_flux_d, float *net_radiation_d, float *soil_heat_d, float *net_radiation_24h_d, float *evapotranspiration_24h_d);
 
 /**
  * @brief  Compute the rah correction cycle. (STEEP algorithm)
