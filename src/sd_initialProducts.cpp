@@ -324,8 +324,7 @@ string large_wave_radiation_surface_function(Products products)
 
     begin = system_clock::now();
     for (int i = 0; i < products.height_band * products.width_band; i++) {
-        float temperature_pixel = products.surface_temperature[i];
-        float surface_temperature_pow_4 = temperature_pixel * temperature_pixel * temperature_pixel * temperature_pixel;
+        float surface_temperature_pow_4 = pow(products.surface_temperature[i], 4);
         products.large_wave_radiation_surface[i] = products.eo_emissivity[i] * 5.67 * 1e-8 * surface_temperature_pow_4;
     }
     end = system_clock::now();
@@ -345,8 +344,7 @@ string large_wave_radiation_atmosphere_function(Products products, float tempera
 
     begin = system_clock::now();
     for (int i = 0; i < products.height_band * products.width_band; i++) {
-        float temperature_pixel = products.surface_temperature[i];
-        float surface_temperature_pow_4 = temperature_pixel * temperature_pixel * temperature_pixel * temperature_pixel;
+        float surface_temperature_pow_4 = pow(products.surface_temperature[i], 4);
         products.large_wave_radiation_surface[i] = products.eo_emissivity[i] * 5.67 * 1e-8 * surface_temperature_pow_4;
     }
     end = system_clock::now();
@@ -389,8 +387,8 @@ string soil_heat_flux_function(Products products)
     begin = system_clock::now();
     for (int i = 0; i < products.height_band * products.width_band; i++) {
         if (products.ndvi[i] >= 0) {
+            float ndvi_pixel_pow_4 = pow(products.ndvi[i], 4);
             float temperature_celcius = products.surface_temperature[i] - 273.15;
-            float ndvi_pixel_pow_4 = products.ndvi[i] * products.ndvi[i] * products.ndvi[i] * products.ndvi[i];
             products.soil_heat[i] = temperature_celcius * (0.0038 + 0.0074 * products.albedo[i]) * (1 - 0.98 * ndvi_pixel_pow_4) * products.net_radiation[i];
         } else
             products.soil_heat[i] = 0.5 * products.net_radiation[i];

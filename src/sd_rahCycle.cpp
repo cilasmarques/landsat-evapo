@@ -19,7 +19,7 @@ string d0_fuction(Products products)
     for (int i = 0; i < products.height_band * products.width_band; i++) {
         float cd1_pai_root = sqrt(CD1 * products.pai[i]);
 
-        products.d0[i] = HGHT * ((1 - (1 / cd1_pai_root)) + (pow(exp(1.0), -cd1_pai_root) / cd1_pai_root));
+        products.d0[i] = HGHT * ((1 - (1 / cd1_pai_root)) + (exp(-cd1_pai_root) / cd1_pai_root));
     }
     end = system_clock::now();
 
@@ -52,21 +52,23 @@ string kb_function(Products products, float ndvi_max, float ndvi_min)
     float soil_moisture_day_rel = 0.33;
 
     for (int i = 0; i < products.height_band * products.width_band; i++) {
-        float Re_star = (products.ustar[i] * 0.009) / visc;
-        float Ct_star = pow(pr, -0.667) * pow(Re_star, -0.5);
-        float beta = c1 - c2 * (exp((cd * -c3 * products.pai[i])));
-        float nec_terra = (cd * products.pai[i]) / (beta * beta * 2);
-
-        float kb1_fst_part = (cd * VON_KARMAN) / (4 * ct * beta * (1 - exp(nec_terra * -0.5)));
-        float kb1_sec_part = (beta * VON_KARMAN * (products.zom[i] / HGHT)) / Ct_star;
-        float kb1s = (pow(Re_star, 0.25) * 2.46) - 2;
-
         float fc = 1 - pow((products.ndvi[i] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
         float fs = 1 - fc;
 
-        float SF = sf_c + (1 / (1 + pow(exp(1.0), (sf_d - (sf_e * soil_moisture_day_rel)))));
+        float Re = (products.ustar[i] * 0.009) / visc;
+        float Ct = pow(pr, -(2/3)) * pow(Re, -(1/2));
+        float ratio = c1 - c2 * (exp(cd * -c3 * products.pai[i]));
+        float nec = (cd * products.pai[i]) / (ratio * ratio * 2);
+        float kbs = 2.46 * pow(Re, 0.25) - 2;
+    
+        float kb1_fst_part = (cd * VON_KARMAN) / (4 * ct * ratio * (1 - exp(nec * -0.5)));
+        float kb1_sec_part = pow(fc, 2) + (VON_KARMAN * ratio * (products.zom[i] / HGHT) / Ct);
+        float kb1_trd_part = pow(fc, 2) * pow(fs, 2) + kbs * pow(fs, 2);
+        float kb_ini = kb1_fst_part * kb1_sec_part * kb1_trd_part;
 
-        products.kb1[i] = ((kb1_fst_part * pow(fc, 2)) + (kb1_sec_part * pow(fc, 2) * pow(fs, 2)) + (pow(fs, 2) * kb1s)) * SF;
+        float SF = sf_c + (1 / (1 + exp(sf_d - sf_e * soil_moisture_day_rel)));
+
+        products.kb1[i] = kb_ini * SF;
     }
     end = system_clock::now();
 
@@ -95,11 +97,11 @@ string zom_fuction(Products products, float A_ZOM, float B_ZOM)
             if (gama < 3.3)
                 gama = 3.3;
 
-            products.zom[i] = (HGHT - products.d0[i]) * pow(exp(1.0), (-VON_KARMAN * gama) + PSICORR);
+            products.zom[i] = (HGHT - products.d0[i]) * exp(-VON_KARMAN * gama) + PSICORR;
         }
     } else {
         for (int i = 0; i < products.height_band * products.width_band; i++)
-            products.zom[i] = exp(A_ZOM + B_ZOM * products.ndvi[i]);
+            products.zom[i] = exp((A_ZOM * products.ndvi[i] / products.albedo[i]) + B_ZOM);
     }
     end = system_clock::now();
 
@@ -142,11 +144,10 @@ string aerodynamic_resistance_fuction(Products products)
     begin = system_clock::now();
     if (model_method == 0) {
         for (int i = 0; i < products.height_band * products.width_band; i++) {
-            float zoh_terra = products.zom[i] / pow(exp(1.0), (products.kb1[i]));
-            float temp_rah1_corr_terra = 1 / (products.ustar[i] * VON_KARMAN);
-            float temp_rah2_corr_terra = logf((10 - products.d0[i]) / products.zom[i]);
-            float temp_rah3_corr_terra = temp_rah1_corr_terra * logf(products.zom[i] / zoh_terra);
-            products.aerodynamic_resistance[i] = (temp_rah1_corr_terra * temp_rah2_corr_terra) + temp_rah3_corr_terra;
+            float rah_fst_part = 1 / (products.ustar[i] * VON_KARMAN);
+            float rah_sec_part = logf((10 - products.d0[i]) / products.zom[i]);
+            float rah_trd_part = rah_fst_part * products.kb1[i];
+            products.aerodynamic_resistance[i] = (rah_fst_part * rah_sec_part) + rah_trd_part;
         }
     } else {
         for (int i = 0; i < products.height_band * products.width_band; i++)
@@ -172,8 +173,8 @@ string rah_correction_function_blocks_STEEP(Products products, float ndvi_min, f
         int hot_pos = products.hotEndmemberPos[0] * products.width_band + products.hotEndmemberPos[1];
         int cold_pos = products.coldEndmemberPos[0] * products.width_band + products.coldEndmemberPos[1];
 
-        float rah_ini_pq_terra = products.aerodynamic_resistance[hot_pos];
-        float rah_ini_pf_terra = products.aerodynamic_resistance[cold_pos];
+        float rah_ini_hot = products.aerodynamic_resistance[hot_pos];
+        float rah_ini_cold = products.aerodynamic_resistance[cold_pos];
 
         float fc_hot = 1 - pow((products.ndvi[hot_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
         float fc_cold = 1 - pow((products.ndvi[cold_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
@@ -181,22 +182,22 @@ string rah_correction_function_blocks_STEEP(Products products, float ndvi_min, f
         float LEc_terra = 0.55 * fc_hot * (products.net_radiation[hot_pos] - products.soil_heat[hot_pos]) * 0.78;
         float LEc_terra_pf = 1.75 * fc_cold * (products.net_radiation[cold_pos] - products.soil_heat[cold_pos]) * 0.78;
 
-        float H_pf_terra = products.net_radiation[cold_pos] - products.soil_heat[cold_pos];
-        float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
+        float H_cold = products.net_radiation[cold_pos] - products.soil_heat[cold_pos];
+        float dt_cold = H_cold * rah_ini_cold / (RHO * SPECIFIC_HEAT_AIR);
 
-        float H_pq_terra = products.net_radiation[hot_pos] - products.soil_heat[hot_pos];
-        float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
+        float H_hot = products.net_radiation[hot_pos] - products.soil_heat[hot_pos];
+        float dt_hot = H_hot * rah_ini_hot / (RHO * SPECIFIC_HEAT_AIR);
 
-        float b = (dt_pq_terra - dt_pf_terra) / (products.surface_temperature[hot_pos] - products.surface_temperature[cold_pos]);
-        float a = dt_pf_terra - (b * products.surface_temperature[cold_pos]);
+        float b = (dt_hot - dt_cold) / (products.surface_temperature[hot_pos] - products.surface_temperature[cold_pos]);
+        float a = dt_cold - (b * products.surface_temperature[cold_pos]);
 
         global_a = a;
         global_b = b;
 
         for (int i = 0; i < products.height_band * products.width_band; i++) {
-            float dT_ini_terra = a + b * (products.surface_temperature[i]);
+            float dt_final = a + b * (products.surface_temperature[i]);
 
-            float sensibleHeatFlux = RHO * SPECIFIC_HEAT_AIR * (dT_ini_terra) / products.aerodynamic_resistance[i];
+            float sensibleHeatFlux = RHO * SPECIFIC_HEAT_AIR * dt_final / products.aerodynamic_resistance[i];
             float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(products.ustar[i], 3) * products.surface_temperature[i]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
 
             float DISP = products.d0[i];
@@ -214,11 +215,10 @@ string rah_correction_function_blocks_STEEP(Products products, float ndvi_min, f
 
             float ust = (VON_KARMAN * products.ustar[i]) / (logf((10 - DISP) / products.zom[i]) - psi200);
 
-            float zoh_terra = products.zom[i] / pow(exp(1.0), (products.kb1[i] + psi200));
-            float temp_rah1_corr_terra = 1 / (products.ustar[i] * VON_KARMAN);
-            float temp_rah2_corr_terra = logf((10 - DISP) / products.zom[i]) - psi2;
-            float temp_rah3_corr_terra = temp_rah1_corr_terra * logf(products.zom[i] / zoh_terra);
-            float rah = (temp_rah1_corr_terra * temp_rah2_corr_terra) + temp_rah3_corr_terra;
+            float rah_fst_part = 1 / (products.ustar[i] * VON_KARMAN);
+            float rah_sec_part = logf((10 - products.d0[i]) / products.zom[i]) - psi2;
+            float rah_trd_part = rah_fst_part * products.kb1[i];
+            float rah = (rah_fst_part * rah_sec_part) + rah_trd_part;
 
             products.ustar[i] = ust;
             products.aerodynamic_resistance[i] = rah;
@@ -246,28 +246,25 @@ string rah_correction_function_blocks_ASEBAL(Products products, float ndvi_min, 
         int hot_pos = products.hotEndmemberPos[0] * products.width_band + products.hotEndmemberPos[1];
         int cold_pos = products.coldEndmemberPos[0] * products.width_band + products.coldEndmemberPos[1];
 
-        float rah_ini_pq_terra = products.aerodynamic_resistance[hot_pos];
-        float rah_ini_pf_terra = products.aerodynamic_resistance[cold_pos];
+        float rah_ini_hot = products.aerodynamic_resistance[hot_pos];
+        float rah_ini_cold = products.aerodynamic_resistance[cold_pos];
 
-        float H_pf_terra = products.net_radiation[cold_pos] - products.soil_heat[cold_pos];
-        float dt_pf_terra = H_pf_terra * rah_ini_pf_terra / (RHO * SPECIFIC_HEAT_AIR);
+        float H_cold = products.net_radiation[cold_pos] - products.soil_heat[cold_pos];
+        float dt_cold = H_cold * rah_ini_cold / (RHO * SPECIFIC_HEAT_AIR);
 
-        float H_pq_terra = products.net_radiation[hot_pos] - products.soil_heat[hot_pos];
-        float dt_pq_terra = H_pq_terra * rah_ini_pq_terra / (RHO * SPECIFIC_HEAT_AIR);
+        float H_hot = products.net_radiation[hot_pos] - products.soil_heat[hot_pos];
+        float dt_hot = H_hot * rah_ini_hot / (RHO * SPECIFIC_HEAT_AIR);
 
-        int posh = 8 * products.width_band + 22;
-        int posc = 13 * products.width_band + 42;
-
-        float b = (dt_pq_terra - dt_pf_terra) / (products.surface_temperature[hot_pos] - products.surface_temperature[cold_pos]);
-        float a = dt_pf_terra - (b * (products.surface_temperature[cold_pos]));
+        float b = (dt_hot - dt_cold) / (products.surface_temperature[hot_pos] - products.surface_temperature[cold_pos]);
+        float a = dt_cold - (b * (products.surface_temperature[cold_pos]));
 
         global_a = a;
         global_b = b;
 
         for (int i = 0; i < products.height_band * products.width_band; i++) {
-            float dT_ini_terra = a + b * (products.surface_temperature[i]);
+            float dt_final = a + b * products.surface_temperature[i];
 
-            float sensibleHeatFlux = RHO * SPECIFIC_HEAT_AIR * (dT_ini_terra) / products.aerodynamic_resistance[i];
+            float sensibleHeatFlux = RHO * SPECIFIC_HEAT_AIR * dt_final / products.aerodynamic_resistance[i];
             float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(products.ustar[i], 3) * products.surface_temperature[i]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
 
             float x1 = pow((1 - (16 * 0.1) / L), 0.25);
@@ -293,7 +290,7 @@ string rah_correction_function_blocks_ASEBAL(Products products, float ndvi_min, 
             products.sensible_heat_flux[i] = sensibleHeatFlux;
         }
 
-        if ((i > 0) && (fabsf(1 - (rah_ini_pq_terra / products.aerodynamic_resistance[hot_pos])) < 0.05))
+        if ((i > 0) && (fabsf(1 - (rah_ini_hot / products.aerodynamic_resistance[hot_pos])) < 0.05))
             break;
         else
             i++;
