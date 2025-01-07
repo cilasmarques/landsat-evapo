@@ -104,7 +104,7 @@ __global__ void kb_kernel(float *zom_d, float *ustar_d, float *pai_d, float *kb1
         float fs = 1 - fc;
 
         float Re = (ustar_d[pos] * 0.009) / visc;
-        float Ct = pow(pr, -(2/3)) * pow(Re, -(1/2));
+        float Ct = pow(pr, -0.667) * pow(Re, -0.5);
         float ratio = c1 - c2 * (exp(cd * -c3 * pai_d[pos]));
         float nec = (cd * pai_d[pos]) / (ratio * ratio * 2);
         float kbs = 2.46 * pow(Re, 0.25) - 2;
