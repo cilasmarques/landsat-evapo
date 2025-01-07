@@ -125,21 +125,24 @@ Products::Products(uint32_t width_band, uint32_t height_band)
 
     // === Tensor
     this->only1 = (float *)malloc(band_bytes);
-    HANDLE_ERROR(cudaMalloc((void **)&this->only1_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->tensor_aux1_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->tensor_aux2_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->tensor_aux3_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->tensor_aux4_d, band_bytes));
-
-    HANDLE_ERROR(cudaMalloc((void **)&this->beta_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->nec_terra_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->kb1_fst_part_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->kb1_sec_part_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->kb1s_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->fc_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->fs_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->fspow_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->fcpow_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->only1_d, band_bytes));    
+    HANDLE_ERROR(cudaMalloc((void **)&this->tensor_aux1_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->tensor_aux2_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->fc_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->fs_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->fcpow_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->fspow_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->ratio_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->nec_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->ct_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->re_d, band_bytes));     
+    HANDLE_ERROR(cudaMalloc((void **)&this->kbs_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->kb1_fst_part_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->kb1_sec_part_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->kb1_trd_part_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->rah_fst_part_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->rah_sec_part_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->rah_trd_part_d, band_bytes)); 
 };
 
 string Products::read_data(TIFF **landsat_bands)
