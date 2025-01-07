@@ -38,8 +38,8 @@ for i in $(seq -f "%02g" 1 120); do
       kill "$pid"
   fi
 
-  THREADS_NUM=`echo "$@" | grep -oP '(?<=-threads=)[0-9]+'`
-  ANALYSIS_OUTPUT_PATH=$OUTPUT_DATA_PATH/analysis-$THREADS_NUM
+  METHOD_NUM=`echo "$@" | grep -oP '(?<=-meth=)[0-9]+'`
+  ANALYSIS_OUTPUT_PATH=$OUTPUT_DATA_PATH/kernels-$METHOD_NUM
   
   mkdir -p $ANALYSIS_OUTPUT_PATH/experiment${i}
   mv $OUTPUT_DATA_PATH/*.csv $ANALYSIS_OUTPUT_PATH/experiment${i}

@@ -86,10 +86,10 @@ int main(int argc, char *argv[])
     time_output << products.compute_H_ET(products, station, mtl);
 
     // save products
-    // time_output << products.host_data();
-    // time_output << products.save_products(output_folder);
+    time_output << products.host_data();
+    time_output << products.save_products(output_folder);
     // time_output << products.print_products(output_folder);
-    // products.close(landsat.landsat_bands);
+    products.close(landsat.landsat_bands);
 
     end = system_clock::now();
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
