@@ -232,7 +232,7 @@ string rah_correction_function_blocks_STEEP(Products products, float ndvi_min, f
     return "SERIAL,RAH_CYCLE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
-string rah_correction_function_blocks_ASEBAL(Products products, float ndvi_min, float ndvi_max, float u200)
+string rah_correction_function_blocks_ASEBAL(Products products, float u200)
 {
     system_clock::time_point begin, end;
     int64_t initial_time, final_time;
@@ -358,7 +358,7 @@ string Products::converge_rah_cycle(Products products, Station station)
         result += zom_fuction(products, station.A_ZOM, station.B_ZOM);
         result += ustar_fuction(products, u200);
         result += aerodynamic_resistance_fuction(products);
-        result += rah_correction_function_blocks_ASEBAL(products, ndvi_min, ndvi_max, u200);
+        result += rah_correction_function_blocks_ASEBAL(products, u200);
         result += sensible_heat_flux_function(products);
     }
     end = system_clock::now();
