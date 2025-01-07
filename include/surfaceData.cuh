@@ -33,7 +33,6 @@ struct Endmember {
 struct CompareEndmemberTemperature {
     __host__ __device__ bool operator()(Endmember a, Endmember b)
     {
-        // Assuming Endmember has a member variable 'temperature'
         bool result = a.temperature < b.temperature;
 
         if (a.temperature == b.temperature)
@@ -202,7 +201,10 @@ struct Products {
     /**
      * @brief Compute the initial products.
      *
+     * @param  products: Products struct.
      * @param  station: Station struct.
+     * @param  mtl: MTL struct.
+     * 
      * @return string with the time spent.
      */
     string compute_Rn_G(Products products, Station station, MTL mtl);
@@ -211,6 +213,7 @@ struct Products {
      * @brief Select the cold and hot endmembers
      *
      * @param  products: Products struct.
+     * 
      * @return string with the time spent.
      */
     string select_endmembers(Products products);
@@ -218,8 +221,8 @@ struct Products {
     /**
      * @brief make the rah cycle converge
      *
+     * @param  products: Products struct.
      * @param  station: Station struct.
-     * @param  model_method: Method to converge the rah cycle.
      *
      * @return string with the time spent.
      */
@@ -228,7 +231,10 @@ struct Products {
     /**
      * @brief Compute the final products.
      *
+     * @param  products: Products struct.
      * @param  station: Station struct.
+     * @param  mtl: MTL struct.
+     * 
      * @return string with the time spent.
      */
     string compute_H_ET(Products products, Station station, MTL mtl);

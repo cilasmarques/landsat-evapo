@@ -82,7 +82,7 @@ __global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, f
  *
  * @param lai_d  The LAI.
  * @param ndvi_d  The NDVI.
- * @param env_d  The ENV.
+ * @param enb_d  The ENB.
  */
 __global__ void enb_kernel(float *lai_d, float *ndvi_d, float *enb_d);
 
@@ -139,7 +139,7 @@ __global__ void large_wave_radiation_surface_kernel(float *surface_temperature_d
  *
  * @param ea_d  The EA.
  * @param large_wave_radiation_atmosphere_d  The large wave radiation atmosphere.
- * @param temperature  The temperature.
+ * @param temperature  The surface temperature.
  */
 __global__ void large_wave_radiation_atmosphere_kernel(float *ea_d, float *large_wave_radiation_atmosphere_d, float temperature);
 
@@ -165,6 +165,59 @@ __global__ void net_radiation_kernel(float *short_wave_radiation_d, float *albed
  * @param soil_heat_d  The soil heat.
  */
 __global__ void soil_heat_kernel(float *ndvi_d, float *albedo_d, float *surface_temperature_d, float *net_radiation_d, float *soil_heat_d);
+
+/**
+ * @brief Filter values that are not NaN or Inf.
+ *
+ * @param target The target array to filter.
+ * @param filtered The filtered array.
+ * @param pos The position of the filtered array.
+ */
+__global__ void filter_valid_values(const float *target, float *filtered, int *pos);
+
+/**
+ * @brief Process the pixels of the target arrays and store the candidates in the hot and cold arrays.
+ *
+ * @param hotCandidates_d The hot candidates array.
+ * @param coldCandidates_d The cold candidates array.
+ * @param indexes_d The indexes of the hot and cold arrays.
+ * @param ndvi_d The NDVI array.
+ * @param surface_temperature_d The surface temperature array.
+ * @param albedo_d The albedo array.
+ * @param net_radiation_d The net radiation array.
+ * @param soil_heat_d The soil heat array.
+ * @param ho_d The ho array.
+ * @param ndviQuartileLow The NDVI low quartile.
+ * @param ndviQuartileHigh The NDVI high quartile.
+ * @param tsQuartileLow The surface temperature low quartile.
+ * @param tsQuartileMid The surface temperature mid quartile.
+ * @param tsQuartileHigh The surface temperature high quartile.
+ * @param albedoQuartileLow The albedo low quartile.
+ * @param albedoQuartileMid The albedo mid quartile.
+ * @param albedoQuartileHigh The albedo high quartile.
+ */
+__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surface_temperature_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh);
+
+/**
+ * @brief Process the pixels of the target arrays and store the candidates in the hot and cold arrays.
+ *
+ * @param hotCandidates_d The hot candidates array.
+ * @param coldCandidates_d The cold candidates array.
+ * @param indexes_d The indexes of the hot and cold arrays.
+ * @param ndvi_d The NDVI array.
+ * @param surface_temperature_d The surface temperature array.
+ * @param albedo_d The albedo array.
+ * @param net_radiation_d The net radiation array.
+ * @param soil_heat_d The soil heat array.
+ * @param ho_d The ho array.
+ * @param ndviHOTQuartile The NDVI hot quartile.
+ * @param ndviCOLDQuartile The NDVI cold quartile.
+ * @param tsHOTQuartile The surface temperature hot quartile.
+ * @param tsCOLDQuartile The surface temperature cold quartile.
+ * @param albedoHOTQuartile The albedo hot quartile.
+ * @param albedoCOLDQuartile The albedo cold quartile.
+ */
+__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surface_temperature_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile);
 
 /**
  * @brief  Compute the zero plane displacement height_d of the bands.
@@ -213,7 +266,7 @@ __global__ void ustar_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, fl
  *
  * @param zom_d  The ZOM.
  * @param ustar_d  The USTAR.
- * @param u10  The U10 constant.
+ * @param u200  The U200 constant.
  */
 __global__ void ustar_kernel_ASEBAL(float *zom_d, float *ustar_d, float u200);
 
@@ -248,6 +301,41 @@ __global__ void aerodynamic_resistance_kernel_STEEP(float *zom_d, float *d0_d, f
  * @param rah_d  The RAH.
  */
 __global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_d);
+
+/**
+ * @brief  Compute the rah correction cycle. (STEEP algorithm)
+ *
+ * @param net_radiation_d  Net radiation
+ * @param soil_heat_flux_d  Soil heat flux
+ * @param ndvi_d  NDVI
+ * @param surface_temperature_d  Surface temperature
+ * @param d0_d  Zero plane displacement height_d
+ * @param kb1_d  KB-1 stability parameter
+ * @param zom_d  Roughness length for momentum
+ * @param ustar_d  Ustar pointer
+ * @param rah_d  Rah pointer
+ * @param H_d  Sensible heat flux
+ * @param ndvi_max  NDVI max value
+ * @param ndvi_min  NDVI min value
+ */
+__global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surface_temperature_d, float *d0_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min);
+
+/**
+ * @brief  Compute the rah correction cycle. (STEEP algorithm)
+ *
+ * @param net_radiation_d  Net radiation
+ * @param soil_heat_flux_d  Soil heat flux
+ * @param ndvi_d  NDVI
+ * @param surface_temperature_d  Surface temperature
+ * @param kb1_d  KB-1 stability parameter
+ * @param zom_d  Roughness length for momentum
+ * @param ustar_d  Ustar pointer
+ * @param rah_d  Rah pointer
+ * @param H_d  Sensible heat flux
+ * @param u200 U200
+ * @param stop_condition Stop condition
+ */
+__global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surface_temperature_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float u200, int *stop_condition);
 
 /**
  * @brief  Compute the sensible heat flux of the bands.
@@ -291,91 +379,3 @@ __global__ void net_radiation_24h_kernel(float *albedo_d, float Rs24h, float Ra2
  * @param evapotranspiration_24h_d  The evapotranspiration 24h.
  */
 __global__ void evapotranspiration_24h_kernel(float *surface_temperature_d, float *latent_heat_flux_d, float *net_radiation_d, float *soil_heat_d, float *net_radiation_24h_d, float *evapotranspiration_24h_d);
-
-/**
- * @brief  Compute the rah correction cycle. (STEEP algorithm)
- *
- * @param net_radiation_d  Net radiation
- * @param soil_heat_flux_d  Soil heat flux
- * @param ndvi_d  NDVI
- * @param surf_temp_d  Surface temperature
- * @param d0_d  Zero plane displacement height_d
- * @param kb1_d  KB-1 stability parameter
- * @param zom_d  Roughness length for momentum
- * @param ustar_d  Ustar pointer
- * @param rah_d  Rah pointer
- * @param H_d  Sensible heat flux
- * @param ndvi_max  NDVI max value
- * @param ndvi_min  NDVI min value
- */
-__global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surf_temp_d, float *d0_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min);
-
-/**
- * @brief  Compute the rah correction cycle. (STEEP algorithm)
- *
- * @param net_radiation_d  Net radiation
- * @param soil_heat_flux_d  Soil heat flux
- * @param ndvi_d  NDVI
- * @param surf_temp_d  Surface temperature
- * @param kb1_d  KB-1 stability parameter
- * @param zom_d  Roughness length for momentum
- * @param ustar_d  Ustar pointer
- * @param rah_d  Rah pointer
- * @param H_d  Sensible heat flux
- * @param u200 U200
- * @param stop_condition Stop condition
- */
-__global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surf_temp_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float u200, int *stop_condition);
-
-/**
- * @brief Filter values that are not NaN or Inf.
- *
- * @param target The target array to filter.
- * @param filtered The filtered array.
- * @param pos The position of the filtered array.
- */
-__global__ void filter_valid_values(const float *target, float *filtered, int *pos);
-
-/**
- * @brief Process the pixels of the target arrays and store the candidates in the hot and cold arrays.
- *
- * @param hotCandidates The hot candidates array.
- * @param coldCandidates The cold candidates array.
- * @param indexes_d The indexes of the hot and cold arrays.
- * @param ndvi The NDVI array.
- * @param surface_temperature The surface temperature array.
- * @param albedo The albedo array.
- * @param net_radiation The net radiation array.
- * @param soil_heat The soil heat array.
- * @param ho The ho array.
- * @param ndviQuartileLow The NDVI low quartile.
- * @param ndviQuartileHigh The NDVI high quartile.
- * @param tsQuartileLow The surface temperature low quartile.
- * @param tsQuartileMid The surface temperature mid quartile.
- * @param tsQuartileHigh The surface temperature high quartile.
- * @param albedoQuartileLow The albedo low quartile.
- * @param albedoQuartileMid The albedo mid quartile.
- * @param albedoQuartileHigh The albedo high quartile.
- */
-__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surf_temp_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh);
-
-/**
- * @brief Process the pixels of the target arrays and store the candidates in the hot and cold arrays.
- *
- * @param hotCandidates The hot candidates array.
- * @param coldCandidates The cold candidates array.
- * @param indexes_d The indexes of the hot and cold arrays.
- * @param ndvi The NDVI array.
- * @param surface_temperature The surface temperature array.
- * @param albedo The albedo array.
- * @param net_radiation The net radiation array.
- * @param soil_heat The soil heat array.
- * @param ho The ho array.
- * @param ndvi1stQuartile The NDVI 1st quartile.
- * @param ndvi4stQuartile The NDVI 4st quartile.
- * @param ts1stQuartile The surface temperature 1st quartile.
- * @param ts3rdQuartile The surface temperature 3rd quartile.
- * @param albedo2ndQuartile The albedo 2nd quartile.
- * @param albedo3rdQuartile The albedo 3rd quartile.
- */
-__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surf_temp_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile);

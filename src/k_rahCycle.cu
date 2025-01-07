@@ -148,7 +148,7 @@ __global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_
     }
 }
 
-__global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surf_temp_d, float *d0_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min)
+__global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surface_temperature_d, float *d0_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -175,16 +175,16 @@ __global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_h
         float H_hot = net_radiation_d[hot_pos] - soil_heat_flux_d[hot_pos] - LE_cold;
         float dt_hot = H_hot * rah_ini_hot / (RHO * SPECIFIC_HEAT_AIR);
 
-        float b = (dt_hot - dt_cold) / (surf_temp_d[hot_pos] - surf_temp_d[cold_pos]);
-        float a = dt_cold - (b * surf_temp_d[cold_pos]);
+        float b = (dt_hot - dt_cold) / (surface_temperature_d[hot_pos] - surface_temperature_d[cold_pos]);
+        float a = dt_cold - (b * surface_temperature_d[cold_pos]);
 
         b_d = b;
         a_d = a;
 
-        float dt_final = a + (b * surf_temp_d[pos]);
+        float dt_final = a + (b * surface_temperature_d[pos]);
 
         float sensibleHeatFlux = RHO * SPECIFIC_HEAT_AIR * (dt_final) / rah_d[pos];
-        float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_d[pos], 3) * surf_temp_d[pos]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
+        float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_d[pos], 3) * surface_temperature_d[pos]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
 
         float DISP = d0_d[pos];
         float y2 = pow((1 - (16 * (10 - d0_d[pos])) / L), 0.25);
@@ -212,7 +212,7 @@ __global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_h
     }
 }
 
-__global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surf_temp_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float u200, int *stop_condition)
+__global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surface_temperature_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float u200, int *stop_condition)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -233,16 +233,16 @@ __global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_
         float H_hot = net_radiation_d[hot_pos] - soil_heat_flux_d[hot_pos];
         float dt_hot = H_hot * rah_ini_hot / (RHO * SPECIFIC_HEAT_AIR);
 
-        float b = (dt_hot - dt_cold) / (surf_temp_d[hot_pos] - surf_temp_d[cold_pos]);
-        float a = dt_cold - (b * surf_temp_d[cold_pos]);
+        float b = (dt_hot - dt_cold) / (surface_temperature_d[hot_pos] - surface_temperature_d[cold_pos]);
+        float a = dt_cold - (b * surface_temperature_d[cold_pos]);
 
         b_d = b;
         a_d = a;
 
-        float dt_final = a + b * (surf_temp_d[pos]);
+        float dt_final = a + b * (surface_temperature_d[pos]);
 
         float sensibleHeatFlux = RHO * SPECIFIC_HEAT_AIR * (dt_final) / rah_d[pos];
-        float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_d[pos], 3) * surf_temp_d[pos]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
+        float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_d[pos], 3) * surface_temperature_d[pos]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
 
         float x1 = pow((1 - (16 * 0.1) / L), 0.25);
         float x2 = pow((1 - (16 * 2) / L), 0.25);

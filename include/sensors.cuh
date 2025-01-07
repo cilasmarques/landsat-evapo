@@ -79,8 +79,6 @@ struct Landsat {
     /**
      * @brief  Constructor.
      * @param  bands_paths: Paths to the bands.
-     * @param  tal_path: Path to the TAL file.
-     * @param  land_cover_path: Path to the land cover file.
      */
     Landsat(string bands_paths[]);
 };
