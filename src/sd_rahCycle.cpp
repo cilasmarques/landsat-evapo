@@ -179,13 +179,13 @@ string rah_correction_function_blocks_STEEP(Products products, float ndvi_min, f
         float fc_hot = 1 - pow((products.ndvi[hot_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
         float fc_cold = 1 - pow((products.ndvi[cold_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
 
-        float LEc_terra = 0.55 * fc_hot * (products.net_radiation[hot_pos] - products.soil_heat[hot_pos]) * 0.78;
-        float LEc_terra_pf = 1.75 * fc_cold * (products.net_radiation[cold_pos] - products.soil_heat[cold_pos]) * 0.78;
+        float LE_hot = 0.55 * fc_hot * (products.net_radiation[hot_pos] - products.soil_heat[hot_pos]) * 0.78;
+        float LE_cold = 1.75 * fc_cold * (products.net_radiation[cold_pos] - products.soil_heat[cold_pos]) * 0.78;
 
-        float H_cold = products.net_radiation[cold_pos] - products.soil_heat[cold_pos];
+        float H_cold = products.net_radiation[cold_pos] - products.soil_heat[cold_pos] - LE_hot;
         float dt_cold = H_cold * rah_ini_cold / (RHO * SPECIFIC_HEAT_AIR);
 
-        float H_hot = products.net_radiation[hot_pos] - products.soil_heat[hot_pos];
+        float H_hot = products.net_radiation[hot_pos] - products.soil_heat[hot_pos] - LE_cold;
         float dt_hot = H_hot * rah_ini_hot / (RHO * SPECIFIC_HEAT_AIR);
 
         float b = (dt_hot - dt_cold) / (products.surface_temperature[hot_pos] - products.surface_temperature[cold_pos]);
