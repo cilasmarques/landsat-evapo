@@ -3,20 +3,6 @@
 __shared__ float a_d;
 __shared__ float b_d;
 
-__global__ void d0_kernel(float *pai_d, float *d0_d, float CD1, float HGHT)
-{
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
-
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
-        float cd1_pai_root = sqrt(CD1 * pai_d[pos]);
-
-        d0_d[pos] = HGHT * ((1 - (1 / cd1_pai_root)) + (pow(exp(1.0), -cd1_pai_root) / cd1_pai_root));
-    }
-}
-
 __global__ void ustar_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, float u10)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -38,113 +24,6 @@ __global__ void ustar_kernel_ASEBAL(float *zom_d, float *ustar_d, float u200)
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
         ustar_d[pos] = (u200 * VON_KARMAN) / logf(200 / zom_d[pos]);
-    }
-}
-
-__global__ void zom_kernel_STEEP(float *d0_d, float *pai_d, float *zom_d, float A_ZOM, float B_ZOM)
-{
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
-
-    float HGHT = 4;
-    float CD = 0.01;
-    float CR = 0.35;
-    float PSICORR = 0.2;
-
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
-
-        float gama = pow((CD + CR * (pai_d[pos] / 2)), -0.5);
-        if (gama < 3.3)
-            gama = 3.3;
-
-        zom_d[pos] = (HGHT - d0_d[pos]) * exp(-VON_KARMAN * gama) + PSICORR;
-    }
-}
-
-__global__ void zom_kernel_ASEBAL(float *ndvi_d, float *albedo_d, float *zom_d, float A_ZOM, float B_ZOM)
-{
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
-
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
-
-        zom_d[pos] = exp((A_ZOM * ndvi_d[pos] / albedo_d[pos]) + B_ZOM);
-    }
-}
-
-__global__ void kb_kernel(float *zom_d, float *ustar_d, float *pai_d, float *kb1_d, float *ndvi_d, float ndvi_max, float ndvi_min)
-{
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
-
-    float HGHT = 4;
-
-    float VON_KARMAN = 0.41;
-    float visc = 0.00001461;
-    float pr = 0.71;
-    float c1 = 0.320;
-    float c2 = 0.264;
-    float c3 = 15.1;
-    float cd = 0.2;
-    float ct = 0.01;
-    float sf_c = 0.3;
-    float sf_d = 2.5;
-    float sf_e = 4.0;
-    float soil_moisture_day_rel = 0.33;
-
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
-
-        float fc = 1 - pow((ndvi_d[pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
-        float fs = 1 - fc;
-
-        float Re = (ustar_d[pos] * 0.009) / visc;
-        float Ct = pow(pr, -(2/3)) * pow(Re, -(1/2));
-        float ratio = c1 - c2 * (exp(cd * -c3 * pai_d[pos]));
-        float nec = (cd * pai_d[pos]) / (ratio * ratio * 2);
-        float kbs = 2.46 * pow(Re, 0.25) - 2;
-    
-        float kb1_fst_part = (cd * VON_KARMAN) / (4 * ct * ratio * (1 - exp(nec * -0.5)));
-        float kb1_sec_part = pow(fc, 2) + (VON_KARMAN * ratio * (zom_d[pos] / HGHT) / Ct);
-        float kb1_trd_part = pow(fc, 2) * pow(fs, 2) + kbs * pow(fs, 2);
-        float kb_ini = kb1_fst_part * kb1_sec_part * kb1_trd_part;
-
-        float SF = sf_c + (1 / (1 + exp(sf_d - sf_e * soil_moisture_day_rel)));
-
-        kb1_d[pos] = kb_ini * SF;
-    }
-}
-
-__global__ void aerodynamic_resistance_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, float *kb1_d, float *rah_d)
-{
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
-
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
-
-        float rah_fst_part = 1 / (ustar_d[pos] * VON_KARMAN);
-        float rah_sec_part = logf((10 - d0_d[pos]) / zom_d[pos]);
-        float rah_trd_part = rah_fst_part * kb1_d[pos];
-        rah_d[pos] = (rah_fst_part * rah_sec_part) + rah_trd_part;
-    }
-}
-
-__global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_d)
-{
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
-
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
-        rah_d[pos] = logf(2.0 / 0.1) / (ustar_d[pos] * VON_KARMAN);
     }
 }
 

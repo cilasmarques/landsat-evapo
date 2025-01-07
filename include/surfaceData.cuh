@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sensors.cuh"
+#include "tensor.cuh"
 
 /**
  * @brief  Struct representing a hot or cold pixel candidate.
@@ -171,6 +172,13 @@ struct Products {
     float *evapotranspiration_24h_d;
     float *evapotranspiration_d;
 
+    float *only1, *only1_d;
+    float *tensor_aux1_d;
+    float *fc_d, *fs_d, *fcpow_d, *fspow_d;
+    float *ratio_d, *nec_d, *ct_d, *re_d, *kbs_d; 
+    float *kb1_fst_part_d, *kb1_sec_part_d, *kb1_trd_part_d;
+    float *rah_fst_part_d, *rah_sec_part_d, *rah_trd_part_d;
+
     /**
      * @brief  Constructor.
      */
@@ -204,10 +212,11 @@ struct Products {
      * @param  products: Products struct.
      * @param  station: Station struct.
      * @param  mtl: MTL struct.
+     * @param  tensors: Tensor struct.
      * 
      * @return string with the time spent.
      */
-    string compute_Rn_G(Products products, Station station, MTL mtl);
+    string compute_Rn_G(Products products, Station station, MTL mtl, Tensor tensors);
 
     /**
      * @brief Select the cold and hot endmembers
@@ -223,10 +232,11 @@ struct Products {
      *
      * @param  products: Products struct.
      * @param  station: Station struct.
+     * @param  tensors: Tensor struct.
      *
      * @return string with the time spent.
      */
-    string converge_rah_cycle(Products products, Station station);
+    string converge_rah_cycle(Products products, Station station, Tensor tensors);
 
     /**
      * @brief Compute the final products.
@@ -234,10 +244,11 @@ struct Products {
      * @param  products: Products struct.
      * @param  station: Station struct.
      * @param  mtl: MTL struct.
+     * @param  tensors: Tensor struct.
      * 
      * @return string with the time spent.
      */
-    string compute_H_ET(Products products, Station station, MTL mtl);
+    string compute_H_ET(Products products, Station station, MTL mtl, Tensor tensors);
 
     /**
      * @brief Save the products.

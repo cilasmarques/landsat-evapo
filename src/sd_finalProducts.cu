@@ -51,7 +51,7 @@ string net_radiation_24h_function(Products products, Station station, MTL mtl)
     return "KERNELS,NET_RADIATION_24H," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string evapotranspiration_24h_function(Products products, Station station)
+string evapotranspiration_24h_function(Products products, Tensor tensors, Station station)
 {
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;
@@ -61,7 +61,28 @@ string evapotranspiration_24h_function(Products products, Station station)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    evapotranspiration_24h_kernel<<<blocks_n, threads_n>>>(products.surface_temperature_d, products.latent_heat_flux_d, products.net_radiation_d, products.soil_heat_d, products.net_radiation_24h_d, products.evapotranspiration_24h_d);
+    float pos2501 = 2.501;
+    float neg00236 = -0.0236;
+    float pos86400 = 86400;
+    float pow10 = pow(10, 6);
+    float neg1 = -1;
+    float pos1 = 1;
+    float neg27315 = -273.15;
+
+    // (86400 / ((2.501 - 0.0236 * temperature_celcius) * pow(10, 6)))
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.surface_temperature_d, (void *)&neg27315, products.only1_d, products.tensor_aux1_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos2501, products.only1_d, (void *)&neg00236, products.tensor_aux1_d, products.tensor_aux1_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_id, (void *)&pow10, products.tensor_aux1_d, products.tensor_aux1_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos86400, products.only1_d, (void *)&pos1, products.tensor_aux1_d, products.tensor_aux1_d, tensors.stream));
+
+    // (latent_heat_flux_d[pos] / (net_radiation_d[pos] - soil_heat_d[pos]))
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.net_radiation_d, (void *)&neg1, products.soil_heat_d, products.evapotranspiration_24h_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos1, products.latent_heat_flux_d, (void *)&pos1, products.evapotranspiration_24h_d, products.evapotranspiration_24h_d, tensors.stream));
+
+    // evapotranspiration_24h_d[pos] = (86400 / ((2.501 - 0.0236 * temperature_celcius) * pow(10, 6))) * (latent_heat_flux_d[pos] / (net_radiation_d[pos] - soil_heat_d[pos])) * net_radiation_24h_d[pos];
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, products.tensor_aux1_d, (void *)&pos1, products.evapotranspiration_24h_d, products.evapotranspiration_24h_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, products.evapotranspiration_24h_d, (void *)&pos1, products.net_radiation_24h_d, products.evapotranspiration_24h_d, tensors.stream));
+    
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -72,7 +93,7 @@ string evapotranspiration_24h_function(Products products, Station station)
     return "KERNELS,EVAPOTRANSPIRATION_24H," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::compute_H_ET(Products products, Station station, MTL mtl)
+string Products::compute_H_ET(Products products, Station station, MTL mtl, Tensor tensors)
 {
     string result = "";
     int64_t initial_time, final_time;
@@ -85,7 +106,7 @@ string Products::compute_H_ET(Products products, Station station, MTL mtl)
     cudaEventRecord(start);
     result += latent_heat_flux_function(products);
     result += net_radiation_24h_function(products, station, mtl);
-    result += evapotranspiration_24h_function(products, station);
+    result += evapotranspiration_24h_function(products, tensors, station);
     cudaEventRecord(stop);
 
     float cuda_time = 0;

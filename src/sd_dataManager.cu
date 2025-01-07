@@ -120,6 +120,26 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMalloc((void **)&this->latent_heat_flux_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->net_radiation_24h_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_24h_d, band_bytes));
+
+    // Tensors
+    this->only1 = (float *)malloc(band_bytes);
+    HANDLE_ERROR(cudaMalloc((void **)&this->only1_d, band_bytes));    
+    HANDLE_ERROR(cudaMalloc((void **)&this->tensor_aux1_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->fc_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->fs_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->fcpow_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->fspow_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->ratio_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->nec_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->ct_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->re_d, band_bytes));     
+    HANDLE_ERROR(cudaMalloc((void **)&this->kbs_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->kb1_fst_part_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->kb1_sec_part_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->kb1_trd_part_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->rah_fst_part_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->rah_sec_part_d, band_bytes)); 
+    HANDLE_ERROR(cudaMalloc((void **)&this->rah_trd_part_d, band_bytes)); 
 };
 
 string Products::read_data(TIFF **landsat_bands)
@@ -140,6 +160,7 @@ string Products::read_data(TIFF **landsat_bands)
 
             for (int col = 0; col < width_band; col++) {
                 float value = 0;
+                this->only1[line * width_band + col] = 1;
                 memcpy(&value, static_cast<unsigned char *>(band_line_buff) + col * curr_band_line_size, curr_band_line_size);
 
                 switch (i) {
@@ -183,6 +204,7 @@ string Products::read_data(TIFF **landsat_bands)
     HANDLE_ERROR(cudaMemcpy(band_termal_d, band_termal, band_bytes, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpy(band_swir2_d, band_swir2, band_bytes, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpy(tal_d, tal, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(only1_d, only1, band_bytes, cudaMemcpyHostToDevice));
 
     end = system_clock::now();
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();

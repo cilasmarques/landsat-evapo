@@ -149,18 +149,6 @@ __global__ void eo_kernel(float *lai_d, float *ndvi_d, float *eo_d)
     }
 }
 
-__global__ void ea_kernel(float *tal_d, float *ea_d)
-{
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
-
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
-        ea_d[pos] = 0.85 * pow((-1 * logf(tal_d[pos])), 0.09);
-    }
-}
-
 __global__ void surface_temperature_kernel(float *enb_d, float *radiance_termal_d, float *surface_temperature_d, float k1, float k2)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -199,19 +187,6 @@ __global__ void large_wave_radiation_surface_kernel(float *surface_temperature_d
         float temperature_pixel = surface_temperature_d[pos];
         float surface_temperature_pow_4 = temperature_pixel * temperature_pixel * temperature_pixel * temperature_pixel;
         large_wave_radiation_surface_d[pos] = eo_d[pos] * 5.67 * 1e-8 * surface_temperature_pow_4;
-    }
-}
-
-__global__ void large_wave_radiation_atmosphere_kernel(float *ea_d, float *large_wave_radiation_atmosphere_d, float temperature)
-{
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
-
-    float temperature_kelvin_pow_4 = temperature * temperature * temperature * temperature;
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
-        large_wave_radiation_atmosphere_d[pos] = ea_d[pos] * 5.67 * 1e-8 * temperature_kelvin_pow_4;
     }
 }
 

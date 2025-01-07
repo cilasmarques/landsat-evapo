@@ -186,7 +186,7 @@ string eo_emissivity_function(Products products)
     return "KERNELS,EO_EMISSIVITY," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string ea_emissivity_function(Products products)
+string ea_emissivity_function(Products products, Tensor tensors)
 {
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;
@@ -196,7 +196,13 @@ string ea_emissivity_function(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    ea_kernel<<<blocks_n, threads_n>>>(products.tal_d, products.ea_d);
+    float pos1 = 1;
+    float pos085 = 0.85;
+    float pos009 = 0.09;
+    float neg1 = -1;
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_log_mul, (void *)&pos1, products.only1_d, (void *)&neg1, products.tal_d, products.ea_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_log_mul, (void *)&pos009, products.only1_d, (void *)&pos1, products.ea_d, products.ea_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_exp_mul, (void *)&pos085, products.only1_d, (void *)&pos1, products.ea_d, products.ea_d, tensors.stream));
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -292,7 +298,7 @@ string large_wave_radiation_surface_function(Products products)
     return "KERNELS,LARGE_WAVE_RADIATION_SURFACE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string large_wave_radiation_atmosphere_function(Products products, float temperature)
+string large_wave_radiation_atmosphere_function(Products products, Tensor tensors, float temperature)
 {
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;
@@ -302,7 +308,9 @@ string large_wave_radiation_atmosphere_function(Products products, float tempera
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    large_wave_radiation_atmosphere_kernel<<<blocks_n, threads_n>>>(products.ea_d, products.large_wave_radiation_atmosphere_d, temperature);
+    float pos567_1e8 = 5.67 * 1e-8;
+    float temperature_kelvin_pow_4 = pow(temperature, 4);
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos567_1e8, products.ea_d, (void *)&temperature_kelvin_pow_4, products.only1_d, products.large_wave_radiation_atmosphere_d, tensors.stream));
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -355,7 +363,7 @@ string soil_heat_flux_function(Products products)
     return "KERNELS,SOIL_HEAT_FLUX," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::compute_Rn_G(Products products, Station station, MTL mtl)
+string Products::compute_Rn_G(Products products, Station station, MTL mtl, Tensor tensors)
 {
     string result = "";
     int64_t initial_time, final_time;
@@ -378,13 +386,13 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
     // Emissivity indices
     result += enb_emissivity_function(products);
     result += eo_emissivity_function(products);
-    result += ea_emissivity_function(products);
+    result += ea_emissivity_function(products, tensors);
     result += surface_temperature_function(products, mtl);
 
     // Radiation waves
     result += short_wave_radiation_function(products, mtl);
     result += large_wave_radiation_surface_function(products);
-    result += large_wave_radiation_atmosphere_function(products, station.temperature_image);
+    result += large_wave_radiation_atmosphere_function(products, tensors, station.temperature_image);
 
     // Main products
     result += net_radiation_function(products);

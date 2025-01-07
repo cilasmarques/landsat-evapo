@@ -96,14 +96,6 @@ __global__ void enb_kernel(float *lai_d, float *ndvi_d, float *enb_d);
 __global__ void eo_kernel(float *lai_d, float *ndvi_d, float *eo_d);
 
 /**
- * @brief  Compute the EA of the bands.
- *
- * @param tal_d  The TAL.
- * @param ea_d  The EA.
- */
-__global__ void ea_kernel(float *tal_d, float *ea_d);
-
-/**
  * @brief  Compute the surface temperature of the bands.
  *
  * @param enb_d  The ENB.
@@ -133,15 +125,6 @@ __global__ void short_wave_radiation_kernel(float *tal_d, float *short_wave_radi
  * @param large_wave_radiation_surface_d  The large wave radiation surface.
  */
 __global__ void large_wave_radiation_surface_kernel(float *surface_temperature_d, float *eo_d, float *large_wave_radiation_surface_d);
-
-/**
- * @brief  Compute the large wave radiation of the bands.
- *
- * @param ea_d  The EA.
- * @param large_wave_radiation_atmosphere_d  The large wave radiation atmosphere.
- * @param temperature  The surface temperature.
- */
-__global__ void large_wave_radiation_atmosphere_kernel(float *ea_d, float *large_wave_radiation_atmosphere_d, float temperature);
 
 /**
  * @brief  Compute the net radiation of the bands.
@@ -220,38 +203,6 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
 __global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surface_temperature_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile);
 
 /**
- * @brief  Compute the zero plane displacement height_d of the bands.
- *
- * @param pai_d  The PAI.
- * @param d0_d  The D0.
- * @param CD1  The CD1 constant.
- * @param HGHT  The HGHT constant.
- */
-__global__ void d0_kernel(float *pai_d, float *d0_d, float CD1, float HGHT);
-
-/**
- * @brief  Compute the roughness length for momentum of the bands.
- *
- * @param d0_d  The D0.
- * @param pai_d  The PAI.
- * @param zom_d  The ZOM.
- * @param A_ZOM  The A_ZOM constant.
- * @param B_ZOM  The B_ZOM constant.
- */
-__global__ void zom_kernel_STEEP(float *d0_d, float *pai_d, float *zom_d, float A_ZOM, float B_ZOM);
-
-/**
- * @brief  Compute the rah of the bands.
- *
- * @param ndvi_d  The NDVI.
- * @param albedo_d  The albedo.
- * @param zom_d  The ZOM.
- * @param A_ZOM  The A_ZOM constant.
- * @param B_ZOM  The B_ZOM constant.
- */
-__global__ void zom_kernel_ASEBAL(float *ndvi_d, float *albedo_d,  float *zom_d, float A_ZOM, float B_ZOM);
-
-/**
  * @brief  Compute the ustar of the bands.
  *
  * @param zom_d  The ZOM.
@@ -269,38 +220,6 @@ __global__ void ustar_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, fl
  * @param u200  The U200 constant.
  */
 __global__ void ustar_kernel_ASEBAL(float *zom_d, float *ustar_d, float u200);
-
-/**
- * @brief  Compute the KB-1 stability parameter of the bands.
- *
- * @param zom_d  The ZOM.
- * @param ustar_d  The USTAR.
- * @param pai_d  The PAI.
- * @param kb1_d  The KB-1.
- * @param ndvi_d  The NDVI.
- * @param ndvi_max  The NDVI max value.
- * @param ndvi_min  The NDVI min value.
- */
-__global__ void kb_kernel(float *zom_d, float *ustar_d, float *pai_d, float *kb1_d, float *ndvi_d, float ndvi_max, float ndvi_min);
-
-/**
- * @brief  Compute the aerodynamic resistance of the bands.
- *
- * @param zom_d  The ZOM.
- * @param d0_d  The D0.
- * @param ustar_d  The USTAR.
- * @param kb1_d  The KB-1.
- * @param rah_d  The RAH.
- */
-__global__ void aerodynamic_resistance_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, float *kb1_d, float *rah_d);
-
-/**
- * @brief  Compute the aerodynamic resistance of the bands.
- *
- * @param ustar_d  The USTAR.
- * @param rah_d  The RAH.
- */
-__global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_d);
 
 /**
  * @brief  Compute the rah correction cycle. (STEEP algorithm)
@@ -367,15 +286,3 @@ __global__ void latent_heat_flux_kernel(float *net_radiation_d, float *soil_heat
  * @param net_radiation_24h_d  The net radiation 24h.
  */
 __global__ void net_radiation_24h_kernel(float *albedo_d, float Rs24h, float Ra24h, float *net_radiation_24h_d);
-
-/**
- * @brief  Compute the evapotranspiration 24h of the bands.
- * 
- * @param surface_temperature_d  The surface temperature.
- * @param latent_heat_flux_d  The latent heat flux.
- * @param net_radiation_d  The net radiation.
- * @param soil_heat_d  The soil heat.
- * @param net_radiation_24h_d  The net radiation 24h.
- * @param evapotranspiration_24h_d  The evapotranspiration 24h.
- */
-__global__ void evapotranspiration_24h_kernel(float *surface_temperature_d, float *latent_heat_flux_d, float *net_radiation_d, float *soil_heat_d, float *net_radiation_24h_d, float *evapotranspiration_24h_d);

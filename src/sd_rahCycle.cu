@@ -3,11 +3,8 @@
 #include "sensors.cuh"
 #include "surfaceData.cuh"
 
-string d0_fuction(Products products)
+string d0_fuction(Products products, Tensor tensors)
 {
-    float CD1 = 20.6;
-    float HGHT = 4;
-
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
@@ -16,7 +13,18 @@ string d0_fuction(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    d0_kernel<<<blocks_n, threads_n>>>(products.pai_d, products.d0_d, CD1, HGHT);
+    float CD1 = 20.6;
+    float HGHT = 4;
+    float pos1 = 1;
+    float neg1 = -1;
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_id, (void *)&CD1, products.pai_d, products.tensor_aux1_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_sqtr, (void *)&pos1, products.tensor_aux1_d, products.tensor_aux1_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, products.only1_d, products.d0_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_log_mul, (void *)&neg1, products.tensor_aux1_d, (void *)&pos1, products.d0_d, products.d0_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos1, products.only1_d, (void *)&pos1, products.tensor_aux1_d, products.tensor_aux1_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_exp_mul, (void *)&pos1, products.tensor_aux1_d, (void *)&pos1, products.d0_d, products.d0_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.only1_d, (void *)&neg1, products.tensor_aux1_d, products.tensor_aux1_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&HGHT, products.tensor_aux1_d, (void *)&pos1, products.d0_d, products.d0_d, tensors.stream));
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -27,7 +35,7 @@ string d0_fuction(Products products)
     return "KERNELS,D0," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string kb_function(Products products, float ndvi_max, float ndvi_min)
+string kb_function(Products products, Tensor tensors, float ndvi_max, float ndvi_min)
 {
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;
@@ -37,7 +45,102 @@ string kb_function(Products products, float ndvi_max, float ndvi_min)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    kb_kernel<<<blocks_n, threads_n>>>(products.zom_d, products.ustar_d, products.pai_d, products.kb1_d, products.ndvi_d, ndvi_max, ndvi_min);
+    float HGHT = 4;
+
+    float visc = 0.00001461;
+    float pr = 0.71;
+    float c1 = 0.320;
+    float c2 = 0.264;
+    float c3 = 15.1;
+    float cd = 0.2;
+    float ct = 0.01;
+    float sf_c = 0.3;
+    float sf_d = 2.5;
+    float sf_e = 4.0;
+
+    float pos1 = 1;
+    float pos2 = 2;
+    float pos025 = 0.25;
+    float pos246 = 2.46;
+    float pos009 = 0.009;
+    float pos4631 = 0.4631;
+    float neg05 = -0.5;
+    float neg1 = -1;
+    float neg2 = -2;
+
+    float ct4 = 4 * ct;
+    float cdc3 = cd * -c3;
+    float divHGHT = 1 / HGHT;
+    float div_visc = 1 / visc;
+    float cdVON = cd * VON_KARMAN;
+    float pow_pr = pow(pr, -0.667);
+    float neg_ndvi_max = -ndvi_max;
+    float soil_moisture_day_rel = 0.33;
+    float div_ndvi_min_max = 1 / (ndvi_min - ndvi_max);
+    float SF = sf_c + (1 / (1 + pow(exp(1.0), (sf_d - (sf_e * soil_moisture_day_rel)))));
+
+    // float fc = 1 - pow((ndvi[i] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.ndvi_d, (void *)&neg_ndvi_max, products.only1_d, products.fc_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_id, (void *)&div_ndvi_min_max, products.fc_d, products.fc_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&pos4631, products.fc_d, products.fc_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, products.fc_d, products.fc_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.only1_d, (void *)&neg1, products.fc_d, products.fc_d, tensors.stream));
+
+    // float fs = 1 - fc;
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.only1_d, (void *)&neg1, products.fc_d, products.fs_d, tensors.stream));
+
+    // float Re = (ustar[i] * 0.009) / visc;
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos009, products.ustar_d, (void *)&div_visc, products.only1_d, products.re_d, tensors.stream));
+
+    // float Ct_star = pow(pr, -(2/3)) * pow(Re, -0.5); ~ pow(pr, -(2/3)) * exp(-0.5 * log(Re)));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&neg05, products.re_d, products.ct_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, products.ct_d, products.ct_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_id, (void *)&pow_pr, products.ct_d, products.ct_d, tensors.stream));
+
+    // float ratio = c1 - c2 * (exp(cdc3 * pai[i]));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_id, (void *)&cdc3, products.pai_d, products.ratio_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&c2, products.ratio_d, products.ratio_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&c1, products.only1_d, (void *)&neg1, products.ratio_d, products.ratio_d, tensors.stream));
+
+    // float nec = (cd * pai[i]) / (ratio * ratio * 2);
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos2, products.ratio_d, (void *)&pos1, products.ratio_d, products.nec_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&cd, products.pai_d, (void *)&pos1, products.nec_d, products.nec_d, tensors.stream));
+
+    // float kb1s = (pow(Re, 0.25) * 2.46) - 2) ~ 2.46 * exp(0.25 * log(Re));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&pos025, products.re_d, products.kbs_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos246, products.kbs_d, products.kbs_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.kbs_d, (void *)&neg2, products.only1_d, products.kbs_d, tensors.stream));
+
+    // float kb1_fst_part = (cd * VON_KARMAN) / (4 * ct * ratio * (1 - exp(nec * -0.5)));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_id, (void *)&neg05, products.nec_d, products.kb1_fst_part_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, products.kb1_fst_part_d, products.kb1_fst_part_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.only1_d, (void *)&neg1, products.kb1_fst_part_d, products.kb1_fst_part_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&ct4, products.ratio_d, (void *)&pos1, products.kb1_fst_part_d, products.kb1_fst_part_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&cdVON, products.only1_d, (void *)&pos1, products.kb1_fst_part_d, products.kb1_fst_part_d, tensors.stream));
+
+    // pow(fc, 2); && pow(fs, 2);
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&pos2, products.fc_d, products.fcpow_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, products.fcpow_d, products.fcpow_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&pos2, products.fs_d, products.fspow_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, products.fspow_d, products.fspow_d, tensors.stream));
+
+    // float kb1_sec_part = pow(fc, 2) + (ratio * VON_KARMAN * (zom[i] / HGHT)) / Ct_star;
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&divHGHT, products.only1_d, (void *)&pos1, products.zom_d, products.kb1_sec_part_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&VON_KARMAN, products.ratio_d, (void *)&pos1, products.kb1_sec_part_d, products.kb1_sec_part_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos1, products.kb1_sec_part_d, (void *)&pos1, products.ct_d, products.kb1_sec_part_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.fcpow_d, (void *)&pos1, products.kb1_sec_part_d, products.kb1_sec_part_d, tensors.stream));
+
+    // float kb1_trd_part = pow(fc, 2) * pow(fs, 2) + kbs * pow(fs, 2);
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, products.fcpow_d, (void *)&pos1, products.fspow_d, products.tensor_aux1_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, products.kbs_d, (void *)&pos1, products.fspow_d, products.kb1_trd_part_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.tensor_aux1_d, (void *)&pos1, products.kb1_trd_part_d, products.kb1_trd_part_d, tensors.stream));
+
+    // float kb_ini = kb1_fst_part * kb1_sec_part * kb1_trd_part;
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, products.kb1_fst_part_d, (void *)&pos1, products.kb1_sec_part_d, products.kb1_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, products.kb1_trd_part_d, (void *)&pos1, products.kb1_d, products.kb1_d, tensors.stream));
+
+    // kb1_d[pos] = kb_ini * SF;
+    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_id, (void *)&SF, products.kb1_d, products.kb1_d, tensors.stream));
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -48,7 +151,7 @@ string kb_function(Products products, float ndvi_max, float ndvi_min)
     return "KERNELS,KB1," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string zom_fuction(Products products, float A_ZOM, float B_ZOM)
+string zom_fuction(Products products, Tensor tensors, float A_ZOM, float B_ZOM)
 {
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;
@@ -58,10 +161,41 @@ string zom_fuction(Products products, float A_ZOM, float B_ZOM)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    if (model_method == 0)
-        zom_kernel_STEEP<<<blocks_n, threads_n>>>(products.d0_d, products.pai_d, products.zom_d, A_ZOM, B_ZOM);
-    else
-        zom_kernel_ASEBAL<<<blocks_n, threads_n>>>(products.ndvi_d, products.albedo_d, products.zom_d, A_ZOM, B_ZOM);
+    if (model_method == 0) {
+        float HGHT = 4;
+        float CD = 0.01;
+        float CR = 0.35;
+        float PSICORR = 0.2;
+        float CR2 = CR / 2;
+        float neg05 = -0.5;
+        float pos1 = 1;
+        float pos33 = 3.3;
+        float negVON = -VON_KARMAN;
+        float neg1 = -1;
+
+        // float gama = pow((CD + CR * pai_d[pos] / 2), -0.5); ~ exp(-0.5 * log(CD + CR * pai_d[pos] / 2));
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&CD, products.only1_d, (void *)&CR2, products.pai_d, products.zom_d, tensors.stream));
+        HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&neg05, products.zom_d, products.zom_d, tensors.stream));
+        HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, products.zom_d, products.zom_d, tensors.stream));
+
+        // if (gama < 3.3) gama = 3.3;
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_max, (void *)&pos33, products.only1_d, (void *)&pos1, products.zom_d, products.zom_d, tensors.stream));
+
+        // zom_d = exp(-VON_KARMAN * gama)
+        HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_id, (void *)&negVON, products.zom_d, products.zom_d, tensors.stream));
+        HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, products.zom_d, products.zom_d, tensors.stream));
+
+        // zom_d[pos] = (HGHT - d0_d[pos]) * exp(-VON_KARMAN * gama) + PSICORR;
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&HGHT, products.only1_d, (void *)&neg1, products.d0_d, products.tensor_aux1_d, tensors.stream));
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, products.zom_d, (void *)&pos1, products.tensor_aux1_d, products.zom_d, tensors.stream));
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.zom_d, (void *)&PSICORR, products.only1_d, products.zom_d, tensors.stream));
+    } else {
+        float pos1 = 1;
+        // zom_d[pos] = exp((A_ZOM * ndvi_d[pos] / albedo_d[pos]) + B_ZOM);
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&A_ZOM, products.ndvi_d, (void *)&pos1, products.albedo_d, products.zom_d, tensors.stream));
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.zom_d, (void *)&B_ZOM, products.only1_d, products.zom_d, tensors.stream));
+        HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_exp, (void *)&pos1, products.zom_d, products.zom_d, tensors.stream));
+    }
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -96,7 +230,7 @@ string ustar_fuction(Products products, float u_const)
     return "KERNELS,USTAR," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string aerodynamic_resistance_fuction(Products products)
+string aerodynamic_resistance_fuction(Products products, Tensor tensors)
 {
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;
@@ -106,10 +240,28 @@ string aerodynamic_resistance_fuction(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    if (model_method == 0)
-        aerodynamic_resistance_kernel_STEEP<<<blocks_n, threads_n>>>(products.zom_d, products.d0_d, products.ustar_d, products.kb1_d, products.rah_d);
-    else
-        aerodynamic_resistance_kernel_ASEBAL<<<blocks_n, threads_n>>>(products.ustar_d, products.rah_d);
+    if (model_method == 0) {
+        float pos1 = 1;
+        float neg1 = -1;
+        float zu = 10;
+        // float rah_fst_part = (1 / (ustar[i] * VON_KARMAN));
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos1, products.only1_d, (void *)&VON_KARMAN, products.ustar_d, products.rah_fst_part_d, tensors.stream));
+
+        // float rah_sec_part = log(((zu - DISP) / zom));
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&zu, products.only1_d, (void *)&neg1, products.d0_d, products.rah_sec_part_d, tensors.stream));
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos1, products.rah_sec_part_d, (void *)&pos1, products.zom_d, products.rah_sec_part_d, tensors.stream));
+        HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&pos1, products.rah_sec_part_d, products.rah_sec_part_d, tensors.stream));
+
+        // float rah_trd_part = rah_fst_part * kb1_d[pos];
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, products.rah_fst_part_d, (void *)&pos1, products.kb1_d, products.rah_trd_part_d, tensors.stream));
+
+        // rah_d[pos] = (rah_fst_part * rah_sec_part) + rah_trd_part;
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, products.rah_fst_part_d, (void *)&pos1, products.rah_sec_part_d, products.rah_d, tensors.stream));
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.rah_d, (void *)&pos1, products.rah_trd_part_d, products.rah_d, tensors.stream));
+    } else {
+        float logz1z2 = logf(2.0 / 0.1);
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&logz1z2, products.only1_d, (void *)&VON_KARMAN, products.ustar_d, products.rah_d, tensors.stream));
+    }
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -186,7 +338,6 @@ string rah_correction_function_blocks_ASEBAL(Products products, float u200)
     return "KERNELS,RAH_CYCLE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
-
 string sensible_heat_flux_function(Products products)
 {
     int64_t initial_time, final_time;
@@ -208,7 +359,7 @@ string sensible_heat_flux_function(Products products)
     return "KERNELS,SENSIBLE_HEAT_FLUX," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string Products::converge_rah_cycle(Products products, Station station)
+string Products::converge_rah_cycle(Products products, Station station, Tensor tensors)
 {
     string result = "";
     int64_t initial_time, final_time;
@@ -236,17 +387,17 @@ string Products::converge_rah_cycle(Products products, Station station)
                                     thrust::maximum<float>());
 
     if (model_method == 0) { // STEEP
-        result += d0_fuction(products);
-        result += zom_fuction(products, station.A_ZOM, station.B_ZOM);
+        result += d0_fuction(products, tensors);
+        result += zom_fuction(products, tensors, station.A_ZOM, station.B_ZOM);
         result += ustar_fuction(products, u10);
-        result += kb_function(products, ndvi_max, ndvi_min);
-        result += aerodynamic_resistance_fuction(products);
+        result += kb_function(products, tensors, ndvi_max, ndvi_min);
+        result += aerodynamic_resistance_fuction(products, tensors);
         result += rah_correction_function_blocks_STEEP(products, ndvi_min, ndvi_max);
         result += sensible_heat_flux_function(products);
     } else { // ASEBAL
-        result += zom_fuction(products, station.A_ZOM, station.B_ZOM);
+        result += zom_fuction(products, tensors, station.A_ZOM, station.B_ZOM);
         result += ustar_fuction(products, u200);
-        result += aerodynamic_resistance_fuction(products);
+        result += aerodynamic_resistance_fuction(products, tensors);
         result += rah_correction_function_blocks_ASEBAL(products, u200);
         result += sensible_heat_flux_function(products);
     }
