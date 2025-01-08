@@ -90,7 +90,7 @@ string evapotranspiration_24h_function(Products products, Tensor tensors, Statio
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,EVAPOTRANSPIRATION_24H," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,EVAPOTRANSPIRATION_24H," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::compute_H_ET(Products products, Station station, MTL mtl, Tensor tensors)

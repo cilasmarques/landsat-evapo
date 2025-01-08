@@ -32,7 +32,7 @@ string d0_fuction(Products products, Tensor tensors)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,D0," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,D0," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string kb_function(Products products, Tensor tensors, float ndvi_max, float ndvi_min)
@@ -148,7 +148,7 @@ string kb_function(Products products, Tensor tensors, float ndvi_max, float ndvi
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,KB1," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,KB1," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string zom_fuction(Products products, Tensor tensors, float A_ZOM, float B_ZOM)
@@ -203,7 +203,7 @@ string zom_fuction(Products products, Tensor tensors, float A_ZOM, float B_ZOM)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,ZOM," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,ZOM," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string ustar_fuction(Products products, float u_const)
@@ -269,7 +269,7 @@ string aerodynamic_resistance_fuction(Products products, Tensor tensors)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,RAH_INI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,RAH_INI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string rah_correction_function_blocks_STEEP(Products products, float ndvi_min, float ndvi_max)

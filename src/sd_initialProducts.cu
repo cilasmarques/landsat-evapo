@@ -210,7 +210,7 @@ string ea_emissivity_function(Products products, Tensor tensors)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,EA_EMISSIVITY," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,EA_EMISSIVITY," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string surface_temperature_function(Products products, MTL mtl)
@@ -318,7 +318,7 @@ string large_wave_radiation_atmosphere_function(Products products, Tensor tensor
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,LARGE_WAVE_RADIATION_ATMOSPHERE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,LARGE_WAVE_RADIATION_ATMOSPHERE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string net_radiation_function(Products products)
