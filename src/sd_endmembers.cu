@@ -18,35 +18,35 @@ __host__ __device__ Endmember::Endmember(float ndvi, float temperature, int line
     this->col = col;
 }
 
-void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int width_band, float first_interval, float middle_interval, float last_interval, int blocks_n, int threads_n)
+void get_quartiles_cuda(half *d_target, half *v_quartile, int height_band, int width_band, half first_interval, half middle_interval, half last_interval, int blocks_num, int threads_num)
 {
-    float *d_filtered;
-    cudaMalloc(&d_filtered, sizeof(float) * height_band * width_band);
+    half *d_filtered;
+    cudaMalloc(&d_filtered, sizeof(half) * height_band * width_band);
 
     int indexes[1] = {0};
-    int *indexes_d;
-    cudaMalloc((void **)&indexes_d, sizeof(int) * 1);
-    cudaMemcpy(indexes_d, indexes, sizeof(int) * 1, cudaMemcpyHostToDevice);
+    int *d_indexes;
+    cudaMalloc((void **)&d_indexes, sizeof(int) * 1);
+    cudaMemcpy(d_indexes, indexes, sizeof(int) * 1, cudaMemcpyHostToDevice);
 
-    filter_valid_values<<<blocks_n, threads_n>>>(d_target, d_filtered, indexes_d);
+    filter_valid_values<<<blocks_num, threads_num>>>(d_target, d_filtered, d_indexes);
 
-    cudaMemcpy(&indexes[0], indexes_d, sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&indexes[0], d_indexes, sizeof(int), cudaMemcpyDeviceToHost);
 
     // Use Thrust to sort the valid elements on the GPU
-    thrust::device_ptr<float> d_filtered_ptr = thrust::device_pointer_cast(d_filtered);
+    thrust::device_ptr<half> d_filtered_ptr = thrust::device_pointer_cast(d_filtered);
     thrust::sort(thrust::device, d_filtered_ptr, d_filtered_ptr + indexes[0]);
 
-    int first_index = static_cast<int>(floor(first_interval * indexes[0]));
-    int middle_index = static_cast<int>(floor(middle_interval * indexes[0]));
-    int last_index = static_cast<int>(floor(last_interval * indexes[0]));
+    int first_index = static_cast<int>(floor(static_cast<float>(first_interval) * indexes[0]));
+    int middle_index = static_cast<int>(floor(static_cast<float>(middle_interval) * indexes[0]));
+    int last_index = static_cast<int>(floor(static_cast<float>(last_interval) * indexes[0]));
 
-    cudaMemcpy(&v_quartile[0], d_filtered + first_index, sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(&v_quartile[1], d_filtered + middle_index, sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(&v_quartile[2], d_filtered + last_index, sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&v_quartile[0], d_filtered + first_index, sizeof(half), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&v_quartile[1], d_filtered + middle_index, sizeof(half), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&v_quartile[2], d_filtered + last_index, sizeof(half), cudaMemcpyDeviceToHost);
 
     // Free GPU memory
     cudaFree(d_filtered);
-    cudaFree(indexes_d);
+    cudaFree(d_indexes);
 }
 
 string getEndmembersSTEEP(Products products)
@@ -57,17 +57,17 @@ string getEndmembersSTEEP(Products products)
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 
-    float *d_ho;
-    cudaMalloc((void **)&d_ho, sizeof(float) * products.height_band * products.width_band);
+    half *d_ho;
+    cudaMalloc((void **)&d_ho, sizeof(half) * products.height_band * products.width_band);
 
     int *indexes_d;
     int indexes[2] = {0, 0};
     cudaMalloc((void **)&indexes_d, sizeof(int) * 2);
     cudaMemcpy(indexes_d, indexes, sizeof(int) * 2, cudaMemcpyHostToDevice);
 
-    vector<float> tsQuartile(3);
-    vector<float> ndviQuartile(3);
-    vector<float> albedoQuartile(3);
+    vector<half> tsQuartile(3);
+    vector<half> ndviQuartile(3);
+    vector<half> albedoQuartile(3);
 
     try {
         initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
@@ -129,17 +129,17 @@ string getEndmembersASEBAL(Products products)
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 
-    float *d_ho;
-    cudaMalloc((void **)&d_ho, sizeof(float) * products.height_band * products.width_band);
+    half *d_ho;
+    cudaMalloc((void **)&d_ho, sizeof(half) * products.height_band * products.width_band);
 
     int *indexes_d;
     int indexes[2] = {0, 0};
     cudaMalloc((void **)&indexes_d, sizeof(int) * 2);
     cudaMemcpy(indexes_d, indexes, sizeof(int) * 2, cudaMemcpyHostToDevice);
 
-    vector<float> tsQuartile(3);
-    vector<float> ndviQuartile(3);
-    vector<float> albedoQuartile(3);
+    vector<half> tsQuartile(3);
+    vector<half> ndviQuartile(3);
+    vector<half> albedoQuartile(3);
 
     try {
         initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
@@ -179,7 +179,7 @@ string getEndmembersASEBAL(Products products)
         cudaMemcpyToSymbol(hotEndmemberCol_d, &hotCandidate.col, sizeof(int), 0, cudaMemcpyHostToDevice);
         cudaMemcpyToSymbol(coldEndmemberLine_d, &coldCandidate.line, sizeof(int), 0, cudaMemcpyHostToDevice);
         cudaMemcpyToSymbol(coldEndmemberCol_d, &coldCandidate.col, sizeof(int), 0, cudaMemcpyHostToDevice);
-        
+
         float cuda_time = 0;
         cudaEventSynchronize(stop);
         cudaEventElapsedTime(&cuda_time, start, stop);

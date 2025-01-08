@@ -5,7 +5,7 @@ __device__ int hotEndmemberCol_d;
 __device__ int coldEndmemberLine_d;
 __device__ int coldEndmemberCol_d;
 
-__global__ void filter_valid_values(const float *target, float *filtered, int *ipos)
+__global__ void filter_valid_values(const half *target, half *filtered, int *ipos)
 {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -22,7 +22,7 @@ __global__ void filter_valid_values(const float *target, float *filtered, int *i
     }
 }
 
-__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surface_temperature_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh)
+__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, half *ndvi_d, half *surface_temperature_d, half *albedo_d, half *net_radiation_d, half *soil_heat_d, half *ho_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -33,13 +33,13 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
 
         ho_d[pos] = net_radiation_d[pos] - soil_heat_d[pos];
 
-        bool hotNDVI = !isnan(ndvi_d[pos]) && ndvi_d[pos] > 0.10 && ndvi_d[pos] < ndviQuartileLow;
-        bool hotAlbedo = !isnan(albedo_d[pos]) && albedo_d[pos] > albedoQuartileMid && albedo_d[pos] < albedoQuartileHigh;
-        bool hotTS = !isnan(surface_temperature_d[pos]) && surface_temperature_d[pos] > tsQuartileMid && surface_temperature_d[pos] < tsQuartileHigh;
+        bool hotNDVI = !isnan(__half2float(ndvi_d[pos])) && __half2float(ndvi_d[pos]) > 0.10 && __half2float(ndvi_d[pos]) < ndviQuartileLow;
+        bool hotAlbedo = !isnan(__half2float(albedo_d[pos])) && __half2float(albedo_d[pos]) > albedoQuartileMid && __half2float(albedo_d[pos]) < albedoQuartileHigh;
+        bool hotTS = !isnan(__half2float(surface_temperature_d[pos])) && __half2float(surface_temperature_d[pos]) > tsQuartileMid && __half2float(surface_temperature_d[pos]) < tsQuartileHigh;
 
-        bool coldNDVI = !isnan(ndvi_d[pos]) && ndvi_d[pos] > ndviQuartileHigh;
-        bool coldAlbedo = !isnan(albedo_d[pos]) && albedo_d[pos] > albedoQuartileLow && albedo_d[pos] < albedoQuartileMid;
-        bool coldTS = !isnan(surface_temperature_d[pos]) && surface_temperature_d[pos] < tsQuartileLow;
+        bool coldNDVI = !isnan(__half2float(ndvi_d[pos])) && __half2float(ndvi_d[pos]) > ndviQuartileHigh;
+        bool coldAlbedo = !isnan(__half2float(albedo_d[pos])) && __half2float(albedo_d[pos]) > albedoQuartileLow && __half2float(albedo_d[pos]) < albedoQuartileMid;
+        bool coldTS = !isnan(__half2float(surface_temperature_d[pos])) && __half2float(surface_temperature_d[pos]) < tsQuartileLow;
 
         if (hotAlbedo && hotNDVI && hotTS) {
             int ih = atomicAdd(&indexes_d[0], 1);
@@ -53,7 +53,7 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
     }
 }
 
-__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surface_temperature_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile)
+__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, half *ndvi_d, half *surface_temperature_d, half *albedo_d, half *net_radiation_d, half *soil_heat_d, half *ho_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -64,13 +64,13 @@ __global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *col
 
         ho_d[pos] = net_radiation_d[pos] - soil_heat_d[pos];
 
-        bool hotNDVI = !isnan(ndvi_d[pos]) && ndvi_d[pos] > 0.10 && ndvi_d[pos] < ndviHOTQuartile;
-        bool hotAlbedo = !isnan(albedo_d[pos]) && albedo_d[pos] > albedoHOTQuartile;
-        bool hotTS = !isnan(surface_temperature_d[pos]) && surface_temperature_d[pos] > tsHOTQuartile;
+        bool hotNDVI = !isnan(__half2float(ndvi_d[pos])) && __half2float(ndvi_d[pos]) > 0.10 && __half2float(ndvi_d[pos]) < ndviHOTQuartile;
+        bool hotAlbedo = !isnan(__half2float(albedo_d[pos])) && __half2float(albedo_d[pos]) > albedoHOTQuartile;
+        bool hotTS = !isnan(__half2float(surface_temperature_d[pos])) && __half2float(surface_temperature_d[pos]) > tsHOTQuartile;
 
-        bool coldNDVI = !isnan(ndvi_d[pos]) && ndvi_d[pos] > ndviCOLDQuartile;
-        bool coldAlbedo = !isnan(albedo_d[pos]) && albedo_d[pos] < albedoCOLDQuartile;
-        bool coldTS = !isnan(surface_temperature_d[pos]) && surface_temperature_d[pos] < tsCOLDQuartile;
+        bool coldNDVI = !isnan(__half2float(ndvi_d[pos])) && __half2float(ndvi_d[pos]) > ndviCOLDQuartile;
+        bool coldAlbedo = !isnan(__half2float(albedo_d[pos])) && __half2float(albedo_d[pos]) < albedoCOLDQuartile;
+        bool coldTS = !isnan(__half2float(surface_temperature_d[pos])) && __half2float(surface_temperature_d[pos]) < tsCOLDQuartile;
 
         if (hotAlbedo && hotNDVI && hotTS) {
             int ih = atomicAdd(&indexes_d[0], 1);

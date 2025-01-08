@@ -7,11 +7,11 @@ MTL::MTL()
     this->julian_day = 0;
     this->number_sensor = 0;
     this->sun_elevation = 0;
-    this->rad_add = (float *)malloc(7 * sizeof(float));
-    this->rad_mult = (float *)malloc(7 * sizeof(float));
-    this->ref_add = (float *)malloc(7 * sizeof(float));
-    this->ref_mult = (float *)malloc(7 * sizeof(float));
-    this->ref_w_coeff = (float *)malloc(7 * sizeof(float));
+    this->rad_add = (half *)malloc(7 * sizeof(float));
+    this->rad_mult = (half *)malloc(7 * sizeof(float));
+    this->ref_add = (half *)malloc(7 * sizeof(float));
+    this->ref_mult = (half *)malloc(7 * sizeof(float));
+    this->ref_w_coeff = (half *)malloc(7 * sizeof(float));
 };
 
 MTL::MTL(string metadata_path)
@@ -60,11 +60,11 @@ MTL::MTL(string metadata_path)
     this->distance_earth_sun = atof(mtl["EARTH_SUN_DISTANCE"].c_str());
     this->image_hour = (hours + minutes / 60.0) * 100;
 
-    this->rad_add = (float *)malloc(7 * sizeof(float));
-    this->rad_mult = (float *)malloc(7 * sizeof(float));
-    this->ref_add = (float *)malloc(7 * sizeof(float));
-    this->ref_mult = (float *)malloc(7 * sizeof(float));
-    this->ref_w_coeff = (float *)malloc(7 * sizeof(float));
+    this->rad_add = (half *)malloc(7 * sizeof(float));
+    this->rad_mult = (half *)malloc(7 * sizeof(float));
+    this->ref_add = (half *)malloc(7 * sizeof(float));
+    this->ref_mult = (half *)malloc(7 * sizeof(float));
+    this->ref_w_coeff = (half *)malloc(7 * sizeof(float));
 
     HANDLE_ERROR(cudaMalloc((void **)&this->rad_add_d, (7 * sizeof(float))));
     HANDLE_ERROR(cudaMalloc((void **)&this->rad_mult_d, (7 * sizeof(float))));
@@ -233,7 +233,7 @@ Landsat::Landsat(string bands_paths[])
     TIFFGetField(landsat_bands[1], TIFFTAG_SAMPLEFORMAT, &sample_bands);
 };
 
-void saveTiff(string path, float *data, int height, int width)
+void saveTiff(string path, half *data, int height, int width)
 {
     TIFF *tif = TIFFOpen(path.c_str(), "w");
     TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width);
@@ -248,17 +248,18 @@ void saveTiff(string path, float *data, int height, int width)
     TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
 
     for (int i = 0; i < height; i++) {
-        TIFFWriteScanline(tif, &data[i * width], i, 0);
+        float v = static_cast<float>(data[i * width]);
+        TIFFWriteScanline(tif, &v, i, 0);
     }
 
     TIFFClose(tif);
 }
 
-void printLinearPointer(float *pointer, int height, int width)
+void printLinearPointer(half *pointer, int height, int width)
 {
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            cout << pointer[i * width + j] << " ";
+            cout << static_cast<float>(pointer[i * width + j]) << " ";
         }
         cout << endl;
     }

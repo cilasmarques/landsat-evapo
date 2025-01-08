@@ -10,17 +10,17 @@ struct MTL {
     int number_sensor, julian_day, year;
     float sun_elevation, distance_earth_sun;
 
-    float *rad_mult;
-    float *rad_add;
-    float *ref_mult;
-    float *ref_add;
-    float *ref_w_coeff;
+    half *rad_mult;
+    half *rad_add;
+    half *ref_mult;
+    half *ref_add;
+    half *ref_w_coeff;
 
-    float *rad_mult_d;
-    float *rad_add_d;
-    float *ref_mult_d;
-    float *ref_add_d;
-    float *ref_w_coeff_d;
+    half *rad_mult_d;
+    half *rad_add_d;
+    half *ref_mult_d;
+    half *ref_add_d;
+    half *ref_w_coeff_d;
 
     /**
      * @brief  Empty constructor. Setting all attributes to 0.
@@ -90,7 +90,7 @@ struct Landsat {
  * @param height: Height of the pointer.
  * @param width: Width of the pointer.
  */
-void printLinearPointer(float *pointer, int height, int width);
+void printLinearPointer(half *pointer, int height, int width);
 
 /**
  * @brief  Saves a TIFF file.
@@ -100,4 +100,4 @@ void printLinearPointer(float *pointer, int height, int width);
  * @param height: Height of the data.
  * @param width: Width of the data.
  */
-void saveTiff(string path, float *data, int height, int width);
+void saveTiff(string path, half *data, int height, int width);

@@ -19,6 +19,7 @@
 #include <tiffio.h>
 #include <time.h>
 #include <vector>
+#include <cuda_fp16.h>
 
 // NAMESPACES
 using namespace std;

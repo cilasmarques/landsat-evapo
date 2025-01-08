@@ -3,7 +3,7 @@
 __device__ int width_d;
 __device__ int height_d;
 
-__global__ void rad_kernel(float *band_d, float *radiance_d, float *rad_add_d, float *rad_mult_d, int band_idx)
+__global__ void rad_kernel(half *band_d, half *radiance_d, half *rad_add_d, half *rad_mult_d, int band_idx)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -14,12 +14,12 @@ __global__ void rad_kernel(float *band_d, float *radiance_d, float *rad_add_d, f
 
         radiance_d[pos] = band_d[pos] * rad_mult_d[band_idx] + rad_add_d[band_idx];
 
-        if (radiance_d[pos] <= 0)
+        if (__half2float(radiance_d[pos]) <= 0)
             radiance_d[pos] = NAN;
     }
 }
 
-__global__ void ref_kernel(float *band_d, float *reflectance_d, float *ref_add_d, float *ref_mult_d, float sin_sun, int band_idx)
+__global__ void ref_kernel(half *band_d, half *reflectance_d, half *ref_add_d, half *ref_mult_d, float sin_sun, int band_idx)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -28,14 +28,14 @@ __global__ void ref_kernel(float *band_d, float *reflectance_d, float *ref_add_d
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
-        reflectance_d[pos] = (band_d[pos] * ref_mult_d[band_idx] + ref_add_d[band_idx]) / sin_sun;
+        reflectance_d[pos] = __float2half((__half2float(band_d[pos]) * __half2float(ref_mult_d[band_idx]) + __half2float(ref_add_d[band_idx])) / sin_sun);
 
-        if (reflectance_d[pos] <= 0)
+        if (__half2float(reflectance_d[pos]) <= 0)
             reflectance_d[pos] = NAN;
     }
 }
 
-__global__ void albedo_kernel(float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_swir2_d, float *tal_d, float *albedo_d, float *ref_w_coeff_d)
+__global__ void albedo_kernel(half *reflectance_blue_d, half *reflectance_green_d, half *reflectance_red_d, half *reflectance_nir_d, half *reflectance_swir1_d, half *reflectance_swir2_d, half *tal_d, half *albedo_d, half *ref_w_coeff_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -51,14 +51,14 @@ __global__ void albedo_kernel(float *reflectance_blue_d, float *reflectance_gree
                         reflectance_swir1_d[pos] * ref_w_coeff_d[PARAM_BAND_SWIR1_INDEX] +
                         reflectance_swir2_d[pos] * ref_w_coeff_d[PARAM_BAND_SWIR2_INDEX];
 
-        albedo_d[pos] = (alb_toa - 0.03) / (tal_d[pos] * tal_d[pos]);
+        albedo_d[pos] = __float2half((alb_toa - 0.03) / (__half2float(tal_d[pos]) * __half2float(tal_d[pos])));
 
-        if (albedo_d[pos] <= 0)
+        if (__half2float(albedo_d[pos]) <= 0)
             albedo_d[pos] = NAN;
     }
 }
 
-__global__ void ndvi_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *ndvi_d)
+__global__ void ndvi_kernel(half *reflectance_nir_d, half *reflectance_red_d, half *ndvi_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -69,12 +69,12 @@ __global__ void ndvi_kernel(float *reflectance_nir_d, float *reflectance_red_d, 
 
         ndvi_d[pos] = (reflectance_nir_d[pos] - reflectance_red_d[pos]) / (reflectance_nir_d[pos] + reflectance_red_d[pos]);
 
-        if (ndvi_d[pos] <= -1 || ndvi_d[pos] >= 1)
+        if (__half2float(ndvi_d[pos]) <= -1.0f || __half2float(ndvi_d[pos]) >= 1.0f)
             ndvi_d[pos] = NAN;
     }
 }
 
-__global__ void pai_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *pai_d)
+__global__ void pai_kernel(half *reflectance_nir_d, half *reflectance_red_d, half *pai_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -83,14 +83,14 @@ __global__ void pai_kernel(float *reflectance_nir_d, float *reflectance_red_d, f
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
-        pai_d[pos] = 10.1 * (reflectance_nir_d[pos] - sqrt(reflectance_red_d[pos])) + 3.1;
+        pai_d[pos] = __float2half(10.1f * (__half2float(reflectance_nir_d[pos]) - sqrt(__half2float(reflectance_red_d[pos]))) + 3.1f);
 
-        if (pai_d[pos] < 0)
-            pai_d[pos] = 0;
+        if (__half2float(pai_d[pos]) < 0)
+            pai_d[pos] = __float2half(0);
     }
 }
 
-__global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *lai_d)
+__global__ void lai_kernel(half *reflectance_nir_d, half *reflectance_red_d, half *lai_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -99,21 +99,21 @@ __global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, f
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
-        float savi = ((1 + 0.5) * (reflectance_nir_d[pos] - reflectance_red_d[pos])) / (0.5 + (reflectance_nir_d[pos] + reflectance_red_d[pos]));
+        float savi = ((1.0f + 0.5f) * (__half2float(reflectance_nir_d[pos]) - __half2float(reflectance_red_d[pos]))) / (0.5f + (__half2float(reflectance_nir_d[pos]) + __half2float(reflectance_red_d[pos])));
 
-        if (!isnan(savi) && savi > 0.687)
-            lai_d[pos] = 6;
-        if (!isnan(savi) && savi <= 0.687)
-            lai_d[pos] = -logf((0.69 - savi) / 0.59) / 0.91;
-        if (!isnan(savi) && savi < 0.1)
-            lai_d[pos] = 0;
+        if (!isnan(savi) && savi > 0.687f)
+            lai_d[pos] = __float2half(6.0f);
+        else if (!isnan(savi) && savi <= 0.687f)
+            lai_d[pos] = __float2half(-logf((0.69f - savi) / 0.59f) / 0.91f);
+        else if (!isnan(savi) && savi < 0.1f)
+            lai_d[pos] = __float2half(0.0f);
 
-        if (lai_d[pos] < 0)
-            lai_d[pos] = 0;
+        if (__half2float(lai_d[pos]) < 0.0f)
+            lai_d[pos] = __float2half(0.0f);
     }
 }
 
-__global__ void enb_kernel(float *lai_d, float *ndvi_d, float *enb_d)
+__global__ void enb_kernel(half *lai_d, half *ndvi_d, half *enb_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -122,16 +122,16 @@ __global__ void enb_kernel(float *lai_d, float *ndvi_d, float *enb_d)
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
-        if (ndvi_d[pos] > 0)
-            enb_d[pos] = (lai_d[pos] < 3) ? 0.97 + 0.0033 * lai_d[pos] : 0.98;            
-        else if (ndvi_d[pos] < 0)
-            enb_d[pos] = 0.99;
+        if (__half2float(ndvi_d[pos]) > 0)
+            enb_d[pos] = __float2half((__half2float(lai_d[pos]) < 3) ? 0.97f + 0.0033f * __half2float(lai_d[pos]) : 0.98f);            
+        else if (__half2float(ndvi_d[pos]) < 0)
+            enb_d[pos] = __float2half(0.99f);
         else
-            enb_d[pos] = NAN;
+            enb_d[pos] = __float2half(NAN);
     }
 }
 
-__global__ void eo_kernel(float *lai_d, float *ndvi_d, float *eo_d)
+__global__ void eo_kernel(half *lai_d, half *ndvi_d, half *eo_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -140,16 +140,16 @@ __global__ void eo_kernel(float *lai_d, float *ndvi_d, float *eo_d)
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
-        if (ndvi_d[pos] > 0)
-            eo_d[pos] = (lai_d[pos] < 3) ? 0.95 + 0.01 * lai_d[pos] : 0.98;            
-        else if (ndvi_d[pos] < 0)
-            eo_d[pos] = 0.985;
+        if (__half2float(ndvi_d[pos]) > 0)
+            eo_d[pos] = __float2half((__half2float(lai_d[pos]) < 3) ? 0.95f + 0.01f * __half2float(lai_d[pos]) : 0.98f);            
+        else if (__half2float(ndvi_d[pos]) < 0)
+            eo_d[pos] = __float2half(0.985f);
         else
-            eo_d[pos] = NAN;
+            eo_d[pos] = __float2half(NAN);
     }
 }
 
-__global__ void ea_kernel(float *tal_d, float *ea_d)
+__global__ void ea_kernel(half *tal_d, half *ea_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -161,7 +161,7 @@ __global__ void ea_kernel(float *tal_d, float *ea_d)
     }
 }
 
-__global__ void surface_temperature_kernel(float *enb_d, float *radiance_termal_d, float *surface_temperature_d, float k1, float k2)
+__global__ void surface_temperature_kernel(half *enb_d, half *radiance_termal_d, half *surface_temperature_d, float k1, float k2)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -169,14 +169,14 @@ __global__ void surface_temperature_kernel(float *enb_d, float *radiance_termal_
         unsigned int row = idx / width_d;
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
-        surface_temperature_d[pos] = k2 / (logf((enb_d[pos] * k1 / radiance_termal_d[pos]) + 1));
+        surface_temperature_d[pos] = __float2half(k2 / (logf((__half2float(enb_d[pos]) * k1 / __half2float(radiance_termal_d[pos])) + 1)));
 
-        if (surface_temperature_d[pos] < 0)
-            surface_temperature_d[pos] = 0;
+        if (__half2float(surface_temperature_d[pos]) < 0)
+            surface_temperature_d[pos] = __float2half(0);
     }
 }
 
-__global__ void short_wave_radiation_kernel(float *tal_d, float *short_wave_radiation_d, float sun_elevation, float distance_earth_sun, float pi)
+__global__ void short_wave_radiation_kernel(half *tal_d, half *short_wave_radiation_d, float sun_elevation, float distance_earth_sun, float pi)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -184,11 +184,11 @@ __global__ void short_wave_radiation_kernel(float *tal_d, float *short_wave_radi
         unsigned int row = idx / width_d;
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
-        short_wave_radiation_d[pos] = (1367 * sin(sun_elevation * pi / 180) * tal_d[pos]) / (distance_earth_sun * distance_earth_sun);
+        short_wave_radiation_d[pos] = __float2half((1367 * sinf(sun_elevation * pi / 180) * __half2float(tal_d[pos])) / (distance_earth_sun * distance_earth_sun));
     }
 }
 
-__global__ void large_wave_radiation_surface_kernel(float *surface_temperature_d, float *eo_d, float *large_wave_radiation_surface_d)
+__global__ void large_wave_radiation_surface_kernel(half *surface_temperature_d, half *eo_d, half *large_wave_radiation_surface_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -198,11 +198,11 @@ __global__ void large_wave_radiation_surface_kernel(float *surface_temperature_d
         unsigned int pos = row * width_d + col;
         float temperature_pixel = surface_temperature_d[pos];
         float surface_temperature_pow_4 = temperature_pixel * temperature_pixel * temperature_pixel * temperature_pixel;
-        large_wave_radiation_surface_d[pos] = eo_d[pos] * 5.67 * 1e-8 * surface_temperature_pow_4;
+        large_wave_radiation_surface_d[pos] = __float2half(__half2float(eo_d[pos]) * 5.67 * 1e-8 * surface_temperature_pow_4);
     }
 }
 
-__global__ void large_wave_radiation_atmosphere_kernel(float *ea_d, float *large_wave_radiation_atmosphere_d, float temperature)
+__global__ void large_wave_radiation_atmosphere_kernel(half *ea_d, half *large_wave_radiation_atmosphere_d, float temperature)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -211,11 +211,11 @@ __global__ void large_wave_radiation_atmosphere_kernel(float *ea_d, float *large
         unsigned int row = idx / width_d;
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
-        large_wave_radiation_atmosphere_d[pos] = ea_d[pos] * 5.67 * 1e-8 * temperature_kelvin_pow_4;
+        large_wave_radiation_atmosphere_d[pos] = __half2float(ea_d[pos]) * 5.67 * 1e-8 * temperature_kelvin_pow_4;
     }
 }
 
-__global__ void net_radiation_kernel(float *short_wave_radiation_d, float *albedo_d, float *large_wave_radiation_atmosphere_d, float *large_wave_radiation_surface_d, float *eo_d, float *net_radiation_d)
+__global__ void net_radiation_kernel(half *short_wave_radiation_d, half *albedo_d, half *large_wave_radiation_atmosphere_d, half *large_wave_radiation_surface_d, half *eo_d, half *net_radiation_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -223,14 +223,14 @@ __global__ void net_radiation_kernel(float *short_wave_radiation_d, float *albed
         unsigned int row = idx / width_d;
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
-        net_radiation_d[pos] = (1 - albedo_d[pos]) * short_wave_radiation_d[pos] + large_wave_radiation_atmosphere_d[pos] - large_wave_radiation_surface_d[pos] - (1 - eo_d[pos]) * large_wave_radiation_atmosphere_d[pos];
+        net_radiation_d[pos] = __float2half((1.0f - __half2float(albedo_d[pos])) * __half2float(short_wave_radiation_d[pos]) + __half2float(large_wave_radiation_atmosphere_d[pos]) - __half2float(large_wave_radiation_surface_d[pos]) - (1.0f - __half2float(eo_d[pos])) * __half2float(large_wave_radiation_atmosphere_d[pos]));
 
-        if (net_radiation_d[pos] < 0)
-            net_radiation_d[pos] = 0;
+        if (__half2float(net_radiation_d[pos]) < 0.0f)
+            net_radiation_d[pos] = __float2half(0.0f);
     }
 }
 
-__global__ void soil_heat_kernel(float *ndvi_d, float *albedo_d, float *surface_temperature_d, float *net_radiation_d, float *soil_heat_d)
+__global__ void soil_heat_kernel(half *ndvi_d, half *albedo_d, half *surface_temperature_d, half *net_radiation_d, half *soil_heat_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -239,14 +239,14 @@ __global__ void soil_heat_kernel(float *ndvi_d, float *albedo_d, float *surface_
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
-        if (ndvi_d[pos] >= 0) {
-            float temperature_celcius = surface_temperature_d[pos] - 273.15;
-            float ndvi_pixel_pow_4 = ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos];
-            soil_heat_d[pos] = temperature_celcius * (0.0038 + 0.0074 * albedo_d[pos]) * (1 - 0.98 * ndvi_pixel_pow_4) * net_radiation_d[pos];
+        if (__half2float(ndvi_d[pos]) >= 0) {
+            float temperature_celcius = __half2float(surface_temperature_d[pos]) - 273.15;
+            float ndvi_pixel_pow_4 = __half2float(ndvi_d[pos]) * __half2float(ndvi_d[pos]) * __half2float(ndvi_d[pos]) * __half2float(ndvi_d[pos]);
+            soil_heat_d[pos] = __float2half(temperature_celcius * (0.0038f + 0.0074f * __half2float(albedo_d[pos])) * (1 - 0.98f * ndvi_pixel_pow_4) * __half2float(net_radiation_d[pos]));
         } else
-            soil_heat_d[pos] = 0.5 * net_radiation_d[pos];
+            soil_heat_d[pos] = __float2half(0.5f * __half2float(net_radiation_d[pos]));
 
-        if (soil_heat_d[pos] < 0)
-            soil_heat_d[pos] = 0;
+        if (__half2float(soil_heat_d[pos]) < 0)
+            soil_heat_d[pos] = __float2half(0);
     }
 }
