@@ -99,17 +99,17 @@ __global__ void lai_kernel(half *reflectance_nir_d, half *reflectance_red_d, hal
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
-        float savi = ((1.0f + 0.5f) * (__half2float(reflectance_nir_d[pos]) - __half2float(reflectance_red_d[pos]))) / (0.5f + (__half2float(reflectance_nir_d[pos]) + __half2float(reflectance_red_d[pos])));
+        half savi = __hdiv(__hmul(__float2half(1.5), __hsub(reflectance_nir_d[pos], reflectance_red_d[pos])), __hadd(__float2half(0.5), __hadd(reflectance_nir_d[pos], reflectance_red_d[pos])));
 
-        if (!isnan(savi) && savi > 0.687f)
-            lai_d[pos] = __float2half(6.0f);
-        else if (!isnan(savi) && savi <= 0.687f)
-            lai_d[pos] = __float2half(-logf((0.69f - savi) / 0.59f) / 0.91f);
-        else if (!isnan(savi) && savi < 0.1f)
-            lai_d[pos] = __float2half(0.0f);
+        if (!__hisnan(savi) && __hgt(savi, __float2half(0.687)))
+            lai_d[pos] = __float2half(6.0);
+        if (!__hisnan(savi) && __hle(savi, __float2half(0.687)))
+            lai_d[pos] = __hdiv(__hneg((half)__logf(__hdiv(__hsub(__float2half(0.69), savi), __float2half(0.59)))), __float2half(0.91));
+        if (!__hisnan(savi) && __hlt(savi, __float2half(0.1)))
+            lai_d[pos] = __float2half(0.0);
 
-        if (__half2float(lai_d[pos]) < 0.0f)
-            lai_d[pos] = __float2half(0.0f);
+        if (__hlt(lai_d[pos], __float2half(0.0)))
+            lai_d[pos] = __float2half(0.0);
     }
 }
 
@@ -123,7 +123,7 @@ __global__ void enb_kernel(half *lai_d, half *ndvi_d, half *enb_d)
         unsigned int pos = row * width_d + col;
 
         if (__half2float(ndvi_d[pos]) > 0)
-            enb_d[pos] = __float2half((__half2float(lai_d[pos]) < 3) ? 0.97f + 0.0033f * __half2float(lai_d[pos]) : 0.98f);            
+            enb_d[pos] = __float2half((__half2float(lai_d[pos]) < 3) ? 0.97f + 0.0033f * __half2float(lai_d[pos]) : 0.98f);
         else if (__half2float(ndvi_d[pos]) < 0)
             enb_d[pos] = __float2half(0.99f);
         else
@@ -141,7 +141,7 @@ __global__ void eo_kernel(half *lai_d, half *ndvi_d, half *eo_d)
         unsigned int pos = row * width_d + col;
 
         if (__half2float(ndvi_d[pos]) > 0)
-            eo_d[pos] = __float2half((__half2float(lai_d[pos]) < 3) ? 0.95f + 0.01f * __half2float(lai_d[pos]) : 0.98f);            
+            eo_d[pos] = __float2half((__half2float(lai_d[pos]) < 3) ? 0.95f + 0.01f * __half2float(lai_d[pos]) : 0.98f);
         else if (__half2float(ndvi_d[pos]) < 0)
             eo_d[pos] = __float2half(0.985f);
         else
