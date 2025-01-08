@@ -15,7 +15,7 @@ IMAGE_DATE="2017-05-11"
 
 ## ==== Execution
 METHOD=0
-THREADS=1024
+THREADS=32
 OUTPUT_DATA_PATH=./output
 INPUT_DATA_PATH=$(IMAGES_DIR)/$(IMAGE_LANDSAT)_$(IMAGE_PATHROW)_$(IMAGE_DATE)/6502x7295
 
@@ -25,7 +25,7 @@ clean:
 clean-all:
 	rm -rf $(OUTPUT_DATA_PATH)/*
 
-build-cores:
+build:
 	nvcc -arch=sm_86 -I ./include -g ./src/*.cu -o ./main -std=c++14 -ltiff -lcutensor -rdc=true
 
 fix-permissions:
