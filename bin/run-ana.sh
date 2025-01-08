@@ -27,7 +27,7 @@ for i in $(seq -f "%02g" 1 120); do
   fi
 
   METHOD=`echo "$@" | grep -oP '(?<=-meth=)[0-9]+'`
-  ANALYSIS_OUTPUT_PATH=$OUTPUT_DATA_PATH/analysis-$METHOD
+  ANALYSIS_OUTPUT_PATH=$OUTPUT_DATA_PATH/serial-$METHOD
   
   mkdir -p $ANALYSIS_OUTPUT_PATH/experiment${i}
   mv $OUTPUT_DATA_PATH/*.csv $ANALYSIS_OUTPUT_PATH/experiment${i}
