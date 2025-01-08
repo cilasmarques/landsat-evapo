@@ -36,7 +36,7 @@ string radiance_function(Products products, MTL mtl, Tensor tensors)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,RADIANCE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,RADIANCE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
 string reflectance_function(Products products, MTL mtl, Tensor tensors)
@@ -71,7 +71,7 @@ string reflectance_function(Products products, MTL mtl, Tensor tensors)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,REFLECTANCE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,REFLECTANCE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
 string albedo_function(Products products, MTL mtl, Tensor tensors)
@@ -101,7 +101,7 @@ string albedo_function(Products products, MTL mtl, Tensor tensors)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,ALBEDO," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,ALBEDO," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
 
 string ndvi_function(Products products, Tensor tensors)
@@ -127,7 +127,7 @@ string ndvi_function(Products products, Tensor tensors)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,NDVI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,NDVI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string pai_function(Products products, Tensor tensors)
@@ -155,7 +155,7 @@ string pai_function(Products products, Tensor tensors)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,PAI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,PAI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string lai_function(Products products, Tensor tensors)
@@ -245,7 +245,7 @@ string ea_emissivity_function(Products products, Tensor tensors)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,EA_EMISSIVITY," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,EA_EMISSIVITY," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string surface_temperature_function(Products products, MTL mtl, Tensor tensors)
@@ -294,7 +294,7 @@ string surface_temperature_function(Products products, MTL mtl, Tensor tensors)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,SURFACE_TEMPERATURE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,SURFACE_TEMPERATURE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string short_wave_radiation_function(Products products, MTL mtl, Tensor tensors)
@@ -318,7 +318,7 @@ string short_wave_radiation_function(Products products, MTL mtl, Tensor tensors)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,SHORT_WAVE_RADIATION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,SHORT_WAVE_RADIATION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string large_wave_radiation_surface_function(Products products, Tensor tensors)
@@ -344,7 +344,7 @@ string large_wave_radiation_surface_function(Products products, Tensor tensors)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,LARGE_WAVE_RADIATION_SURFACE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,LARGE_WAVE_RADIATION_SURFACE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string large_wave_radiation_atmosphere_function(Products products, Tensor tensors, float temperature)
@@ -368,7 +368,7 @@ string large_wave_radiation_atmosphere_function(Products products, Tensor tensor
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,LARGE_WAVE_RADIATION_ATMOSPHERE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,LARGE_WAVE_RADIATION_ATMOSPHERE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string net_radiation_function(Products products, Tensor tensors)
@@ -397,7 +397,7 @@ string net_radiation_function(Products products, Tensor tensors)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,NET_RADIATION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,NET_RADIATION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string soil_heat_flux_function(Products products, Tensor tensors)
@@ -431,7 +431,7 @@ string soil_heat_flux_function(Products products, Tensor tensors)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,SOIL_HEAT_FLUX," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "CUTENSOR,SOIL_HEAT_FLUX," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string Products::compute_Rn_G(Products products, Station station, MTL mtl, Tensor tensors)
