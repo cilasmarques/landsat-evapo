@@ -137,24 +137,24 @@ string Products::save_products(string output_path)
 
     begin = system_clock::now();    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    saveTiff(output_path + "/albedo.tif", albedo, height_band, width_band);
-    saveTiff(output_path + "/ndvi.tif", ndvi, height_band, width_band);
-    saveTiff(output_path + "/pai.tif", pai, height_band, width_band);
-    saveTiff(output_path + "/lai.tif", lai, height_band, width_band);
-    saveTiff(output_path + "/enb_emissivity.tif", enb_emissivity, height_band, width_band);
-    saveTiff(output_path + "/eo_emissivity.tif", eo_emissivity, height_band, width_band);
-    saveTiff(output_path + "/ea_emissivity.tif", ea_emissivity, height_band, width_band);
-    saveTiff(output_path + "/surface_temperature.tif", surface_temperature, height_band, width_band);
-    saveTiff(output_path + "/net_radiation.tif", net_radiation, height_band, width_band);
-    saveTiff(output_path + "/soil_heat_flux.tif", soil_heat, height_band, width_band);
-    saveTiff(output_path + "/d0.tif", d0, height_band, width_band);
-    saveTiff(output_path + "/zom.tif", zom, height_band, width_band);
-    saveTiff(output_path + "/ustar.tif", ustar, height_band, width_band);
-    saveTiff(output_path + "/kb.tif", kb1, height_band, width_band);
-    saveTiff(output_path + "/rah.tif", aerodynamic_resistance, height_band, width_band);
-    saveTiff(output_path + "/sensible_heat_flux.tif", sensible_heat_flux, height_band, width_band);
-    saveTiff(output_path + "/latent_heat_flux.tif", latent_heat_flux, height_band, width_band);
-    saveTiff(output_path + "/net_radiation_24h.tif", net_radiation_24h, height_band, width_band);
+//    saveTiff(output_path + "/albedo.tif", albedo, height_band, width_band);
+//    saveTiff(output_path + "/ndvi.tif", ndvi, height_band, width_band);
+//    saveTiff(output_path + "/pai.tif", pai, height_band, width_band);
+//    saveTiff(output_path + "/lai.tif", lai, height_band, width_band);
+//    saveTiff(output_path + "/enb_emissivity.tif", enb_emissivity, height_band, width_band);
+//    saveTiff(output_path + "/eo_emissivity.tif", eo_emissivity, height_band, width_band);
+//    saveTiff(output_path + "/ea_emissivity.tif", ea_emissivity, height_band, width_band);
+//    saveTiff(output_path + "/surface_temperature.tif", surface_temperature, height_band, width_band);
+//    saveTiff(output_path + "/net_radiation.tif", net_radiation, height_band, width_band);
+//    saveTiff(output_path + "/soil_heat_flux.tif", soil_heat, height_band, width_band);
+//    saveTiff(output_path + "/d0.tif", d0, height_band, width_band);
+//    saveTiff(output_path + "/zom.tif", zom, height_band, width_band);
+//    saveTiff(output_path + "/ustar.tif", ustar, height_band, width_band);
+//    saveTiff(output_path + "/kb.tif", kb1, height_band, width_band);
+//    saveTiff(output_path + "/rah.tif", aerodynamic_resistance, height_band, width_band);
+//    saveTiff(output_path + "/sensible_heat_flux.tif", sensible_heat_flux, height_band, width_band);
+//    saveTiff(output_path + "/latent_heat_flux.tif", latent_heat_flux, height_band, width_band);
+//    saveTiff(output_path + "/net_radiation_24h.tif", net_radiation_24h, height_band, width_band);
     saveTiff(output_path + "/evapotranspiration_24h.tif", evapotranspiration_24h, height_band, width_band);
 
     end = system_clock::now();
@@ -176,61 +176,61 @@ string Products::print_products(string output_path)
     std::ofstream out(output_path + "/products.txt");
     std::streambuf *coutbuf = std::cout.rdbuf();
     std::cout.rdbuf(out.rdbuf());
-
-    std::cout << "==== Albedo" << std::endl;
-    printLinearPointer(albedo, height_band, width_band);
-
-    std::cout << "==== NDVI" << std::endl;
-    printLinearPointer(ndvi, height_band, width_band);
-
-    std::cout << "==== PAI" << std::endl;
-    printLinearPointer(pai, height_band, width_band);
-
-    std::cout << "==== LAI" << std::endl;
-    printLinearPointer(lai, height_band, width_band);
-
-    std::cout << "==== ENB Emissivity" << std::endl;
-    printLinearPointer(enb_emissivity, height_band, width_band);
-
-    std::cout << "==== EO Emissivity" << std::endl;
-    printLinearPointer(eo_emissivity, height_band, width_band);
-
-    std::cout << "==== EA Emissivity" << std::endl;
-    printLinearPointer(ea_emissivity, height_band, width_band);
-
-    std::cout << "==== Surface Temperature" << std::endl;
-    printLinearPointer(surface_temperature, height_band, width_band);
-
-    std::cout << "==== Net Radiation" << std::endl;
-    printLinearPointer(net_radiation, height_band, width_band);
-
-    std::cout << "==== Soil Heat Flux" << std::endl;
-    printLinearPointer(soil_heat, height_band, width_band);
-
-    std::cout << "==== D0" << std::endl;
-    printLinearPointer(d0, height_band, width_band);
-
-    std::cout << "==== ZOM" << std::endl;
-    printLinearPointer(zom, height_band, width_band);
-
-    std::cout << "==== Ustar" << std::endl;
-    printLinearPointer(ustar, height_band, width_band);
-
-    std::cout << "==== KB" << std::endl;
-    printLinearPointer(kb1, height_band, width_band);
-
-    std::cout << "==== RAH" << std::endl;
-    printLinearPointer(aerodynamic_resistance, height_band, width_band);
-
-    std::cout << "==== Sensible Heat Flux" << std::endl;
-    printLinearPointer(sensible_heat_flux, height_band, width_band);
-
-    std::cout << "==== Latent Heat Flux" << std::endl;
-    printLinearPointer(latent_heat_flux, height_band, width_band);
-
-    std::cout << "==== Net Radiation 24h" << std::endl;
-    printLinearPointer(net_radiation_24h, height_band, width_band);
-
+//
+//    std::cout << "==== Albedo" << std::endl;
+//    printLinearPointer(albedo, height_band, width_band);
+//
+//    std::cout << "==== NDVI" << std::endl;
+//    printLinearPointer(ndvi, height_band, width_band);
+//
+//    std::cout << "==== PAI" << std::endl;
+//    printLinearPointer(pai, height_band, width_band);
+//
+//    std::cout << "==== LAI" << std::endl;
+//    printLinearPointer(lai, height_band, width_band);
+//
+//    std::cout << "==== ENB Emissivity" << std::endl;
+//    printLinearPointer(enb_emissivity, height_band, width_band);
+//
+//    std::cout << "==== EO Emissivity" << std::endl;
+//    printLinearPointer(eo_emissivity, height_band, width_band);
+//
+//    std::cout << "==== EA Emissivity" << std::endl;
+//    printLinearPointer(ea_emissivity, height_band, width_band);
+//
+//    std::cout << "==== Surface Temperature" << std::endl;
+//    printLinearPointer(surface_temperature, height_band, width_band);
+//
+//    std::cout << "==== Net Radiation" << std::endl;
+//    printLinearPointer(net_radiation, height_band, width_band);
+//
+//    std::cout << "==== Soil Heat Flux" << std::endl;
+//    printLinearPointer(soil_heat, height_band, width_band);
+//
+//    std::cout << "==== D0" << std::endl;
+//    printLinearPointer(d0, height_band, width_band);
+//
+//    std::cout << "==== ZOM" << std::endl;
+//    printLinearPointer(zom, height_band, width_band);
+//
+//    std::cout << "==== Ustar" << std::endl;
+//    printLinearPointer(ustar, height_band, width_band);
+//
+//    std::cout << "==== KB" << std::endl;
+//    printLinearPointer(kb1, height_band, width_band);
+//
+//    std::cout << "==== RAH" << std::endl;
+//    printLinearPointer(aerodynamic_resistance, height_band, width_band);
+//
+//    std::cout << "==== Sensible Heat Flux" << std::endl;
+//    printLinearPointer(sensible_heat_flux, height_band, width_band);
+//
+//    std::cout << "==== Latent Heat Flux" << std::endl;
+//    printLinearPointer(latent_heat_flux, height_band, width_band);
+//
+//    std::cout << "==== Net Radiation 24h" << std::endl;
+//    printLinearPointer(net_radiation_24h, height_band, width_band);
+//
     std::cout << "==== Evapotranspiration 24h" << std::endl;
     printLinearPointer(evapotranspiration_24h, height_band, width_band);
 
