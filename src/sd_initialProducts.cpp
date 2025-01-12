@@ -15,8 +15,8 @@ string radiance_function(Products products, MTL mtl)
     float *radiances[] = {products.radiance_blue, products.radiance_green, products.radiance_red, products.radiance_nir, products.radiance_swir1, products.radiance_termal, products.radiance_swir2};
     int band_ids[] = {PARAM_BAND_BLUE_INDEX, PARAM_BAND_GREEN_INDEX, PARAM_BAND_RED_INDEX, PARAM_BAND_NIR_INDEX, PARAM_BAND_SWIR1_INDEX, PARAM_BAND_TERMAL_INDEX, PARAM_BAND_SWIR2_INDEX};
 
-    for (int i = 0; i < products.height_band * products.width_band; i++) {
-        for (int b = 0; b < 7; b++) {
+    for (int b = 0; b < 7; b++) {
+        for (int i = 0; i < products.height_band * products.width_band; i++) {
             radiances[b][i] = bands[b][i] * mtl.rad_mult[band_ids[b]] + mtl.rad_add[band_ids[b]];
             if (radiances[b][i] <= 0)
                 radiances[b][i] = NAN;
@@ -44,8 +44,8 @@ string reflectance_function(Products products, MTL mtl)
     float *reflectances[] = {products.reflectance_blue, products.reflectance_green, products.reflectance_red, products.reflectance_nir, products.reflectance_swir1, products.reflectance_termal, products.reflectance_swir2};
     int indices[] = {PARAM_BAND_BLUE_INDEX, PARAM_BAND_GREEN_INDEX, PARAM_BAND_RED_INDEX, PARAM_BAND_NIR_INDEX, PARAM_BAND_SWIR1_INDEX, PARAM_BAND_TERMAL_INDEX, PARAM_BAND_SWIR2_INDEX};
 
-    for (int i = 0; i < products.height_band * products.width_band; i++) {
-        for (int b = 0; b < 7; b++) {
+    for (int b = 0; b < 7; b++) {
+        for (int i = 0; i < products.height_band * products.width_band; i++) {
             reflectances[b][i] = (bands[b][i] * mtl.ref_mult[indices[b]] + mtl.ref_add[indices[b]]) / sin_sun;
             if (reflectances[b][i] <= 0)
                 reflectances[b][i] = NAN;
