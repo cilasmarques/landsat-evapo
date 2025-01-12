@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
         if (threads_flag.substr(0, 9) == "-threads=")
             threads_n = atof(threads_flag.substr(9, threads_flag.size()).c_str());
         else
-            threads_n = 32;
+            threads_n = 64;
     }
 
     // Save output paths
