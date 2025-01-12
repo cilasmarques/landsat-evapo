@@ -107,7 +107,6 @@ __global__ void filter_valid_values(const float *target, float *filtered, int *p
  * @param albedo The albedo array.
  * @param net_radiation The net radiation array.
  * @param soil_heat The soil heat array.
- * @param ho The ho array.
  * @param ndviQuartileLow The NDVI low quartile.
  * @param ndviQuartileHigh The NDVI high quartile.
  * @param tsQuartileLow The surface temperature low quartile.
@@ -117,7 +116,7 @@ __global__ void filter_valid_values(const float *target, float *filtered, int *p
  * @param albedoQuartileMid The albedo mid quartile.
  * @param albedoQuartileHigh The albedo high quartile.
  */
-__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surf_temp_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh);
+__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surf_temp_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh);
 
 /**
  * @brief Process the pixels of the target arrays and store the candidates in the hot and cold arrays.
@@ -130,7 +129,6 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
  * @param albedo The albedo array.
  * @param net_radiation The net radiation array.
  * @param soil_heat The soil heat array.
- * @param ho The ho array.
  * @param ndvi1stQuartile The NDVI 1st quartile.
  * @param ndvi4stQuartile The NDVI 4st quartile.
  * @param ts1stQuartile The surface temperature 1st quartile.
@@ -138,4 +136,4 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
  * @param albedo2ndQuartile The albedo 2nd quartile.
  * @param albedo3rdQuartile The albedo 3rd quartile.
  */
-__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surf_temp_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile);
+__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surf_temp_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile);

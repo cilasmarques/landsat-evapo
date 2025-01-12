@@ -57,9 +57,6 @@ string getEndmembersSTEEP(Products products)
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 
-    float *d_ho;
-    cudaMalloc((void **)&d_ho, sizeof(float) * products.height_band * products.width_band);
-
     int *indexes_d;
     int indexes[2] = {0, 0};
     cudaMalloc((void **)&indexes_d, sizeof(int) * 2);
@@ -77,7 +74,7 @@ string getEndmembersSTEEP(Products products)
         get_quartiles_cuda(products.albedo_d, albedoQuartile.data(), products.height_band, products.width_band, 0.25, 0.50, 0.75, blocks_n, threads_n);
         get_quartiles_cuda(products.surface_temperature_d, tsQuartile.data(), products.height_band, products.width_band, 0.20, 0.85, 0.97, blocks_n, threads_n);
 
-        process_pixels_STEEP<<<blocks_n, threads_n>>>(products.hotCandidates_d, products.coldCandidates_d, indexes_d, products.ndvi_d, products.surface_temperature_d, products.albedo_d, products.net_radiation_d, products.soil_heat_d, d_ho, ndviQuartile[0], ndviQuartile[1], tsQuartile[0], tsQuartile[1], tsQuartile[2], albedoQuartile[0], albedoQuartile[1], albedoQuartile[2]);
+        process_pixels_STEEP<<<blocks_n, threads_n>>>(products.hotCandidates_d, products.coldCandidates_d, indexes_d, products.ndvi_d, products.surface_temperature_d, products.albedo_d, products.net_radiation_d, products.soil_heat_d, ndviQuartile[0], ndviQuartile[1], tsQuartile[0], tsQuartile[1], tsQuartile[2], albedoQuartile[0], albedoQuartile[1], albedoQuartile[2]);
         cudaEventRecord(stop);
 
         cudaMemcpy(&indexes, indexes_d, sizeof(int) * 2, cudaMemcpyDeviceToHost);
@@ -129,9 +126,6 @@ string getEndmembersASEBAL(Products products)
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 
-    float *d_ho;
-    cudaMalloc((void **)&d_ho, sizeof(float) * products.height_band * products.width_band);
-
     int *indexes_d;
     int indexes[2] = {0, 0};
     cudaMalloc((void **)&indexes_d, sizeof(int) * 2);
@@ -149,7 +143,7 @@ string getEndmembersASEBAL(Products products)
         get_quartiles_cuda(products.albedo_d, albedoQuartile.data(), products.height_band, products.width_band, 0.25, 0.50, 0.75, blocks_n, threads_n);
         get_quartiles_cuda(products.surface_temperature_d, tsQuartile.data(), products.height_band, products.width_band, 0.25, 0.50, 0.75, blocks_n, threads_n);
 
-        process_pixels_ASEBAL<<<blocks_n, threads_n>>>(products.hotCandidates_d, products.coldCandidates_d, indexes_d, products.ndvi_d, products.surface_temperature_d, products.albedo_d, products.net_radiation_d, products.soil_heat_d, d_ho, ndviQuartile[0], ndviQuartile[2], tsQuartile[2], tsQuartile[0], albedoQuartile[2], albedoQuartile[1]);
+        process_pixels_ASEBAL<<<blocks_n, threads_n>>>(products.hotCandidates_d, products.coldCandidates_d, indexes_d, products.ndvi_d, products.surface_temperature_d, products.albedo_d, products.net_radiation_d, products.soil_heat_d, ndviQuartile[0], ndviQuartile[2], tsQuartile[2], tsQuartile[0], albedoQuartile[2], albedoQuartile[1]);
         cudaEventRecord(stop);
 
         cudaMemcpy(&indexes, indexes_d, sizeof(int) * 2, cudaMemcpyDeviceToHost);

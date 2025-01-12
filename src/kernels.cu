@@ -96,7 +96,7 @@ __global__ void surface_temperature_kernel(float *enb_d, float *radiance_termal_
     }
 }
 
-__global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surf_temp_d, float *d0_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float *a_d, float *b_d, float ndvi_max, float ndvi_min)
+__global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surface_temperature_d, float *d0_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float *a_d, float *b_d, float ndvi_max, float ndvi_min)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -123,44 +123,38 @@ __global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_h
         float H_hot = net_radiation_d[hot_pos] - soil_heat_flux_d[hot_pos] - LE_cold;
         float dt_hot = H_hot * rah_ini_hot / (RHO * SPECIFIC_HEAT_AIR);
 
-        float b = (dt_hot - dt_cold) / (surf_temp_d[hot_pos] - surf_temp_d[cold_pos]);
-        float a = dt_cold - (b * surf_temp_d[cold_pos]);
+        float b = (dt_hot - dt_cold) / (surface_temperature_d[hot_pos] - surface_temperature_d[cold_pos]);
+        float a = dt_cold - (b * surface_temperature_d[cold_pos]);
 
         *b_d = b;
         *a_d = a;
 
-        float dt_final = a + (b * surf_temp_d[pos]);
+        float dt_final = a + b * surface_temperature_d[pos];
+        H_d[pos] = RHO * SPECIFIC_HEAT_AIR * dt_final / rah_d[pos];
+        float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_d[pos], 3) * surface_temperature_d[pos]) / (VON_KARMAN * GRAVITY * H_d[pos]));
 
-        float sensibleHeatFlux = RHO * SPECIFIC_HEAT_AIR * (dt_final) / rah_d[pos];
-        float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_d[pos], 3) * surf_temp_d[pos]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
-
-        float DISP = d0_d[pos];
         float y2 = pow((1 - (16 * (10 - d0_d[pos])) / L), 0.25);
-        float x200 = pow((1 - (16 * (10 - DISP)) / L), 0.25);
+        float x200 = pow((1 - (16 * (10 - d0_d[pos])) / L), 0.25);
 
         float psi2, psi200;
         if (!isnan(L) && L > 0) {
-            psi2 = -5 * ((10 - DISP) / L);
-            psi200 = -5 * ((10 - DISP) / L);
+            psi2 = -5 * ((10 - d0_d[pos]) / L);
+            psi200 = -5 * ((10 - d0_d[pos]) / L);
         } else {
             psi2 = 2 * logf((1 + y2 * y2) / 2);
             psi200 = 2 * logf((1 + x200) / 2) + logf((1 + x200 * x200) / 2) - 2 * atan(x200) + 0.5 * M_PI;
         }
 
-        float ust = (VON_KARMAN * ustar_d[pos]) / (logf((10 - DISP) / zom_d[pos]) - psi200);
+        ustar_d[pos] = (VON_KARMAN * ustar_d[pos]) / (logf((10 - d0_d[pos]) / zom_d[pos]) - psi200);
 
         float rah_fst_part = 1 / (ustar_d[pos] * VON_KARMAN);
         float rah_sec_part = logf((10 - d0_d[pos]) / zom_d[pos]) - psi2;
         float rah_trd_part = rah_fst_part * kb1_d[pos];
-        float rah = (rah_fst_part * rah_sec_part) + rah_trd_part;
-
-        ustar_d[pos] = ust;
-        rah_d[pos] = rah;
-        H_d[pos] = sensibleHeatFlux;
+        rah_d[pos] = (rah_fst_part * rah_sec_part) + rah_trd_part;
     }
 }
 
-__global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surf_temp_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float *a_d, float *b_d, float u200, int *stop_condition)
+__global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surface_temperature_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float *a_d, float *b_d, float u200, int *stop_condition)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -181,16 +175,16 @@ __global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_
         float H_hot = net_radiation_d[hot_pos] - soil_heat_flux_d[hot_pos];
         float dt_hot = H_hot * rah_ini_hot / (RHO * SPECIFIC_HEAT_AIR);
 
-        float b = (dt_hot - dt_cold) / (surf_temp_d[hot_pos] - surf_temp_d[cold_pos]);
-        float a = dt_cold - (b * surf_temp_d[cold_pos]);
+        float b = (dt_hot - dt_cold) / (surface_temperature_d[hot_pos] - surface_temperature_d[cold_pos]);
+        float a = dt_cold - (b * surface_temperature_d[cold_pos]);
 
         *b_d = b;
         *a_d = a;
 
-        float dt_final = a + b * (surf_temp_d[pos]);
+        float dt_final = a + b * (surface_temperature_d[pos]);
 
-        float sensibleHeatFlux = RHO * SPECIFIC_HEAT_AIR * (dt_final) / rah_d[pos];
-        float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_d[pos], 3) * surf_temp_d[pos]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
+        H_d[pos] = RHO * SPECIFIC_HEAT_AIR * (dt_final) / rah_d[pos];
+        float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_d[pos], 3) * surface_temperature_d[pos]) / (VON_KARMAN * GRAVITY * H_d[pos]));
 
         float x1 = pow((1 - (16 * 0.1) / L), 0.25);
         float x2 = pow((1 - (16 * 2) / L), 0.25);
@@ -207,16 +201,12 @@ __global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_
             psi200 = 2 * logf((1 + x200) / 2) + logf((1 + x200 * x200) / 2) - 2 * atan(x200) + 0.5 * M_PI;
         }
 
-        float ust = (VON_KARMAN * u200) / (logf(200 / zom_d[pos]) - psi200);
-        float rah = (logf(2 / 0.1) - psi2 + psi1) / (ustar_d[pos] * VON_KARMAN);
+        ustar_d[pos] = (VON_KARMAN * u200) / (logf(200 / zom_d[pos]) - psi200);
+        rah_d[pos] = (logf(2 / 0.1) - psi2 + psi1) / (ustar_d[pos] * VON_KARMAN);
 
-        if ((pos == hot_pos) && (fabsf(1 - (rah_ini_hot / rah)) < 0.05)) {
+        if ((pos == hot_pos) && (fabsf(1 - (rah_ini_hot / rah_d[hot_pos])) < 0.05)) {
             atomicExch(stop_condition, 1);
         }
-
-        ustar_d[pos] = ust;
-        rah_d[pos] = rah;
-        H_d[pos] = sensibleHeatFlux;
     }
 }
 
@@ -237,7 +227,7 @@ __global__ void filter_valid_values(const float *target, float *filtered, int *i
     }
 }
 
-__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surf_temp_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh)
+__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surface_temperature_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -246,29 +236,27 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
-        ho_d[pos] = net_radiation_d[pos] - soil_heat_d[pos];
-
         bool hotNDVI = !isnan(ndvi_d[pos]) && ndvi_d[pos] > 0.10 && ndvi_d[pos] < ndviQuartileLow;
         bool hotAlbedo = !isnan(albedo_d[pos]) && albedo_d[pos] > albedoQuartileMid && albedo_d[pos] < albedoQuartileHigh;
-        bool hotTS = !isnan(surf_temp_d[pos]) && surf_temp_d[pos] > tsQuartileMid && surf_temp_d[pos] < tsQuartileHigh;
+        bool hotTS = !isnan(surface_temperature_d[pos]) && surface_temperature_d[pos] > tsQuartileMid && surface_temperature_d[pos] < tsQuartileHigh;
 
         bool coldNDVI = !isnan(ndvi_d[pos]) && ndvi_d[pos] > ndviQuartileHigh;
         bool coldAlbedo = !isnan(albedo_d[pos]) && albedo_d[pos] > albedoQuartileLow && albedo_d[pos] < albedoQuartileMid;
-        bool coldTS = !isnan(surf_temp_d[pos]) && surf_temp_d[pos] < tsQuartileLow;
+        bool coldTS = !isnan(surface_temperature_d[pos]) && surface_temperature_d[pos] < tsQuartileLow;
 
         if (hotAlbedo && hotNDVI && hotTS) {
             int ih = atomicAdd(&indexes_d[0], 1);
-            hotCandidates_d[ih] = Endmember(ndvi_d[pos], surf_temp_d[pos], row, col);
+            hotCandidates_d[ih] = Endmember(ndvi_d[pos], surface_temperature_d[pos], row, col);
         }
 
         if (coldNDVI && coldAlbedo && coldTS) {
             int ic = atomicAdd(&indexes_d[1], 1);
-            coldCandidates_d[ic] = Endmember(ndvi_d[pos], surf_temp_d[pos], row, col);
+            coldCandidates_d[ic] = Endmember(ndvi_d[pos], surface_temperature_d[pos], row, col);
         }
     }
 }
 
-__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surf_temp_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile)
+__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surface_temperature_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -277,24 +265,22 @@ __global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *col
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
-        ho_d[pos] = net_radiation_d[pos] - soil_heat_d[pos];
-
         bool hotNDVI = !isnan(ndvi_d[pos]) && ndvi_d[pos] > 0.10 && ndvi_d[pos] < ndviHOTQuartile;
         bool hotAlbedo = !isnan(albedo_d[pos]) && albedo_d[pos] > albedoHOTQuartile;
-        bool hotTS = !isnan(surf_temp_d[pos]) && surf_temp_d[pos] > tsHOTQuartile;
+        bool hotTS = !isnan(surface_temperature_d[pos]) && surface_temperature_d[pos] > tsHOTQuartile;
 
         bool coldNDVI = !isnan(ndvi_d[pos]) && ndvi_d[pos] > ndviCOLDQuartile;
         bool coldAlbedo = !isnan(albedo_d[pos]) && albedo_d[pos] < albedoCOLDQuartile;
-        bool coldTS = !isnan(surf_temp_d[pos]) && surf_temp_d[pos] < tsCOLDQuartile;
+        bool coldTS = !isnan(surface_temperature_d[pos]) && surface_temperature_d[pos] < tsCOLDQuartile;
 
         if (hotAlbedo && hotNDVI && hotTS) {
             int ih = atomicAdd(&indexes_d[0], 1);
-            hotCandidates_d[ih] = Endmember(ndvi_d[pos], surf_temp_d[pos], row, col);
+            hotCandidates_d[ih] = Endmember(ndvi_d[pos], surface_temperature_d[pos], row, col);
         }
 
         if (coldNDVI && coldAlbedo && coldTS) {
             int ic = atomicAdd(&indexes_d[1], 1);
-            coldCandidates_d[ic] = Endmember(ndvi_d[pos], surf_temp_d[pos], row, col);
+            coldCandidates_d[ic] = Endmember(ndvi_d[pos], surface_temperature_d[pos], row, col);
         }
     }
 }
