@@ -62,8 +62,6 @@ string getEndmembersSTEEP(Products products)
     vector<float> tsQuartile(3);
     vector<float> ndviQuartile(3);
     vector<float> albedoQuartile(3);
-    float *ho = (float *)malloc(sizeof(float) * products.height_band * products.width_band);
-
     try {
         initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
@@ -73,8 +71,6 @@ string getEndmembersSTEEP(Products products)
         get_quartiles(products.surface_temperature, tsQuartile.data(), products.height_band, products.width_band, 0.20, 0.85, 0.97);
 
         for (int i = 0; i < products.height_band * products.width_band; i++) {
-            ho[i] = products.net_radiation[i] - products.soil_heat[i];
-
             bool hotNDVI = !std::isnan(products.ndvi[i]) && products.ndvi[i] > 0.10 && products.ndvi[i] < ndviQuartile[0];
             bool hotAlbedo = !std::isnan(products.albedo[i]) && products.albedo[i] > albedoQuartile[1] && products.albedo[i] < albedoQuartile[2];
             bool hotTS = !std::isnan(products.surface_temperature[i]) && products.surface_temperature[i] > tsQuartile[1] && products.surface_temperature[i] < tsQuartile[2];
@@ -136,8 +132,6 @@ string getEndmembersASEBAL(Products products)
     vector<float> tsQuartile(3);
     vector<float> ndviQuartile(3);
     vector<float> albedoQuartile(3);
-    float *ho = (float *)malloc(sizeof(float) * products.height_band * products.width_band);
-
     try {
         initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
@@ -147,8 +141,6 @@ string getEndmembersASEBAL(Products products)
         get_quartiles(products.surface_temperature, tsQuartile.data(), products.height_band, products.width_band, 0.25, 0.50, 0.75);
 
         for (int i = 0; i < products.height_band * products.width_band; i++) {
-            ho[i] = products.net_radiation[i] - products.soil_heat[i];
-
             bool hotNDVI = !isnan(products.ndvi[i]) && products.ndvi[i] > 0.10 && products.ndvi[i] < ndviQuartile[0];
             bool hotAlbedo = !isnan(products.albedo[i]) && products.albedo[i] > albedoQuartile[2];
             bool hotTS = !isnan(products.surface_temperature[i]) && products.surface_temperature[i] > tsQuartile[2];
