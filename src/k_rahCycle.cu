@@ -1,7 +1,7 @@
 #include "kernels.cuh"
 
-__shared__ float a_d;
-__shared__ float b_d;
+__device__ float a_d;
+__device__ float b_d;
 
 __global__ void d0_kernel(float *pai_d, float *d0_d, float CD1, float HGHT)
 {
@@ -108,7 +108,7 @@ __global__ void kb_kernel(float *zom_d, float *ustar_d, float *pai_d, float *kb1
         float ratio = c1 - c2 * (exp(cd * -c3 * pai_d[pos]));
         float nec = (cd * pai_d[pos]) / (ratio * ratio * 2);
         float kbs = 2.46 * pow(Re, 0.25) - 2;
-    
+
         float kb1_fst_part = (cd * VON_KARMAN) / (4 * ct * ratio * (1 - exp(nec * -0.5)));
         float kb1_sec_part = pow(fc, 2) + (VON_KARMAN * ratio * (zom_d[pos] / HGHT) / Ct);
         float kb1_trd_part = pow(fc, 2) * pow(fs, 2) + kbs * pow(fs, 2);
@@ -181,34 +181,28 @@ __global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_h
         b_d = b;
         a_d = a;
 
-        float dt_final = a + (b * surface_temperature_d[pos]);
+        float dt_final = a + b * surface_temperature_d[pos];
+        H_d[pos] = RHO * SPECIFIC_HEAT_AIR * dt_final / rah_d[pos];
+        float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_d[pos], 3) * surface_temperature_d[pos]) / (VON_KARMAN * GRAVITY * H_d[pos]));
 
-        float sensibleHeatFlux = RHO * SPECIFIC_HEAT_AIR * (dt_final) / rah_d[pos];
-        float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_d[pos], 3) * surface_temperature_d[pos]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
-
-        float DISP = d0_d[pos];
         float y2 = pow((1 - (16 * (10 - d0_d[pos])) / L), 0.25);
-        float x200 = pow((1 - (16 * (10 - DISP)) / L), 0.25);
+        float x200 = pow((1 - (16 * (10 - d0_d[pos])) / L), 0.25);
 
         float psi2, psi200;
         if (!isnan(L) && L > 0) {
-            psi2 = -5 * ((10 - DISP) / L);
-            psi200 = -5 * ((10 - DISP) / L);
+            psi2 = -5 * ((10 - d0_d[pos]) / L);
+            psi200 = -5 * ((10 - d0_d[pos]) / L);
         } else {
             psi2 = 2 * logf((1 + y2 * y2) / 2);
             psi200 = 2 * logf((1 + x200) / 2) + logf((1 + x200 * x200) / 2) - 2 * atan(x200) + 0.5 * M_PI;
         }
 
-        float ust = (VON_KARMAN * ustar_d[pos]) / (logf((10 - DISP) / zom_d[pos]) - psi200);
+        ustar_d[pos] = (VON_KARMAN * ustar_d[pos]) / (logf((10 - d0_d[pos]) / zom_d[pos]) - psi200);
 
         float rah_fst_part = 1 / (ustar_d[pos] * VON_KARMAN);
         float rah_sec_part = logf((10 - d0_d[pos]) / zom_d[pos]) - psi2;
         float rah_trd_part = rah_fst_part * kb1_d[pos];
-        float rah = (rah_fst_part * rah_sec_part) + rah_trd_part;
-
-        ustar_d[pos] = ust;
-        rah_d[pos] = rah;
-        H_d[pos] = sensibleHeatFlux;
+        rah_d[pos] = (rah_fst_part * rah_sec_part) + rah_trd_part;
     }
 }
 
@@ -241,8 +235,8 @@ __global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_
 
         float dt_final = a + b * (surface_temperature_d[pos]);
 
-        float sensibleHeatFlux = RHO * SPECIFIC_HEAT_AIR * (dt_final) / rah_d[pos];
-        float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_d[pos], 3) * surface_temperature_d[pos]) / (VON_KARMAN * GRAVITY * sensibleHeatFlux));
+        H_d[pos] = RHO * SPECIFIC_HEAT_AIR * (dt_final) / rah_d[pos];
+        float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_d[pos], 3) * surface_temperature_d[pos]) / (VON_KARMAN * GRAVITY * H_d[pos]));
 
         float x1 = pow((1 - (16 * 0.1) / L), 0.25);
         float x2 = pow((1 - (16 * 2) / L), 0.25);
@@ -259,16 +253,12 @@ __global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_
             psi200 = 2 * logf((1 + x200) / 2) + logf((1 + x200 * x200) / 2) - 2 * atan(x200) + 0.5 * M_PI;
         }
 
-        float ust = (VON_KARMAN * u200) / (logf(200 / zom_d[pos]) - psi200);
-        float rah = (logf(2 / 0.1) - psi2 + psi1) / (ustar_d[pos] * VON_KARMAN);
+        ustar_d[pos] = (VON_KARMAN * u200) / (logf(200 / zom_d[pos]) - psi200);
+        rah_d[pos] = (logf(2 / 0.1) - psi2 + psi1) / (ustar_d[pos] * VON_KARMAN);
 
-        if ((pos == hot_pos) && (fabsf(1 - (rah_ini_hot / rah)) < 0.05)) {
+        if ((pos == hot_pos) && (fabsf(1 - (rah_ini_hot / rah_d[hot_pos])) < 0.05)) {
             atomicExch(stop_condition, 1);
         }
-
-        ustar_d[pos] = ust;
-        rah_d[pos] = rah;
-        H_d[pos] = sensibleHeatFlux;
     }
 }
 
@@ -281,7 +271,7 @@ __global__ void sensible_heat_flux_kernel(float *surface_temperature_d, float *r
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
-        sensible_heat_flux_d[pos] = RHO * SPECIFIC_HEAT_AIR * (a_d + b_d * (surface_temperature_d[pos])) / rah_d[pos];
+        sensible_heat_flux_d[pos] = RHO * SPECIFIC_HEAT_AIR * (a_d + b_d * surface_temperature_d[pos]) / rah_d[pos];
         if (!isnan(sensible_heat_flux_d[pos]) && sensible_heat_flux_d[pos] > (net_radiation_d[pos] - soil_heat_d[pos]))
             sensible_heat_flux_d[pos] = net_radiation_d[pos] - soil_heat_d[pos];
     }
