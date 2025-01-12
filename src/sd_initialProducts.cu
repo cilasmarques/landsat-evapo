@@ -119,7 +119,7 @@ string ndvi_function(Products products, Tensor tensors)
     HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.reflectance_nir_d, (void *)&neg1, products.reflectance_red_d, products.tensor_aux1_d, tensors.stream));
     HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.reflectance_nir_d, (void *)&pos1, products.reflectance_red_d, products.tensor_aux2_d, tensors.stream));
     HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos1, products.tensor_aux1_d, (void *)&pos1, products.tensor_aux2_d, products.ndvi_d, tensors.stream));
-    NAN_kernel<<<blocks_n, threads_n>>>(products.ndvi_d);
+    NDVI_NAN_kernel<<<blocks_n, threads_n>>>(products.ndvi_d);
     cudaEventRecord(stop);
 
     float cuda_time = 0;

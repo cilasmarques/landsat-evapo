@@ -14,6 +14,8 @@ extern __device__ int coldEndmemberCol_d;
 
 __global__ void NAN_kernel(float *pointer_d);
 
+__global__ void NDVI_NAN_kernel(float *pointer_d);
+
 /**
  * @brief  Compute the LAI of the bands.
  *

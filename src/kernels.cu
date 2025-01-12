@@ -22,6 +22,20 @@ __global__ void NAN_kernel(float *pointer_d)
     }
 }
 
+__global__ void NDVI_NAN_kernel(float *pointer_d)
+{
+    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
+        unsigned int pos = row * width_d + col;
+
+        if (pointer_d[pos] <= -1 || pointer_d[pos] >= 1)
+            pointer_d[pos] = NAN;
+    }
+}
+
 __global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *lai_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
