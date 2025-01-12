@@ -169,7 +169,6 @@ __global__ void filter_valid_values(const float *target, float *filtered, int *p
  * @param albedo_d The albedo array.
  * @param net_radiation_d The net radiation array.
  * @param soil_heat_d The soil heat array.
- * @param ho_d The ho array.
  * @param ndviQuartileLow The NDVI low quartile.
  * @param ndviQuartileHigh The NDVI high quartile.
  * @param tsQuartileLow The surface temperature low quartile.
@@ -179,7 +178,7 @@ __global__ void filter_valid_values(const float *target, float *filtered, int *p
  * @param albedoQuartileMid The albedo mid quartile.
  * @param albedoQuartileHigh The albedo high quartile.
  */
-__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surface_temperature_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh);
+__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surface_temperature_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh);
 
 /**
  * @brief Process the pixels of the target arrays and store the candidates in the hot and cold arrays.
@@ -192,7 +191,6 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
  * @param albedo_d The albedo array.
  * @param net_radiation_d The net radiation array.
  * @param soil_heat_d The soil heat array.
- * @param ho_d The ho array.
  * @param ndviHOTQuartile The NDVI hot quartile.
  * @param ndviCOLDQuartile The NDVI cold quartile.
  * @param tsHOTQuartile The surface temperature hot quartile.
@@ -200,7 +198,7 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
  * @param albedoHOTQuartile The albedo hot quartile.
  * @param albedoCOLDQuartile The albedo cold quartile.
  */
-__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surface_temperature_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile);
+__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surface_temperature_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile);
 
 /**
  * @brief  Compute the ustar of the bands.

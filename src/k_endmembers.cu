@@ -22,7 +22,7 @@ __global__ void filter_valid_values(const float *target, float *filtered, int *i
     }
 }
 
-__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surface_temperature_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh)
+__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surface_temperature_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -30,8 +30,6 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
         unsigned int row = idx / width_d;
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
-
-        ho_d[pos] = net_radiation_d[pos] - soil_heat_d[pos];
 
         bool hotNDVI = !isnan(ndvi_d[pos]) && ndvi_d[pos] > 0.10 && ndvi_d[pos] < ndviQuartileLow;
         bool hotAlbedo = !isnan(albedo_d[pos]) && albedo_d[pos] > albedoQuartileMid && albedo_d[pos] < albedoQuartileHigh;
@@ -53,7 +51,7 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
     }
 }
 
-__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surface_temperature_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float *ho_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile)
+__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surface_temperature_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -61,8 +59,6 @@ __global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *col
         unsigned int row = idx / width_d;
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
-
-        ho_d[pos] = net_radiation_d[pos] - soil_heat_d[pos];
 
         bool hotNDVI = !isnan(ndvi_d[pos]) && ndvi_d[pos] > 0.10 && ndvi_d[pos] < ndviHOTQuartile;
         bool hotAlbedo = !isnan(albedo_d[pos]) && albedo_d[pos] > albedoHOTQuartile;
