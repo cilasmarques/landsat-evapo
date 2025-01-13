@@ -381,7 +381,7 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl, Tenso
     // Vegetation indices
     result += ndvi_function(products);
     result += lai_function(products);
-    if (model_method == 0) { 
+    if (model_method == 0)  
         result += pai_function(products);
 
     // Emissivity indices
