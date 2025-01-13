@@ -215,21 +215,25 @@ string ustar_fuction(Products products, Tensor tensors, float u_const)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    float zu = 10;
-    float pos1 = 1;
-    float neg1 = -1;
-    float uVON = u_const * VON_KARMAN;
-    // ustar_d = (zu - DISP)
-    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&zu, products.only1_d, (void *)&neg1, products.d0_d, products.ustar_d, tensors.stream));
-
-    // ustar_d = (zu - DISP) / zom
-    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos1, products.ustar_d, (void *)&pos1, products.zom_d, products.ustar_d, tensors.stream));
-
-    // ustar_d = log((zu - DISP) / zom)
-    HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&pos1, products.ustar_d, products.ustar_d, tensors.stream));
-
-    // ustar[i] = (u10 * VON_KARMAN) / log((zu - DISP) / zom);
-    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&uVON, products.only1_d, (void *)&pos1, products.ustar_d, products.ustar_d, tensors.stream));
+    if (model_method == 0) {
+        float zu = 10;
+        float pos1 = 1;
+        float neg1 = -1;
+        float uVON = u_const * VON_KARMAN;
+        // ustar[i] = (u10 * VON_KARMAN) / log((zu - DISP) / zom);
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&zu, products.only1_d, (void *)&neg1, products.d0_d, products.ustar_d, tensors.stream));
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos1, products.ustar_d, (void *)&pos1, products.zom_d, products.ustar_d, tensors.stream));
+        HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&pos1, products.ustar_d, products.ustar_d, tensors.stream));
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&uVON, products.only1_d, (void *)&pos1, products.ustar_d, products.ustar_d, tensors.stream));
+    } else if (model_method == 1) {
+        float zu = 200;
+        float pos1 = 1;
+        float uVON = u_const * VON_KARMAN;
+        // ustar_d[pos] = (u200 * VON_KARMAN) / logf(200 / zom_d[pos]);
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&zu, products.only1_d, (void *)&pos1, products.zom_d, products.ustar_d, tensors.stream));
+        HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&pos1, products.ustar_d, products.ustar_d, tensors.stream));
+        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&uVON, products.only1_d, (void *)&pos1, products.ustar_d, products.ustar_d, tensors.stream));
+    }
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -360,13 +364,12 @@ string sensible_heat_flux_function(Products products, Tensor tensors)
     float neg1 = -1;
     float neg27315 = -273.15;
     float RHO_AIR = RHO * SPECIFIC_HEAT_AIR;
-    // tensor_aux1_d = this->surface_temperature[i] - 273.15
-    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add,
-                                                            (void *)&pos1, products.surface_temperature_d, (void *)&neg27315, products.only1_d, products.tensor_aux1_d, tensors.stream));
+    HANDLE_ERROR(cudaMemcpy(products.a, products.a_d, sizeof(float), cudaMemcpyDeviceToHost));
+    HANDLE_ERROR(cudaMemcpy(products.b, products.b_d, sizeof(float), cudaMemcpyDeviceToHost));
 
-    // tensor_aux1_d = a + b * (this->surface_temperature[i] - 273.15))
+    // tensor_aux1_d = a + b * this->surface_temperature[i]
     HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add,
-                                                            (void *)&products.a_d, products.only1_d, (void *)&products.b_d, products.tensor_aux1_d, products.tensor_aux1_d, tensors.stream));
+                                                            (void *)products.a, products.only1_d, (void *)products.b, products.surface_temperature_d, products.tensor_aux1_d, tensors.stream));
 
     // sensible_heat_flux[i] = RHO * SPECIFIC_HEAT_AIR * (a + b * (this->surface_temperature[i] - 273.15)) / this->aerodynamic_resistance[i];
     HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div,
