@@ -64,12 +64,10 @@ __global__ void enb_kernel(float *lai_d, float *ndvi_d, float *enb_d)
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
-        if (ndvi_d[pos] > 0)
-            enb_d[pos] = (lai_d[pos] < 3) ? 0.97 + 0.0033 * lai_d[pos] : 0.98;            
+        if (ndvi_d[pos] > 0 && lai_d[pos] >= 3)
+            enb_d[pos] = 0.98;            
         else if (ndvi_d[pos] < 0)
             enb_d[pos] = 0.99;
-        else
-            enb_d[pos] = NAN;
     }
 }
 
@@ -82,12 +80,10 @@ __global__ void eo_kernel(float *lai_d, float *ndvi_d, float *eo_d)
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
-        if (ndvi_d[pos] > 0)
-            eo_d[pos] = (lai_d[pos] < 3) ? 0.95 + 0.01 * lai_d[pos] : 0.98;            
+        if (ndvi_d[pos] > 0 && (lai_d[pos] >= 3) )
+            eo_d[pos] = 0.98;            
         else if (ndvi_d[pos] < 0)
             eo_d[pos] = 0.985;
-        else
-            eo_d[pos] = NAN;
     }
 }
 

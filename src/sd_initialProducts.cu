@@ -207,6 +207,9 @@ string enb_emissivity_function(Products products, Tensor tensors)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
+    float pos097 = 0.97;
+    float pos0033 = 0.0033;
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos097, products.only1_d, (void *)&pos0033, products.lai_d, products.enb_d, tensors.stream));
     enb_kernel<<<blocks_n, threads_n>>>(products.lai_d, products.ndvi_d, products.enb_d);
     cudaEventRecord(stop);
 
@@ -228,6 +231,9 @@ string eo_emissivity_function(Products products, Tensor tensors)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
+    float pos095 = 0.95;
+    float pos001 = 0.01;
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos095, products.only1_d, (void *)&pos001, products.lai_d, products.eo_d, tensors.stream));
     eo_kernel<<<blocks_n, threads_n>>>(products.lai_d, products.ndvi_d, products.eo_d);
     cudaEventRecord(stop);
 
