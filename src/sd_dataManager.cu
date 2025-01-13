@@ -100,6 +100,7 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMalloc((void **)&this->albedo_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->ndvi_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->pai_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->savi_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->lai_d, band_bytes));
 
     HANDLE_ERROR(cudaMalloc((void **)&this->enb_d, band_bytes));

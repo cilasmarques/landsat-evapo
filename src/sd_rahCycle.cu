@@ -362,7 +362,6 @@ string sensible_heat_flux_function(Products products, Tensor tensors)
     cudaEventRecord(start);
     float pos1 = 1;
     float neg1 = -1;
-    float neg27315 = -273.15;
     float RHO_AIR = RHO * SPECIFIC_HEAT_AIR;
     HANDLE_ERROR(cudaMemcpy(products.a, products.a_d, sizeof(float), cudaMemcpyDeviceToHost));
     HANDLE_ERROR(cudaMemcpy(products.b, products.b_d, sizeof(float), cudaMemcpyDeviceToHost));

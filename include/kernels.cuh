@@ -19,11 +19,10 @@ __global__ void NDVI_NAN_kernel(float *pointer_d);
 /**
  * @brief  Compute the LAI of the bands.
  *
- * @param reflectance_nir_d  The NIR reflectance.
- * @param reflectance_red_d  The red reflectance.
+ * @param savid  The SAVI.
  * @param lai_d  The LAI.
  */
-__global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *lai_d);
+__global__ void lai_kernel(float *savi_d, float *lai_d);
 
 /**
  * @brief  Compute the ENV of the bands.
