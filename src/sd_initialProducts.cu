@@ -475,8 +475,9 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl, Tenso
 
     // Vegetation indices
     result += ndvi_function(products, tensors);
-    result += pai_function(products, tensors);
     result += lai_function(products, tensors);
+    if (model_method == 0)
+        result += pai_function(products, tensors);
 
     // Emissivity indices
     result += enb_emissivity_function(products, tensors);
