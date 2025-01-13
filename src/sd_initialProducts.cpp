@@ -393,8 +393,9 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
 
     // Vegetation indices
     result += ndvi_function(products);
-    result += pai_function(products);
     result += lai_function(products);
+    if (model_method == 0)  
+        result += pai_function(products);
 
     // Emissivity indices
     result += enb_emissivity_function(products);
