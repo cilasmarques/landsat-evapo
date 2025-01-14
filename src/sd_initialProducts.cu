@@ -14,13 +14,13 @@ string radiance_function(Products products, MTL mtl)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start, 0);
-    rad_kernel<<<blocks_n, threads_n>>>(products.band_blue_d, products.radiance_blue_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_BLUE_INDEX);
-    rad_kernel<<<blocks_n, threads_n>>>(products.band_green_d, products.radiance_green_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_GREEN_INDEX);
-    rad_kernel<<<blocks_n, threads_n>>>(products.band_red_d, products.radiance_red_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_RED_INDEX);
-    rad_kernel<<<blocks_n, threads_n>>>(products.band_nir_d, products.radiance_nir_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_NIR_INDEX);
-    rad_kernel<<<blocks_n, threads_n>>>(products.band_swir1_d, products.radiance_swir1_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_SWIR1_INDEX);
+    // rad_kernel<<<blocks_n, threads_n>>>(products.band_blue_d, products.radiance_blue_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_BLUE_INDEX);
+    // rad_kernel<<<blocks_n, threads_n>>>(products.band_green_d, products.radiance_green_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_GREEN_INDEX);
+    // rad_kernel<<<blocks_n, threads_n>>>(products.band_red_d, products.radiance_red_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_RED_INDEX);
+    // rad_kernel<<<blocks_n, threads_n>>>(products.band_nir_d, products.radiance_nir_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_NIR_INDEX);
+    // rad_kernel<<<blocks_n, threads_n>>>(products.band_swir1_d, products.radiance_swir1_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_SWIR1_INDEX);
+    // rad_kernel<<<blocks_n, threads_n>>>(products.band_swir2_d, products.radiance_swir2_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_SWIR2_INDEX);
     rad_kernel<<<blocks_n, threads_n>>>(products.band_termal_d, products.radiance_termal_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_TERMAL_INDEX);
-    rad_kernel<<<blocks_n, threads_n>>>(products.band_swir2_d, products.radiance_swir2_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_SWIR2_INDEX);
     cudaEventRecord(stop, 0);
 
     float cuda_time = 0;
