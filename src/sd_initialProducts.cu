@@ -123,7 +123,7 @@ string pai_function(Products products)
     return "KERNELS,PAI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string lai_function(Products products)
+string lai_function(Products products, Tensor tensors)
 {
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;
@@ -133,7 +133,25 @@ string lai_function(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    lai_kernel<<<blocks_n, threads_n>>>(products.reflectance_nir_d, products.reflectance_red_d, products.lai_d);
+    float neg1 = -1;
+    float pos1 = 1;
+    float pos05 = 0.5; // L
+    float pos15 = 1.5; // 1 + L
+    float pos069 = 0.69;
+    float frc059 = 1 / 0.59;
+    float frc091 = 1 / 0.91;
+
+    // float savi = ((1 + 0.5) * (reflectance_nir_d[pos] - reflectance_red_d[pos])) / (0.5 + (reflectance_nir_d[pos] + reflectance_red_d[pos]));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.reflectance_nir_d, (void *)&neg1, products.reflectance_red_d, products.savi_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.reflectance_nir_d, (void *)&pos1, products.reflectance_red_d, products.tensor_aux1_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.tensor_aux1_d, (void *)&pos05, products.only1_d, products.tensor_aux1_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos15, products.savi_d, (void *)&pos1, products.tensor_aux1_d, products.savi_d, tensors.stream));
+
+    // lai_d[pos] = -logf((0.69 - savi) / 0.59) / 0.91;
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseTrinaryExecute(tensors.handle, tensors.tensor_plan_trinity_add_mult, (void *)&pos069, products.only1_d, (void *)&neg1, products.savi_d, (void *)&frc059, products.only1_d, products.lai_d, tensors.stream));
+    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_log_mul, (void *)&frc091, products.only1_d, (void *)&neg1, products.lai_d, products.lai_d, tensors.stream));
+
+    lai_kernel<<<blocks_n, threads_n>>>(products.savi_d, products.lai_d);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -380,7 +398,7 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl, Tenso
 
     // Vegetation indices
     result += ndvi_function(products);
-    result += lai_function(products);
+    result += lai_function(products, tensors);
     if (model_method == 0)  
         result += pai_function(products);
 

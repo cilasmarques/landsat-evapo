@@ -230,7 +230,7 @@ string ustar_fuction(Products products, float u_const)
     return "KERNELS,USTAR," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string aerodynamic_resistance_fuction(Products products, Tensor tensors)
+string aerodynamic_resistance_fuction(Products products)
 {
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;
@@ -240,28 +240,10 @@ string aerodynamic_resistance_fuction(Products products, Tensor tensors)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    if (model_method == 0) {
-        float pos1 = 1;
-        float neg1 = -1;
-        float zu = 10;
-        // float rah_fst_part = (1 / (ustar[i] * VON_KARMAN));
-        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos1, products.only1_d, (void *)&VON_KARMAN, products.ustar_d, products.rah_fst_part_d, tensors.stream));
-
-        // float rah_sec_part = log(((zu - DISP) / zom));
-        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&zu, products.only1_d, (void *)&neg1, products.d0_d, products.rah_sec_part_d, tensors.stream));
-        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&pos1, products.rah_sec_part_d, (void *)&pos1, products.zom_d, products.rah_sec_part_d, tensors.stream));
-        HANDLE_CUTENSOR_ERROR(cutensorPermute(tensors.handle, tensors.tensor_plan_permute_log, (void *)&pos1, products.rah_sec_part_d, products.rah_sec_part_d, tensors.stream));
-
-        // float rah_trd_part = rah_fst_part * kb1_d[pos];
-        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, products.rah_fst_part_d, (void *)&pos1, products.kb1_d, products.rah_trd_part_d, tensors.stream));
-
-        // rah_d[pos] = (rah_fst_part * rah_sec_part) + rah_trd_part;
-        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_mult, (void *)&pos1, products.rah_fst_part_d, (void *)&pos1, products.rah_sec_part_d, products.rah_d, tensors.stream));
-        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&pos1, products.rah_d, (void *)&pos1, products.rah_trd_part_d, products.rah_d, tensors.stream));
-    } else {
-        float logz1z2 = logf(2.0 / 0.1);
-        HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_div, (void *)&logz1z2, products.only1_d, (void *)&VON_KARMAN, products.ustar_d, products.rah_d, tensors.stream));
-    }
+    if (model_method == 0)
+        aerodynamic_resistance_kernel_STEEP<<<blocks_n, threads_n>>>(products.zom_d, products.d0_d, products.ustar_d, products.kb1_d, products.rah_d);
+    else
+        aerodynamic_resistance_kernel_ASEBAL<<<blocks_n, threads_n>>>(products.ustar_d, products.rah_d);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -269,7 +251,7 @@ string aerodynamic_resistance_fuction(Products products, Tensor tensors)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "CUTENSOR,RAH_INI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "KERNELS,RAH_INI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string rah_correction_function_blocks_STEEP(Products products, float ndvi_min, float ndvi_max)
@@ -391,13 +373,13 @@ string Products::converge_rah_cycle(Products products, Station station, Tensor t
         result += zom_fuction(products, tensors, station.A_ZOM, station.B_ZOM);
         result += ustar_fuction(products, u10);
         result += kb_function(products, tensors, ndvi_max, ndvi_min);
-        result += aerodynamic_resistance_fuction(products, tensors);
+        result += aerodynamic_resistance_fuction(products);
         result += rah_correction_function_blocks_STEEP(products, ndvi_min, ndvi_max);
         result += sensible_heat_flux_function(products);
     } else { // ASEBAL
         result += zom_fuction(products, tensors, station.A_ZOM, station.B_ZOM);
         result += ustar_fuction(products, u200);
-        result += aerodynamic_resistance_fuction(products, tensors);
+        result += aerodynamic_resistance_fuction(products);
         result += rah_correction_function_blocks_ASEBAL(products, u200);
         result += sensible_heat_flux_function(products);
     }

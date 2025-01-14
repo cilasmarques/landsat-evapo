@@ -90,7 +90,7 @@ __global__ void pai_kernel(float *reflectance_nir_d, float *reflectance_red_d, f
     }
 }
 
-__global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *lai_d)
+__global__ void lai_kernel(float *savi_d, float *lai_d)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -99,13 +99,9 @@ __global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, f
         unsigned int col = idx % width_d;
         unsigned int pos = row * width_d + col;
 
-        float savi = ((1 + 0.5) * (reflectance_nir_d[pos] - reflectance_red_d[pos])) / (0.5 + (reflectance_nir_d[pos] + reflectance_red_d[pos]));
-
-        if (!isnan(savi) && savi > 0.687)
+        if (!isnan(savi_d[pos]) && savi_d[pos] > 0.687)
             lai_d[pos] = 6;
-        if (!isnan(savi) && savi <= 0.687)
-            lai_d[pos] = -logf((0.69 - savi) / 0.59) / 0.91;
-        if (!isnan(savi) && savi < 0.1)
+        if (!isnan(savi_d[pos]) && savi_d[pos] < 0.1)
             lai_d[pos] = 0;
 
         if (lai_d[pos] < 0)

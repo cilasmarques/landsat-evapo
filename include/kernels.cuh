@@ -71,11 +71,10 @@ __global__ void pai_kernel(float *reflectance_nir_d, float *reflectance_red_d, f
 /**
  * @brief  Compute the LAI of the bands.
  *
- * @param reflectance_nir_d  The NIR reflectance.
- * @param reflectance_red_d  The red reflectance.
+ * @param savi_d  The SAVI.
  * @param lai_d  The LAI.
  */
-__global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *lai_d);
+__global__ void lai_kernel(float *savi_d, float *lai_d);
 
 /**
  * @brief  Compute the ENV of the bands.
@@ -218,6 +217,25 @@ __global__ void ustar_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, fl
  * @param u200  The U200 constant.
  */
 __global__ void ustar_kernel_ASEBAL(float *zom_d, float *ustar_d, float u200);
+
+/**
+ * @brief  Compute the aerodynamic resistance of the bands.
+ *
+ * @param zom_d  The ZOM.
+ * @param d0_d  The D0.
+ * @param ustar_d  The USTAR.
+ * @param kb1_d  The KB-1.
+ * @param rah_d  The RAH.
+ */
+__global__ void aerodynamic_resistance_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, float *kb1_d, float *rah_d);
+
+/**
+ * @brief  Compute the aerodynamic resistance of the bands.
+ *
+ * @param ustar_d  The USTAR.
+ * @param rah_d  The RAH.
+ */
+__global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_d);
 
 /**
  * @brief  Compute the rah correction cycle. (STEEP algorithm)

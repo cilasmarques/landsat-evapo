@@ -27,6 +27,34 @@ __global__ void ustar_kernel_ASEBAL(float *zom_d, float *ustar_d, float u200)
     }
 }
 
+__global__ void aerodynamic_resistance_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, float *kb1_d, float *rah_d)
+{
+    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
+        unsigned int pos = row * width_d + col;
+
+        float rah_fst_part = 1 / (ustar_d[pos] * VON_KARMAN);
+        float rah_sec_part = logf((10 - d0_d[pos]) / zom_d[pos]);
+        float rah_trd_part = rah_fst_part * kb1_d[pos];
+        rah_d[pos] = (rah_fst_part * rah_sec_part) + rah_trd_part;
+    }
+}
+
+__global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_d)
+{
+    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (idx < width_d * height_d) {
+        unsigned int row = idx / width_d;
+        unsigned int col = idx % width_d;
+        unsigned int pos = row * width_d + col;
+        rah_d[pos] = logf(2.0 / 0.1) / (ustar_d[pos] * VON_KARMAN);
+    }
+}
+
 __global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surface_temperature_d, float *d0_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min)
 {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
