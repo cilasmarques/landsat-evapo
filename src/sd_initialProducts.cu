@@ -15,20 +15,20 @@ string radiance_function(Products products, MTL mtl, Tensor tensors)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start, 0);
-    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&mtl.rad_mult[PARAM_BAND_BLUE_INDEX], products.band_blue_d, (void *)&mtl.rad_add[PARAM_BAND_BLUE_INDEX], products.only1_d, products.radiance_blue_d, tensors.stream));
-    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&mtl.rad_mult[PARAM_BAND_GREEN_INDEX], products.band_green_d, (void *)&mtl.rad_add[PARAM_BAND_GREEN_INDEX], products.only1_d, products.radiance_green_d, tensors.stream));
-    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&mtl.rad_mult[PARAM_BAND_RED_INDEX], products.band_red_d, (void *)&mtl.rad_add[PARAM_BAND_RED_INDEX], products.only1_d, products.radiance_red_d, tensors.stream));
-    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&mtl.rad_mult[PARAM_BAND_NIR_INDEX], products.band_nir_d, (void *)&mtl.rad_add[PARAM_BAND_NIR_INDEX], products.only1_d, products.radiance_nir_d, tensors.stream));
-    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&mtl.rad_mult[PARAM_BAND_SWIR1_INDEX], products.band_swir1_d, (void *)&mtl.rad_add[PARAM_BAND_SWIR1_INDEX], products.only1_d, products.radiance_swir1_d, tensors.stream));
+    // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&mtl.rad_mult[PARAM_BAND_BLUE_INDEX], products.band_blue_d, (void *)&mtl.rad_add[PARAM_BAND_BLUE_INDEX], products.only1_d, products.radiance_blue_d, tensors.stream));
+    // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&mtl.rad_mult[PARAM_BAND_GREEN_INDEX], products.band_green_d, (void *)&mtl.rad_add[PARAM_BAND_GREEN_INDEX], products.only1_d, products.radiance_green_d, tensors.stream));
+    // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&mtl.rad_mult[PARAM_BAND_RED_INDEX], products.band_red_d, (void *)&mtl.rad_add[PARAM_BAND_RED_INDEX], products.only1_d, products.radiance_red_d, tensors.stream));
+    // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&mtl.rad_mult[PARAM_BAND_NIR_INDEX], products.band_nir_d, (void *)&mtl.rad_add[PARAM_BAND_NIR_INDEX], products.only1_d, products.radiance_nir_d, tensors.stream));
+    // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&mtl.rad_mult[PARAM_BAND_SWIR1_INDEX], products.band_swir1_d, (void *)&mtl.rad_add[PARAM_BAND_SWIR1_INDEX], products.only1_d, products.radiance_swir1_d, tensors.stream));
+    // HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&mtl.rad_mult[PARAM_BAND_SWIR2_INDEX], products.band_swir2_d, (void *)&mtl.rad_add[PARAM_BAND_SWIR2_INDEX], products.only1_d, products.radiance_swir2_d, tensors.stream));
     HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&mtl.rad_mult[PARAM_BAND_TERMAL_INDEX], products.band_termal_d, (void *)&mtl.rad_add[PARAM_BAND_TERMAL_INDEX], products.only1_d, products.radiance_termal_d, tensors.stream));
-    HANDLE_CUTENSOR_ERROR(cutensorElementwiseBinaryExecute(tensors.handle, tensors.tensor_plan_binary_add, (void *)&mtl.rad_mult[PARAM_BAND_SWIR2_INDEX], products.band_swir2_d, (void *)&mtl.rad_add[PARAM_BAND_SWIR2_INDEX], products.only1_d, products.radiance_swir2_d, tensors.stream));
-    NAN_kernel<<<blocks_n, threads_n>>>(products.radiance_blue_d);
-    NAN_kernel<<<blocks_n, threads_n>>>(products.radiance_green_d);
-    NAN_kernel<<<blocks_n, threads_n>>>(products.radiance_red_d);
-    NAN_kernel<<<blocks_n, threads_n>>>(products.radiance_nir_d);
-    NAN_kernel<<<blocks_n, threads_n>>>(products.radiance_swir1_d);
+    // NAN_kernel<<<blocks_n, threads_n>>>(products.radiance_blue_d);
+    // NAN_kernel<<<blocks_n, threads_n>>>(products.radiance_green_d);
+    // NAN_kernel<<<blocks_n, threads_n>>>(products.radiance_red_d);
+    // NAN_kernel<<<blocks_n, threads_n>>>(products.radiance_nir_d);
+    // NAN_kernel<<<blocks_n, threads_n>>>(products.radiance_swir1_d);
+    // NAN_kernel<<<blocks_n, threads_n>>>(products.radiance_swir2_d);
     NAN_kernel<<<blocks_n, threads_n>>>(products.radiance_termal_d);
-    NAN_kernel<<<blocks_n, threads_n>>>(products.radiance_swir2_d);
     cudaEventRecord(stop, 0);
 
     float cuda_time = 0;
