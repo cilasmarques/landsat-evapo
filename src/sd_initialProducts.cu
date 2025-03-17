@@ -374,16 +374,6 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
     HANDLE_ERROR(cudaStreamSynchronize(products.stream_swir2));
     HANDLE_ERROR(cudaStreamSynchronize(products.stream_tal));
 
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_blue));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_green));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_red));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_nir));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_swir1));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_termal));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_swir2));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_tal));
-
-
     cudaEventRecord(start);
     result += radiance_function(products, mtl);
     result += reflectance_function(products, mtl);
@@ -410,6 +400,16 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
     result += net_radiation_function(products);
     result += soil_heat_flux_function(products);
     cudaEventRecord(stop);
+
+
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_blue));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_green));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_red));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_nir));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_swir1));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_termal));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_swir2));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_tal));
 
     float cuda_time = 0;
     cudaEventSynchronize(stop);
