@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
     time_output << products.converge_rah_cycle(products, station);
     time_output << products.compute_H_ET(products, station, mtl);
 
-    save products
+    //save products
     time_output << products.host_data();
     time_output << products.save_products(output_folder);
     time_output << products.print_products(output_folder);

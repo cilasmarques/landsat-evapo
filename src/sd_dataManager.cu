@@ -221,7 +221,7 @@ string Products::read_data(TIFF **landsat_bands)
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     result += "KERNELS,P0_READ_INPUT," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 
-    return result
+    return result;
 }   
 
 string Products::host_data()

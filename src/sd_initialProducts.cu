@@ -372,7 +372,7 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
     HANDLE_ERROR(cudaStreamSynchronize(products.stream_swir1));
     HANDLE_ERROR(cudaStreamSynchronize(products.stream_termal));
     HANDLE_ERROR(cudaStreamSynchronize(products.stream_swir2));
-    HANDLE_ERROR(cudaStreamSynchronize(producsts.stream_tal));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_tal));
 
     HANDLE_ERROR(cudaStreamDestroy(products.stream_blue));
     HANDLE_ERROR(cudaStreamDestroy(products.stream_green));
@@ -381,7 +381,7 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
     HANDLE_ERROR(cudaStreamDestroy(products.stream_swir1));
     HANDLE_ERROR(cudaStreamDestroy(products.stream_termal));
     HANDLE_ERROR(cudaStreamDestroy(products.stream_swir2));
-    HANDLE_ERROR(cudaStreamDestroy(producsts.stream_tal));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_tal));
 
 
     cudaEventRecord(start);
