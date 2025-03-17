@@ -365,6 +365,25 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
 
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_blue));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_green));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_red));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_nir));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_swir1));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_termal));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_swir2));
+    HANDLE_ERROR(cudaStreamSynchronize(producsts.stream_tal));
+
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_blue));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_green));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_red));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_nir));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_swir1));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_termal));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_swir2));
+    HANDLE_ERROR(cudaStreamDestroy(producsts.stream_tal));
+
+
     cudaEventRecord(start);
     result += radiance_function(products, mtl);
     result += reflectance_function(products, mtl);

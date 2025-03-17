@@ -17,48 +17,57 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     this->band_swir2 = (float *)malloc(band_bytes);
     this->tal = (float *)malloc(band_bytes);
 
-    // this->radiance_blue = (float *)malloc(band_bytes);
-    // this->radiance_green = (float *)malloc(band_bytes);
-    // this->radiance_red = (float *)malloc(band_bytes);
-    // this->radiance_nir = (float *)malloc(band_bytes);
-    // this->radiance_swir1 = (float *)malloc(band_bytes);
-    // this->radiance_termal = (float *)malloc(band_bytes);
-    // this->radiance_swir2 = (float *)malloc(band_bytes);
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_blue));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_green));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_red));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_nir));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_swir1));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_termal));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_swir2));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_tal));
 
-    // this->reflectance_blue = (float *)malloc(band_bytes);
-    // this->reflectance_green = (float *)malloc(band_bytes);
-    // this->reflectance_red = (float *)malloc(band_bytes);
-    // this->reflectance_nir = (float *)malloc(band_bytes);
-    // this->reflectance_swir1 = (float *)malloc(band_bytes);
-    // this->reflectance_termal = (float *)malloc(band_bytes);
-    // this->reflectance_swir2 = (float *)malloc(band_bytes);
+    this->radiance_blue = (float *)malloc(band_bytes);
+    this->radiance_green = (float *)malloc(band_bytes);
+    this->radiance_red = (float *)malloc(band_bytes);
+    this->radiance_nir = (float *)malloc(band_bytes);
+    this->radiance_swir1 = (float *)malloc(band_bytes);
+    this->radiance_termal = (float *)malloc(band_bytes);
+    this->radiance_swir2 = (float *)malloc(band_bytes);
 
-    // this->albedo = (float *)malloc(band_bytes);
-    // this->ndvi = (float *)malloc(band_bytes);
-    // this->soil_heat = (float *)malloc(band_bytes);
-    // this->surface_temperature = (float *)malloc(band_bytes);
-    // this->net_radiation = (float *)malloc(band_bytes);
-    // this->lai = (float *)malloc(band_bytes);
-    // this->savi = (float *)malloc(band_bytes);
-    // this->pai = (float *)malloc(band_bytes);
-    // this->enb_emissivity = (float *)malloc(band_bytes);
-    // this->eo_emissivity = (float *)malloc(band_bytes);
-    // this->ea_emissivity = (float *)malloc(band_bytes);
-    // this->short_wave_radiation = (float *)malloc(band_bytes);
-    // this->large_wave_radiation_surface = (float *)malloc(band_bytes);
-    // this->large_wave_radiation_atmosphere = (float *)malloc(band_bytes);
+    this->reflectance_blue = (float *)malloc(band_bytes);
+    this->reflectance_green = (float *)malloc(band_bytes);
+    this->reflectance_red = (float *)malloc(band_bytes);
+    this->reflectance_nir = (float *)malloc(band_bytes);
+    this->reflectance_swir1 = (float *)malloc(band_bytes);
+    this->reflectance_termal = (float *)malloc(band_bytes);
+    this->reflectance_swir2 = (float *)malloc(band_bytes);
 
-    // this->surface_temperature = (float *)malloc(band_bytes);
-    // this->d0 = (float *)malloc(band_bytes);
-    // this->zom = (float *)malloc(band_bytes);
-    // this->ustar = (float *)malloc(band_bytes);
-    // this->kb1 = (float *)malloc(band_bytes);
-    // this->aerodynamic_resistance = (float *)malloc(band_bytes);
-    // this->sensible_heat_flux = (float *)malloc(band_bytes);
+    this->albedo = (float *)malloc(band_bytes);
+    this->ndvi = (float *)malloc(band_bytes);
+    this->soil_heat = (float *)malloc(band_bytes);
+    this->surface_temperature = (float *)malloc(band_bytes);
+    this->net_radiation = (float *)malloc(band_bytes);
+    this->lai = (float *)malloc(band_bytes);
+    this->savi = (float *)malloc(band_bytes);
+    this->pai = (float *)malloc(band_bytes);
+    this->enb_emissivity = (float *)malloc(band_bytes);
+    this->eo_emissivity = (float *)malloc(band_bytes);
+    this->ea_emissivity = (float *)malloc(band_bytes);
+    this->short_wave_radiation = (float *)malloc(band_bytes);
+    this->large_wave_radiation_surface = (float *)malloc(band_bytes);
+    this->large_wave_radiation_atmosphere = (float *)malloc(band_bytes);
 
-    // this->latent_heat_flux = (float *)malloc(band_bytes);
-    // this->net_radiation_24h = (float *)malloc(band_bytes);
-    // this->evapotranspiration_24h = (float *)malloc(band_bytes);
+    this->surface_temperature = (float *)malloc(band_bytes);
+    this->d0 = (float *)malloc(band_bytes);
+    this->zom = (float *)malloc(band_bytes);
+    this->ustar = (float *)malloc(band_bytes);
+    this->kb1 = (float *)malloc(band_bytes);
+    this->aerodynamic_resistance = (float *)malloc(band_bytes);
+    this->sensible_heat_flux = (float *)malloc(band_bytes);
+
+    this->latent_heat_flux = (float *)malloc(band_bytes);
+    this->net_radiation_24h = (float *)malloc(band_bytes);
+    this->evapotranspiration_24h = (float *)malloc(band_bytes);
 
     HANDLE_ERROR(cudaMemcpyToSymbol(width_d, &width_band, sizeof(int), 0, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpyToSymbol(height_d, &height_band, sizeof(int), 0, cudaMemcpyHostToDevice));
@@ -66,9 +75,9 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     this->stop_condition = (int *)malloc(sizeof(int));
     HANDLE_ERROR(cudaMalloc((void **)&this->stop_condition_d, sizeof(int)));
 
-    //const size_t MAXC = sizeof(Endmember) * height_band * width_band;
-    //HANDLE_ERROR(cudaMalloc((void **)&this->hotCandidates_d, MAXC));
-    //HANDLE_ERROR(cudaMalloc((void **)&this->coldCandidates_d, MAXC));
+    const size_t MAXC = sizeof(Endmember) * height_band * width_band;
+    HANDLE_ERROR(cudaMalloc((void **)&this->hotCandidates_d, MAXC));
+    HANDLE_ERROR(cudaMalloc((void **)&this->coldCandidates_d, MAXC));
 
     HANDLE_ERROR(cudaMalloc((void **)&this->band_blue_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->band_green_d, band_bytes));
@@ -79,47 +88,47 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMalloc((void **)&this->band_swir2_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->tal_d, band_bytes));
 
-    // HANDLE_ERROR(cudaMalloc((void **)&this->radiance_blue_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->radiance_green_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->radiance_red_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->radiance_nir_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->radiance_swir1_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->radiance_termal_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->radiance_swir2_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->radiance_blue_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->radiance_green_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->radiance_red_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->radiance_nir_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->radiance_swir1_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->radiance_termal_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->radiance_swir2_d, band_bytes));
 
-    // HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_blue_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_green_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_red_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_nir_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_swir1_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_termal_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_swir2_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_blue_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_green_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_red_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_nir_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_swir1_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_termal_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_swir2_d, band_bytes));
 
-    // HANDLE_ERROR(cudaMalloc((void **)&this->albedo_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->ndvi_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->pai_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->lai_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->albedo_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->ndvi_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->pai_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->lai_d, band_bytes));
 
-    // HANDLE_ERROR(cudaMalloc((void **)&this->enb_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->eo_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->ea_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->short_wave_radiation_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->large_wave_radiation_surface_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->large_wave_radiation_atmosphere_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->surface_temperature_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->net_radiation_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->soil_heat_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->enb_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->eo_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->ea_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->short_wave_radiation_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->large_wave_radiation_surface_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->large_wave_radiation_atmosphere_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->surface_temperature_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->net_radiation_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->soil_heat_d, band_bytes));
 
-    // HANDLE_ERROR(cudaMalloc((void **)&this->zom_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->d0_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->kb1_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->ustar_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->rah_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->sensible_heat_flux_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->zom_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->d0_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->kb1_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->ustar_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->rah_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->sensible_heat_flux_d, band_bytes));
 
-    // HANDLE_ERROR(cudaMalloc((void **)&this->latent_heat_flux_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->net_radiation_24h_d, band_bytes));
-    // HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_24h_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->latent_heat_flux_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->net_radiation_24h_d, band_bytes));
+    HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_24h_d, band_bytes));
 };
 
 string Products::read_data(TIFF **landsat_bands)
@@ -174,44 +183,22 @@ string Products::read_data(TIFF **landsat_bands)
             _TIFFfree(band_line_buff);
         }
     }
+    
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    
+    cudaEventRecord(start);
+    HANDLE_ERROR(cudaMemcpyAsync(band_blue_d, band_blue, band_bytes, cudaMemcpyHostToDevice, this->stream_blue));
+    HANDLE_ERROR(cudaMemcpyAsync(band_green_d, band_green, band_bytes, cudaMemcpyHostToDevice, this->stream_green));
+    HANDLE_ERROR(cudaMemcpyAsync(band_red_d, band_red, band_bytes, cudaMemcpyHostToDevice, this->stream_red));
+    HANDLE_ERROR(cudaMemcpyAsync(band_nir_d, band_nir, band_bytes, cudaMemcpyHostToDevice, this->stream_nir));
+    HANDLE_ERROR(cudaMemcpyAsync(band_swir1_d, band_swir1, band_bytes, cudaMemcpyHostToDevice, this->stream_swir1));
+    HANDLE_ERROR(cudaMemcpyAsync(band_termal_d, band_termal, band_bytes, cudaMemcpyHostToDevice, this->stream_termal));
+    HANDLE_ERROR(cudaMemcpyAsync(band_swir2_d, band_swir2, band_bytes, cudaMemcpyHostToDevice, this->stream_swir2));
+    HANDLE_ERROR(cudaMemcpyAsync(tal_d, tal, band_bytes, cudaMemcpyHostToDevice, this->stream_tal));
 
-    cudaStream_t stream_blue, stream_green, stream_red, stream_nir, stream_swir1, stream_termal, stream_swir2, stream_tal;
-    HANDLE_ERROR(cudaStreamCreate(&stream_blue));
-    HANDLE_ERROR(cudaStreamCreate(&stream_green));
-    HANDLE_ERROR(cudaStreamCreate(&stream_red));
-    HANDLE_ERROR(cudaStreamCreate(&stream_nir));
-    HANDLE_ERROR(cudaStreamCreate(&stream_swir1));
-    HANDLE_ERROR(cudaStreamCreate(&stream_termal));
-    HANDLE_ERROR(cudaStreamCreate(&stream_swir2));
-    HANDLE_ERROR(cudaStreamCreate(&stream_tal));
-
-
-    HANDLE_ERROR(cudaMemcpyAsync(band_blue_d, band_blue, band_bytes, cudaMemcpyHostToDevice, stream_blue));
-    HANDLE_ERROR(cudaMemcpyAsync(band_green_d, band_green, band_bytes, cudaMemcpyHostToDevice, stream_green));
-    HANDLE_ERROR(cudaMemcpyAsync(band_red_d, band_red, band_bytes, cudaMemcpyHostToDevice, stream_red));
-    HANDLE_ERROR(cudaMemcpyAsync(band_nir_d, band_nir, band_bytes, cudaMemcpyHostToDevice, stream_nir));
-    HANDLE_ERROR(cudaMemcpyAsync(band_swir1_d, band_swir1, band_bytes, cudaMemcpyHostToDevice, stream_swir1));
-    HANDLE_ERROR(cudaMemcpyAsync(band_termal_d, band_termal, band_bytes, cudaMemcpyHostToDevice, stream_termal));
-    HANDLE_ERROR(cudaMemcpyAsync(band_swir2_d, band_swir2, band_bytes, cudaMemcpyHostToDevice, stream_swir2));
-    HANDLE_ERROR(cudaMemcpyAsync(tal_d, tal, band_bytes, cudaMemcpyHostToDevice, stream_tal));
-
-    HANDLE_ERROR(cudaStreamSynchronize(stream_blue));
-    HANDLE_ERROR(cudaStreamSynchronize(stream_green));
-    HANDLE_ERROR(cudaStreamSynchronize(stream_red));
-    HANDLE_ERROR(cudaStreamSynchronize(stream_nir));
-    HANDLE_ERROR(cudaStreamSynchronize(stream_swir1));
-    HANDLE_ERROR(cudaStreamSynchronize(stream_termal));
-    HANDLE_ERROR(cudaStreamSynchronize(stream_swir2));
-    HANDLE_ERROR(cudaStreamSynchronize(stream_tal));
-
-    HANDLE_ERROR(cudaStreamDestroy(stream_blue));
-    HANDLE_ERROR(cudaStreamDestroy(stream_green));
-    HANDLE_ERROR(cudaStreamDestroy(stream_red));
-    HANDLE_ERROR(cudaStreamDestroy(stream_nir));
-    HANDLE_ERROR(cudaStreamDestroy(stream_swir1));
-    HANDLE_ERROR(cudaStreamDestroy(stream_termal));
-    HANDLE_ERROR(cudaStreamDestroy(stream_swir2));
-    HANDLE_ERROR(cudaStreamDestroy(stream_tal));
+    cudaEventRecord(stop);
     // HANDLE_ERROR(cudaMemcpy(band_blue_d, band_blue, band_bytes, cudaMemcpyHostToDevice));
     // HANDLE_ERROR(cudaMemcpy(band_green_d, band_green, band_bytes, cudaMemcpyHostToDevice));
     // HANDLE_ERROR(cudaMemcpy(band_red_d, band_red, band_bytes, cudaMemcpyHostToDevice));
@@ -224,8 +211,18 @@ string Products::read_data(TIFF **landsat_bands)
     end = system_clock::now();
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
-    return "SERIAL,P0_READ_INPUT," + to_string(general_time) + "," + to_string(initial_time) + "," + to_string(final_time) + "\n";
-}
+
+    string result = "";
+    result += "SERIAL,P0_READ_INPUT," + to_string(general_time) + "," + to_string(initial_time) + "," + to_string(final_time) + "\n";
+
+    float cuda_time = 0;
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&cuda_time, start, stop);
+    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    result += "KERNELS,P0_READ_INPUT," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+
+    return result
+}   
 
 string Products::host_data()
 {
