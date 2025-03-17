@@ -80,16 +80,16 @@ int main(int argc, char *argv[])
 
     // process products
     time_output << products.read_data(landsat.landsat_bands);
-    time_output << products.compute_Rn_G(products, station, mtl);
-    time_output << products.select_endmembers(products);
-    time_output << products.converge_rah_cycle(products, station);
-    time_output << products.compute_H_ET(products, station, mtl);
+    // time_output << products.compute_Rn_G(products, station, mtl);
+    // time_output << products.select_endmembers(products);
+    // time_output << products.converge_rah_cycle(products, station);
+    // time_output << products.compute_H_ET(products, station, mtl);
 
     // save products
-    time_output << products.host_data();
-    time_output << products.save_products(output_folder);
+    // time_output << products.host_data();
+    // time_output << products.save_products(output_folder);
     // time_output << products.print_products(output_folder);
-    products.close(landsat.landsat_bands);
+    // products.close(landsat.landsat_bands);
 
     end = system_clock::now();
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
