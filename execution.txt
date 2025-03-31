@@ -1,1 +1,0 @@
-make exec-landsat8 INPUT_DATA_PATH=./input/6502x7295
