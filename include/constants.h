@@ -64,7 +64,7 @@ const float GRAVITY = 9.81f;
 const float RHO = 1.15f;
 
 // Specific heat of air
-const float SPECIFIC_HEAT_AIR = 1004f;
+const float SPECIFIC_HEAT_AIR = 1004;
 
 // Solar constant
 const float GSC = 0.082f;

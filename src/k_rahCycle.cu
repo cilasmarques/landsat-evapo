@@ -218,9 +218,9 @@ __global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_
         }
 
         ustar_d[pos] = (VON_KARMAN * u200) / (logf(200 / zom_d[pos]) - psi200);
-        rah_d[pos] = (logf(2 / 0.1) - psi2 + psi1) / (ustar_d[pos] * VON_KARMAN);
+        rah_d[pos] = (logf(2 / 0.1f) - psi2 + psi1) / (ustar_d[pos] * VON_KARMAN);
 
-        if ((pos == hot_pos) && (fabsf(1 - (rah_ini_hot / rah_d[hot_pos])) < 0.05)) {
+        if ((pos == hot_pos) && (fabsf(1 - (rah_ini_hot / rah_d[hot_pos])) < 0.05f)) {
             atomicExch(stop_condition, 1);
         }
     }
