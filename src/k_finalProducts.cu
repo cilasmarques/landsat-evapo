@@ -11,7 +11,6 @@ __global__ void latent_heat_flux_kernel(float *net_radiation_d, float *soil_heat
 
 __global__ void net_radiation_24h_kernel(float *albedo_d, float Rs24h, float Ra24h, float *net_radiation_24h_d)
 {
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
     int FL = 110;
     if (pos < width_d * height_d) {

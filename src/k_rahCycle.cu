@@ -10,7 +10,7 @@ __global__ void d0_kernel(float *pai_d, float *d0_d, float CD1, float HGHT)
     if (pos < width_d * height_d) {
         float cd1_pai_root = sqrt(CD1 * pai_d[pos]);
 
-        d0_d[pos] = HGHT * ((1 - (1 / cd1_pai_root)) + (pow(exp(1.0), -cd1_pai_root) / cd1_pai_root));
+        d0_d[pos] = HGHT * ((1 - (1 / cd1_pai_root)) + (powf(exp(1.0), -cd1_pai_root) / cd1_pai_root));
     }
 }
 
@@ -37,13 +37,13 @@ __global__ void zom_kernel_STEEP(float *d0_d, float *pai_d, float *zom_d, float 
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     float HGHT = 4;
-    float CD = 0.01;
-    float CR = 0.35;
-    float PSICORR = 0.2;
+    float CD = 0.01f;
+    float CR = 0.35f;
+    float PSICORR = 0.2f;
 
     if (pos < width_d * height_d) {
-        float gama = pow((CD + CR * (pai_d[pos] / 2)), -0.5);
-        if (gama < 3.3)
+        float gama = powf((CD + CR * (pai_d[pos] / 2)), -0.5f);
+        if (gama < 3.3f)
             gama = 3.3;
 
         zom_d[pos] = (HGHT - d0_d[pos]) * exp(-VON_KARMAN * gama) + PSICORR;
@@ -65,32 +65,32 @@ __global__ void kb_kernel(float *zom_d, float *ustar_d, float *pai_d, float *kb1
 
     float HGHT = 4;
 
-    float VON_KARMAN = 0.41;
-    float visc = 0.00001461;
-    float pr = 0.71;
-    float c1 = 0.320;
-    float c2 = 0.264;
-    float c3 = 15.1;
-    float cd = 0.2;
-    float ct = 0.01;
-    float sf_c = 0.3;
-    float sf_d = 2.5;
-    float sf_e = 4.0;
-    float soil_moisture_day_rel = 0.33;
+    float VON_KARMAN = 0.41f;
+    float visc = 0.00001461f;
+    float pr = 0.71f;
+    float c1 = 0.320f;
+    float c2 = 0.264f;
+    float c3 = 15.1f;
+    float cd = 0.2f;
+    float ct = 0.01f;
+    float sf_c = 0.3f;
+    float sf_d = 2.5f;
+    float sf_e = 4.0f;
+    float soil_moisture_day_rel = 0.33f;
 
     if (pos < width_d * height_d) {
-        float fc = 1 - pow((ndvi_d[pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+        float fc = 1 - powf((ndvi_d[pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631f);
         float fs = 1 - fc;
 
-        float Re = (ustar_d[pos] * 0.009) / visc;
-        float Ct = pow(pr, -0.667) * pow(Re, -0.5);
+        float Re = (ustar_d[pos] * 0.009f) / visc;
+        float Ct = powf(pr, -0.667f) * powf(Re, -0.5f);
         float ratio = c1 - c2 * (exp(cd * -c3 * pai_d[pos]));
         float nec = (cd * pai_d[pos]) / (ratio * ratio * 2);
-        float kbs = 2.46 * pow(Re, 0.25) - 2;
+        float kbs = 2.46f * powf(Re, 0.25f) - 2;
 
-        float kb1_fst_part = (cd * VON_KARMAN) / (4 * ct * ratio * (1 - exp(nec * -0.5)));
-        float kb1_sec_part = pow(fc, 2) + (VON_KARMAN * ratio * (zom_d[pos] / HGHT) / Ct);
-        float kb1_trd_part = pow(fc, 2) * pow(fs, 2) + kbs * pow(fs, 2);
+        float kb1_fst_part = (cd * VON_KARMAN) / (4 * ct * ratio * (1 - exp(nec * -0.5f)));
+        float kb1_sec_part = powf(fc, 2) + (VON_KARMAN * ratio * (zom_d[pos] / HGHT) / Ct);
+        float kb1_trd_part = powf(fc, 2) * powf(fs, 2) + kbs * powf(fs, 2);
         float kb_ini = kb1_fst_part * kb1_sec_part * kb1_trd_part;
 
         float SF = sf_c + (1 / (1 + exp(sf_d - sf_e * soil_moisture_day_rel)));
@@ -116,7 +116,7 @@ __global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        rah_d[pos] = logf(2.0 / 0.1) / (ustar_d[pos] * VON_KARMAN);
+        rah_d[pos] = logf(2.0f / 0.1f) / (ustar_d[pos] * VON_KARMAN);
     }
 }
 
@@ -131,11 +131,11 @@ __global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_h
         float rah_ini_hot = rah_d[hot_pos];
         float rah_ini_cold = rah_d[cold_pos];
 
-        float fc_hot = 1 - pow((ndvi_d[hot_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
-        float fc_cold = 1 - pow((ndvi_d[cold_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+        float fc_hot = 1 - pow((ndvi_d[hot_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631f);
+        float fc_cold = 1 - pow((ndvi_d[cold_pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631f);
 
-        float LE_hot = 0.55 * fc_hot * (net_radiation_d[hot_pos] - soil_heat_flux_d[hot_pos]) * 0.78;
-        float LE_cold = 1.75 * fc_cold * (net_radiation_d[cold_pos] - soil_heat_flux_d[cold_pos]) * 0.78;
+        float LE_hot = 0.55f * fc_hot * (net_radiation_d[hot_pos] - soil_heat_flux_d[hot_pos]) * 0.78f;
+        float LE_cold = 1.75f * fc_cold * (net_radiation_d[cold_pos] - soil_heat_flux_d[cold_pos]) * 0.78f;
 
         float H_cold = net_radiation_d[cold_pos] - soil_heat_flux_d[cold_pos] - LE_hot;
         float dt_cold = H_cold * rah_ini_cold / (RHO * SPECIFIC_HEAT_AIR);
@@ -151,10 +151,10 @@ __global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_h
 
         float dt_final = a + b * surface_temperature_d[pos];
         H_d[pos] = RHO * SPECIFIC_HEAT_AIR * dt_final / rah_d[pos];
-        float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_d[pos], 3) * surface_temperature_d[pos]) / (VON_KARMAN * GRAVITY * H_d[pos]));
+        float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * powf(ustar_d[pos], 3) * surface_temperature_d[pos]) / (VON_KARMAN * GRAVITY * H_d[pos]));
 
-        float y2 = pow((1 - (16 * (10 - d0_d[pos])) / L), 0.25);
-        float x200 = pow((1 - (16 * (10 - d0_d[pos])) / L), 0.25);
+        float y2 = powf((1 - (16 * (10 - d0_d[pos])) / L), 0.25f);
+        float x200 = powf((1 - (16 * (10 - d0_d[pos])) / L), 0.25f);
 
         float psi2, psi200;
         if (!isnan(L) && L > 0) {
@@ -162,7 +162,7 @@ __global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_h
             psi200 = -5 * ((10 - d0_d[pos]) / L);
         } else {
             psi2 = 2 * logf((1 + y2 * y2) / 2);
-            psi200 = 2 * logf((1 + x200) / 2) + logf((1 + x200 * x200) / 2) - 2 * atan(x200) + 0.5 * M_PI;
+            psi200 = 2 * logf((1 + x200) / 2) + logf((1 + x200 * x200) / 2) - 2 * atan(x200) + 0.5f * M_PI;
         }
 
         ustar_d[pos] = (VON_KARMAN * ustar_d[pos]) / (logf((10 - d0_d[pos]) / zom_d[pos]) - psi200);
@@ -200,11 +200,11 @@ __global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_
         float dt_final = a + b * (surface_temperature_d[pos]);
 
         H_d[pos] = RHO * SPECIFIC_HEAT_AIR * (dt_final) / rah_d[pos];
-        float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * pow(ustar_d[pos], 3) * surface_temperature_d[pos]) / (VON_KARMAN * GRAVITY * H_d[pos]));
+        float L = -1 * ((RHO * SPECIFIC_HEAT_AIR * powf(ustar_d[pos], 3) * surface_temperature_d[pos]) / (VON_KARMAN * GRAVITY * H_d[pos]));
 
-        float x1 = pow((1 - (16 * 0.1) / L), 0.25);
-        float x2 = pow((1 - (16 * 2) / L), 0.25);
-        float x200 = pow((1 - (16 * 200) / L), 0.25);
+        float x1 = powf((1 - (16 * 0.1) / L), 0.25f);
+        float x2 = powf((1 - (16 * 2) / L), 0.25f);
+        float x200 = powf((1 - (16 * 200) / L), 0.25f);
 
         float psi1, psi2, psi200;
         if (!isnan(L) && L > 0) {
@@ -214,7 +214,7 @@ __global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_
         } else {
             psi1 = 2 * logf((1 + x1 * x1) / 2);
             psi2 = 2 * logf((1 + x2 * x2) / 2);
-            psi200 = 2 * logf((1 + x200) / 2) + logf((1 + x200 * x200) / 2) - 2 * atan(x200) + 0.5 * M_PI;
+            psi200 = 2 * logf((1 + x200) / 2) + logf((1 + x200 * x200) / 2) - 2 * atan(x200) + 0.5f * M_PI;
         }
 
         ustar_d[pos] = (VON_KARMAN * u200) / (logf(200 / zom_d[pos]) - psi200);
