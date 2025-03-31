@@ -5,12 +5,9 @@ __device__ float b_d;
 
 __global__ void d0_kernel(float *pai_d, float *d0_d, float CD1, float HGHT)
 {
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
+    if (pos < width_d * height_d) {
         float cd1_pai_root = sqrt(CD1 * pai_d[pos]);
 
         d0_d[pos] = HGHT * ((1 - (1 / cd1_pai_root)) + (pow(exp(1.0), -cd1_pai_root) / cd1_pai_root));
@@ -19,42 +16,32 @@ __global__ void d0_kernel(float *pai_d, float *d0_d, float CD1, float HGHT)
 
 __global__ void ustar_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, float u10)
 {
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
+    if (pos < width_d * height_d) {
         ustar_d[pos] = (u10 * VON_KARMAN) / logf((10 - d0_d[pos]) / zom_d[pos]);
     }
 }
 
 __global__ void ustar_kernel_ASEBAL(float *zom_d, float *ustar_d, float u200)
 {
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
+    if (pos < width_d * height_d) {
         ustar_d[pos] = (u200 * VON_KARMAN) / logf(200 / zom_d[pos]);
     }
 }
 
 __global__ void zom_kernel_STEEP(float *d0_d, float *pai_d, float *zom_d, float A_ZOM, float B_ZOM)
 {
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     float HGHT = 4;
     float CD = 0.01;
     float CR = 0.35;
     float PSICORR = 0.2;
 
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
-
+    if (pos < width_d * height_d) {
         float gama = pow((CD + CR * (pai_d[pos] / 2)), -0.5);
         if (gama < 3.3)
             gama = 3.3;
@@ -65,20 +52,16 @@ __global__ void zom_kernel_STEEP(float *d0_d, float *pai_d, float *zom_d, float 
 
 __global__ void zom_kernel_ASEBAL(float *ndvi_d, float *albedo_d, float *zom_d, float A_ZOM, float B_ZOM)
 {
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
-
+    if (pos < width_d * height_d) {
         zom_d[pos] = exp((A_ZOM * ndvi_d[pos] / albedo_d[pos]) + B_ZOM);
     }
 }
 
 __global__ void kb_kernel(float *zom_d, float *ustar_d, float *pai_d, float *kb1_d, float *ndvi_d, float ndvi_max, float ndvi_min)
 {
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     float HGHT = 4;
 
@@ -95,11 +78,7 @@ __global__ void kb_kernel(float *zom_d, float *ustar_d, float *pai_d, float *kb1
     float sf_e = 4.0;
     float soil_moisture_day_rel = 0.33;
 
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
-
+    if (pos < width_d * height_d) {
         float fc = 1 - pow((ndvi_d[pos] - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
         float fs = 1 - fc;
 
@@ -122,13 +101,9 @@ __global__ void kb_kernel(float *zom_d, float *ustar_d, float *pai_d, float *kb1
 
 __global__ void aerodynamic_resistance_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, float *kb1_d, float *rah_d)
 {
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
-
+    if (pos < width_d * height_d) {
         float rah_fst_part = 1 / (ustar_d[pos] * VON_KARMAN);
         float rah_sec_part = logf((10 - d0_d[pos]) / zom_d[pos]);
         float rah_trd_part = rah_fst_part * kb1_d[pos];
@@ -138,25 +113,18 @@ __global__ void aerodynamic_resistance_kernel_STEEP(float *zom_d, float *d0_d, f
 
 __global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_d)
 {
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
+    if (pos < width_d * height_d) {
         rah_d[pos] = logf(2.0 / 0.1) / (ustar_d[pos] * VON_KARMAN);
     }
 }
 
 __global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surface_temperature_d, float *d0_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min)
 {
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
-
+    if (pos < width_d * height_d) {
         unsigned int hot_pos = hotEndmemberLine_d * width_d + hotEndmemberCol_d;
         unsigned int cold_pos = coldEndmemberLine_d * width_d + coldEndmemberCol_d;
 
@@ -208,13 +176,9 @@ __global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_h
 
 __global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surface_temperature_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float u200, int *stop_condition)
 {
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
-
+    if (pos < width_d * height_d) {
         unsigned int hot_pos = hotEndmemberLine_d * width_d + hotEndmemberCol_d;
         unsigned int cold_pos = coldEndmemberLine_d * width_d + coldEndmemberCol_d;
 
@@ -264,13 +228,9 @@ __global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_
 
 __global__ void sensible_heat_flux_kernel(float *surface_temperature_d, float *rah_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d)
 {
-    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (idx < width_d * height_d) {
-        unsigned int row = idx / width_d;
-        unsigned int col = idx % width_d;
-        unsigned int pos = row * width_d + col;
-
+    if (pos < width_d * height_d) {
         sensible_heat_flux_d[pos] = RHO * SPECIFIC_HEAT_AIR * (a_d + b_d * surface_temperature_d[pos]) / rah_d[pos];
         if (!isnan(sensible_heat_flux_d[pos]) && sensible_heat_flux_d[pos] > (net_radiation_d[pos] - soil_heat_d[pos]))
             sensible_heat_flux_d[pos] = net_radiation_d[pos] - soil_heat_d[pos];
