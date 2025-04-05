@@ -41,3 +41,5 @@ myenv/*
 *.exe
 *.out
 *.app
+
+**/CLAUDE.local.md

@@ -13,6 +13,13 @@ IMAGE_LANDSAT="landsat_8"
 IMAGE_PATHROW="215065"
 IMAGE_DATE="2017-05-11"
 
+## ==== GPU architecture
+ARCH=sm_86
+
+## ==== Docker configuration
+DOCKER_IMAGE_NAME=landsat-evapo
+DOCKER_GPU_ARGS=--gpus all
+
 ## ==== Execution
 METHOD=0
 THREADS=64
@@ -26,28 +33,10 @@ clean-all:
 	rm -rf $(OUTPUT_DATA_PATH)/*
 
 build:
-	nvcc -arch=sm_86 -I ./include -g ./src/*.cu -o ./main -std=c++14 -ltiff -lcutensor -rdc=true
+	nvcc -arch=$(ARCH) -I ./include -g ./src/*.cu -o ./main -std=c++14 -ltiff -rdc=true
 
 fix-permissions:
 	sudo chmod -R 755 $(INPUT_DATA_PATH)/*
-
-docker-landsat-download:
-	docker run \
-		-v $(IMAGES_DIR):$(DOCKER_OUTPUT_PATH) \
-		-e OUTPUT_PATH=$(DOCKER_OUTPUT_PATH) \
-		-e LANDSAT=$(IMAGE_LANDSAT) \
-		-e PATHROW=$(IMAGE_PATHROW) \
-		-e DATE=$(IMAGE_DATE) \
-		cilasmarques/landsat-download:latest
-
-docker-landsat-preprocess:
-	docker run \
-		-v $(IMAGES_DIR):$(DOCKER_OUTPUT_PATH) \
-		-e OUTPUT_PATH=$(DOCKER_OUTPUT_PATH) \
-		-e LANDSAT=$(IMAGE_LANDSAT) \
-		-e PATHROW=$(IMAGE_PATHROW) \
-		-e DATE=$(IMAGE_DATE) \
-		cilasmarques/landsat-preprocess:latest
 
 exec-landsat8:
 	./bin/run-exp.sh \
@@ -112,3 +101,52 @@ analisys-landsat5-7:
 		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
 		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
 		-meth=$(METHOD) -threads=$(THREADS) &
+
+## ==== Docker targets
+
+docker-build:
+	docker build -t $(DOCKER_IMAGE_NAME) --build-arg CUDA_ARCH=$(ARCH) .
+
+docker-test-nvidia:
+	docker run --rm $(DOCKER_GPU_ARGS) nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
+
+docker-run-landsat8: 
+	docker run $(DOCKER_GPU_ARGS) \
+		-v $(shell pwd)/$(IMAGES_DIR):/app/$(IMAGES_DIR) \
+		-v $(shell pwd)/$(OUTPUT_DATA_PATH):/app/$(OUTPUT_DATA_PATH) \
+		$(DOCKER_IMAGE_NAME) \
+		$(INPUT_DATA_PATH)/B2.TIF $(INPUT_DATA_PATH)/B3.TIF $(INPUT_DATA_PATH)/B4.TIF \
+		$(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF $(INPUT_DATA_PATH)/B10.TIF \
+		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
+		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
+		-meth=$(METHOD) -threads=$(THREADS)
+
+docker-run-landsat5-7: 
+	docker run $(DOCKER_GPU_ARGS) \
+		-v $(shell pwd)/$(IMAGES_DIR):/app/$(IMAGES_DIR) \
+		-v $(shell pwd)/$(OUTPUT_DATA_PATH):/app/$(OUTPUT_DATA_PATH) \
+		$(DOCKER_IMAGE_NAME) \
+		$(INPUT_DATA_PATH)/B1.TIF $(INPUT_DATA_PATH)/B2.TIF $(INPUT_DATA_PATH)/B3.TIF \
+		$(INPUT_DATA_PATH)/B4.TIF $(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF \
+		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
+		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
+		-meth=$(METHOD) -threads=$(THREADS)
+
+docker-landsat-download:
+	docker run \
+		-v $(IMAGES_DIR):$(DOCKER_OUTPUT_PATH) \
+		-e OUTPUT_PATH=$(DOCKER_OUTPUT_PATH) \
+		-e LANDSAT=$(IMAGE_LANDSAT) \
+		-e PATHROW=$(IMAGE_PATHROW) \
+		-e DATE=$(IMAGE_DATE) \
+		cilasmarques/landsat-download:latest
+
+docker-landsat-preprocess:
+	docker run \
+		-v $(IMAGES_DIR):$(DOCKER_OUTPUT_PATH) \
+		-e OUTPUT_PATH=$(DOCKER_OUTPUT_PATH) \
+		-e LANDSAT=$(IMAGE_LANDSAT) \
+		-e PATHROW=$(IMAGE_PATHROW) \
+		-e DATE=$(IMAGE_DATE) \
+		cilasmarques/landsat-preprocess:latest
+
