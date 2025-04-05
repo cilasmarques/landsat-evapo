@@ -162,8 +162,8 @@ __global__ void large_wave_radiation_atmosphere_kernel(float *ea_d, float *large
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
-    float temperature_kelvin_pow_4 = temperature * temperature * temperature * temperature;
     if (pos < width_d * height_d) {
+        float temperature_kelvin_pow_4 = temperature * temperature * temperature * temperature;
         large_wave_radiation_atmosphere_d[pos] = ea_d[pos] * 5.67f * 1e-8f * temperature_kelvin_pow_4;
     }
 }

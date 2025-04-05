@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
     if (argc >= THREADS_INDEX) {
         string threads_flag = argv[THREADS_INDEX];
         if (threads_flag.substr(0, 9) == "-threads=")
-            threads_n = atof(threads_flag.substr(9, threads_flag.size()).c_str());
+            threads_n = atoi(threads_flag.substr(9, threads_flag.size()).c_str());
         else
             threads_n = 64;
     }
@@ -87,8 +87,8 @@ int main(int argc, char *argv[])
 
     // save products
     time_output << products.host_data();
-    // time_output << products.save_products(output_folder);
-    time_output << products.print_products(output_folder);
+    time_output << products.save_products(output_folder);
+    // time_output << products.print_products(output_folder);
     products.close(landsat.landsat_bands);
 
     end = system_clock::now();
