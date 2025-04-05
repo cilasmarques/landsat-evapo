@@ -113,7 +113,7 @@ string Products::read_data(TIFF **landsat_bands)
                     band_swir2[line * width_band + col] = value;
                     break;
                 case 7:
-                    tal[line * width_band + col] = 0.75 + 2 * pow(10, -5) * value;
+                    tal[line * width_band + col] = 0.75f + 2.0f * powf(10.0f, -5.0f) * value;
                     break;
                 default:
                     break;

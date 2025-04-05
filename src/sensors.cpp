@@ -57,7 +57,7 @@ MTL::MTL(string metadata_path)
     this->year = atoi(year);
     this->sun_elevation = atof(mtl["SUN_ELEVATION"].c_str());
     this->distance_earth_sun = atof(mtl["EARTH_SUN_DISTANCE"].c_str());
-    this->image_hour = (hours + minutes / 60.0) * 100;
+    this->image_hour = (hours + minutes / 60.0f) * 100.0f;
 
     this->rad_add = (float *)malloc(7 * sizeof(float));
     this->rad_mult = (float *)malloc(7 * sizeof(float));
@@ -66,13 +66,13 @@ MTL::MTL(string metadata_path)
     this->ref_w_coeff = (float *)malloc(7 * sizeof(float));
 
     if (this->number_sensor == 8) {
-        this->ref_w_coeff[PARAM_BAND_BLUE_INDEX] = 0.257048331;
-        this->ref_w_coeff[PARAM_BAND_GREEN_INDEX] = 0.251150748;
-        this->ref_w_coeff[PARAM_BAND_RED_INDEX] = 0.220943613;
-        this->ref_w_coeff[PARAM_BAND_NIR_INDEX] = 0.143411968;
-        this->ref_w_coeff[PARAM_BAND_SWIR1_INDEX] = 0.116657077;
-        this->ref_w_coeff[PARAM_BAND_TERMAL_INDEX] = 0.000000000;
-        this->ref_w_coeff[PARAM_BAND_SWIR2_INDEX] = 0.010788262;
+        this->ref_w_coeff[PARAM_BAND_BLUE_INDEX] = 0.257048331f;
+        this->ref_w_coeff[PARAM_BAND_GREEN_INDEX] = 0.251150748f;
+        this->ref_w_coeff[PARAM_BAND_RED_INDEX] = 0.220943613f;
+        this->ref_w_coeff[PARAM_BAND_NIR_INDEX] = 0.143411968f;
+        this->ref_w_coeff[PARAM_BAND_SWIR1_INDEX] = 0.116657077f;
+        this->ref_w_coeff[PARAM_BAND_TERMAL_INDEX] = 0.000000000f;
+        this->ref_w_coeff[PARAM_BAND_SWIR2_INDEX] = 0.010788262f;
 
         this->rad_mult[PARAM_BAND_BLUE_INDEX] = atof(mtl["RADIANCE_MULT_BAND_2"].c_str());
         this->rad_mult[PARAM_BAND_GREEN_INDEX] = atof(mtl["RADIANCE_MULT_BAND_3"].c_str());
@@ -106,13 +106,13 @@ MTL::MTL(string metadata_path)
         this->ref_add[PARAM_BAND_TERMAL_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_10"].c_str());
         this->ref_add[PARAM_BAND_SWIR2_INDEX] = atof(mtl["REFLECTANCE_ADD_BAND_7"].c_str());
     } else {
-        this->ref_w_coeff[PARAM_BAND_BLUE_INDEX] = 0.298220602;
-        this->ref_w_coeff[PARAM_BAND_GREEN_INDEX] = 0.270097933;
-        this->ref_w_coeff[PARAM_BAND_RED_INDEX] = 0.230996896;
-        this->ref_w_coeff[PARAM_BAND_NIR_INDEX] = 0.155050651;
-        this->ref_w_coeff[PARAM_BAND_SWIR1_INDEX] = 0.033085493;
-        this->ref_w_coeff[PARAM_BAND_TERMAL_INDEX] = 0.000000000;
-        this->ref_w_coeff[PARAM_BAND_SWIR2_INDEX] = 0.012548425;
+        this->ref_w_coeff[PARAM_BAND_BLUE_INDEX] = 0.298220602f;
+        this->ref_w_coeff[PARAM_BAND_GREEN_INDEX] = 0.270097933f;
+        this->ref_w_coeff[PARAM_BAND_RED_INDEX] = 0.230996896f;
+        this->ref_w_coeff[PARAM_BAND_NIR_INDEX] = 0.155050651f;
+        this->ref_w_coeff[PARAM_BAND_SWIR1_INDEX] = 0.033085493f;
+        this->ref_w_coeff[PARAM_BAND_TERMAL_INDEX] = 0.000000000f;
+        this->ref_w_coeff[PARAM_BAND_SWIR2_INDEX] = 0.012548425f;
 
         this->rad_mult[PARAM_BAND_BLUE_INDEX] = atof(mtl["RADIANCE_MULT_BAND_1"].c_str());
         this->rad_mult[PARAM_BAND_GREEN_INDEX] = atof(mtl["RADIANCE_MULT_BAND_2"].c_str());
@@ -180,7 +180,7 @@ Station::Station(string station_data_path, float image_hour)
         exit(12);
     }
 
-    float diff = fabs(atof(this->info[0][2].c_str()) - image_hour);
+    float diff = fabsf(atof(this->info[0][2].c_str()) - image_hour);
     this->temperature_image = atof(this->info[0][6].c_str());
     this->v6 = atof(this->info[0][5].c_str());
     this->v7_max = atof(this->info[0][6].c_str());
@@ -189,11 +189,11 @@ Station::Station(string station_data_path, float image_hour)
     this->longitude = atof(this->info[0][4].c_str());
 
     for (int i = 1; i < this->info.size(); i++) {
-        v7_max = static_cast<float>(std::max(static_cast<double>(v7_max), atof(this->info[i][6].c_str())));
-        v7_min = static_cast<float>(std::min(static_cast<double>(v7_min), atof(this->info[i][6].c_str())));
+        v7_max = std::max(v7_max, static_cast<float>(atof(this->info[i][6].c_str())));
+        v7_min = std::min(v7_min, static_cast<float>(atof(this->info[i][6].c_str())));
 
-        if (fabs(atof(this->info[i][2].c_str()) - image_hour) < diff) {
-            diff = fabs(atof(this->info[i][2].c_str()) - image_hour);
+        if (fabsf(atof(this->info[i][2].c_str()) - image_hour) < diff) {
+            diff = fabsf(atof(this->info[i][2].c_str()) - image_hour);
             this->temperature_image = atof(this->info[i][6].c_str());
             this->v6 = atof(this->info[i][5].c_str());
         }

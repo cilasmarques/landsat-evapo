@@ -47,25 +47,25 @@ extern int blocks_n;
 const float EPS = 1e-7;
 
 // Not a number
-const float NaN = -sqrt(-1.0);
+const float NaN = -sqrtf(-1.0f);
 
 // Pi
-const float PI = acos(-1);
+const float PI = acosf(-1.0f);
 
 // Karman's constant
-const float VON_KARMAN = 0.41;
+const float VON_KARMAN = 0.41f;
 
 // Earth's gravity
-const float GRAVITY = 9.81;
+const float GRAVITY = 9.81f;
 
 // Atmospheric density
-const float RHO = 1.15;
+const float RHO = 1.15f;
 
 // Specific heat of air
-const float SPECIFIC_HEAT_AIR = 1004;
+const float SPECIFIC_HEAT_AIR = 1004.0f;
 
 // Solar constant
-const float GSC = 0.082;
+const float GSC = 0.082f;
 
 // Agricultural field land cover value
 // Available at https://mapbiomas.org/downloads_codigos
