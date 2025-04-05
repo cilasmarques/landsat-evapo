@@ -147,7 +147,7 @@ string lai_function(Products products)
 
     begin = system_clock::now();
     for (int i = 0; i < products.height_band * products.width_band; i++) {
-        float savi = ((1.0f + 0.5f) * (products.reflectance_nir[i] - products.reflectance_red[i])) / (0.5f + (products.reflectance_nir[i] + products.reflectance_red[i]));
+        float savi = ((1.5f) * (products.reflectance_nir[i] - products.reflectance_red[i])) / (0.5f + (products.reflectance_nir[i] + products.reflectance_red[i]));
 
         if (!isnan(savi) && savi > 0.687f)
             products.lai[i] = 6.0f;
@@ -304,7 +304,8 @@ string large_wave_radiation_surface_function(Products products)
 
     begin = system_clock::now();
     for (int i = 0; i < products.height_band * products.width_band; i++) {
-        float surface_temperature_pow_4 = powf(products.surface_temperature[i], 4.0f);
+        float temperature_pixel = products.surface_temperature[i];
+        float surface_temperature_pow_4 = temperature_pixel * temperature_pixel * temperature_pixel * temperature_pixel;
         products.large_wave_radiation_surface[i] = products.eo_emissivity[i] * 5.67f * 1e-8f * surface_temperature_pow_4;
     }
     end = system_clock::now();
@@ -324,7 +325,8 @@ string large_wave_radiation_atmosphere_function(Products products, float tempera
 
     begin = system_clock::now();
     for (int i = 0; i < products.height_band * products.width_band; i++) {
-        float surface_temperature_pow_4 = powf(products.surface_temperature[i], 4.0f);
+        float temperature_pixel = products.surface_temperature[i];
+        float surface_temperature_pow_4 = temperature_pixel * temperature_pixel * temperature_pixel * temperature_pixel;
         products.large_wave_radiation_surface[i] = products.eo_emissivity[i] * 5.67f * 1e-8f * surface_temperature_pow_4;
     }
     end = system_clock::now();

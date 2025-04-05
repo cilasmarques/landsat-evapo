@@ -20,7 +20,7 @@ string d0_fuction(Products products)
     {
         float cd1_pai_root = sqrtf(CD1 * products.pai[i]);
 
-        products.d0[i] = HGHT * ((1.0f - (1.0f / cd1_pai_root)) + (expf(-cd1_pai_root) / cd1_pai_root));
+        products.d0[i] = HGHT * ((1.0f - (1.0f / cd1_pai_root)) + (powf(expf(1.0f), -cd1_pai_root) / cd1_pai_root));
     }
     end = system_clock::now();
 
