@@ -87,8 +87,8 @@ int main(int argc, char *argv[])
 
     // save products
     time_output << products.host_data();
-    time_output << products.save_products(output_folder);
-    // time_output << products.print_products(output_folder);
+    // time_output << products.save_products(output_folder);
+    time_output << products.print_products(output_folder);
     products.close(landsat.landsat_bands);
 
     end = system_clock::now();

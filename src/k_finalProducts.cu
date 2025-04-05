@@ -12,9 +12,9 @@ __global__ void latent_heat_flux_kernel(float *net_radiation_d, float *soil_heat
 __global__ void net_radiation_24h_kernel(float *albedo_d, float Rs24h, float Ra24h, float *net_radiation_24h_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
-    int FL = 110;
+    float FL = 110.0f;
     if (pos < width_d * height_d) {
-        net_radiation_24h_d[pos] = (1 - albedo_d[pos]) * Rs24h - FL * Rs24h / Ra24h;
+        net_radiation_24h_d[pos] = (1.0f - albedo_d[pos]) * Rs24h - FL * Rs24h / Ra24h;
     }
 }
 

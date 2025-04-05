@@ -143,7 +143,7 @@ __global__ void short_wave_radiation_kernel(float *tal_d, float *short_wave_radi
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        short_wave_radiation_d[pos] = (1367 * sin(sun_elevation * pi / 180) * tal_d[pos]) / (distance_earth_sun * distance_earth_sun);
+        short_wave_radiation_d[pos] = (1367.0f * sinf(sun_elevation * pi / 180.0f) * tal_d[pos]) / (distance_earth_sun * distance_earth_sun);
     }
 }
 
