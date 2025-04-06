@@ -13,6 +13,57 @@ extern __device__ int coldEndmemberLine_d;
 extern __device__ int coldEndmemberCol_d;
 
 /**
+ * @brief  Kernel combinado para calcular radiância e reflectância em uma única chamada
+ *
+ * @param band_d  The band.
+ * @param radiance_d  The radiance output.
+ * @param reflectance_d  The reflectance output.
+ * @param rad_add_d  The radiance add value.
+ * @param rad_mult_d  The radiance mult value.
+ * @param ref_add_d  The reflectance add value.
+ * @param ref_mult_d  The reflectance mult value.
+ * @param sin_sun  The sin of the sun.
+ * @param band_idx  The band index.
+ */
+__global__ void rad_ref_kernel(float *band_d, float *radiance_d, float *reflectance_d, float *rad_add_d, 
+                              float *rad_mult_d, float *ref_add_d, float *ref_mult_d, float sin_sun, int band_idx);
+
+/**
+ * @brief  Kernel combinado para calcular a radiação de onda longa superfície e atmosfera
+ *
+ * @param surface_temperature_d  The surface temperature.
+ * @param eo_d  The EO.
+ * @param ea_d  The EA.
+ * @param large_wave_radiation_surface_d  The large wave radiation surface output.
+ * @param large_wave_radiation_atmosphere_d  The large wave radiation atmosphere output.
+ * @param temperature  The temperature.
+ */
+__global__ void large_wave_radiation_combined_kernel(float *surface_temperature_d, float *eo_d, float *ea_d, 
+                                                    float *large_wave_radiation_surface_d, 
+                                                    float *large_wave_radiation_atmosphere_d, 
+                                                    float temperature);
+
+/**
+ * @brief  Kernel combinado para calcular radiação líquida e fluxo de calor do solo
+ *
+ * @param short_wave_radiation_d  The short wave radiation.
+ * @param albedo_d  The albedo.
+ * @param large_wave_radiation_atmosphere_d  The large wave radiation atmosphere.
+ * @param large_wave_radiation_surface_d  The large wave radiation surface.
+ * @param eo_d  The EO.
+ * @param ndvi_d  The NDVI.
+ * @param surface_temperature_d  The surface temperature.
+ * @param net_radiation_d  The net radiation output.
+ * @param soil_heat_d  The soil heat output.
+ */
+__global__ void net_radiation_soil_heat_kernel(float *short_wave_radiation_d, float *albedo_d, 
+                                              float *large_wave_radiation_atmosphere_d, 
+                                              float *large_wave_radiation_surface_d, 
+                                              float *eo_d, float *ndvi_d, 
+                                              float *surface_temperature_d, 
+                                              float *net_radiation_d, float *soil_heat_d);
+
+/**
  * @brief  Compute the radiance of the bands.
  *
  * @param band_d  The band.

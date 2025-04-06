@@ -3,6 +3,25 @@
 __device__ int width_d;
 __device__ int height_d;
 
+// Combinação dos kernels rad_kernel e ref_kernel para reduzir chamadas de kernel
+__global__ void rad_ref_kernel(float *band_d, float *radiance_d, float *reflectance_d, float *rad_add_d, float *rad_mult_d, float *ref_add_d, float *ref_mult_d, float sin_sun, int band_idx)
+{
+    unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (pos < width_d * height_d) {
+        // Cálculo de radiância
+        radiance_d[pos] = band_d[pos] * rad_mult_d[band_idx] + rad_add_d[band_idx];
+        if (radiance_d[pos] <= 0)
+            radiance_d[pos] = NAN;
+
+        // Cálculo de reflectância
+        reflectance_d[pos] = (band_d[pos] * ref_mult_d[band_idx] + ref_add_d[band_idx]) / sin_sun;
+        if (reflectance_d[pos] <= 0)
+            reflectance_d[pos] = NAN;
+    }
+}
+
+// Mantendo os kernels originais para compatibilidade
 __global__ void rad_kernel(float *band_d, float *radiance_d, float *rad_add_d, float *rad_mult_d, int band_idx)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
@@ -122,7 +141,8 @@ __global__ void ea_kernel(float *tal_d, float *ea_d)
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        ea_d[pos] = 0.85f * powf((-1 * logf(tal_d[pos])), 0.09f);
+        // Uso de funções intrínsecas para melhor desempenho
+        ea_d[pos] = 0.85f * __powf((-1 * __logf(tal_d[pos])), 0.09f);
     }
 }
 
@@ -131,7 +151,8 @@ __global__ void surface_temperature_kernel(float *enb_d, float *radiance_termal_
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        surface_temperature_d[pos] = k2 / (logf((enb_d[pos] * k1 / radiance_termal_d[pos]) + 1));
+        // Uso de funções intrínsecas
+        surface_temperature_d[pos] = k2 / (__logf((enb_d[pos] * k1 / radiance_termal_d[pos]) + 1.0f));
 
         if (surface_temperature_d[pos] < 0)
             surface_temperature_d[pos] = 0;
@@ -143,17 +164,47 @@ __global__ void short_wave_radiation_kernel(float *tal_d, float *short_wave_radi
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        short_wave_radiation_d[pos] = (1367.0f * sinf(sun_elevation * pi / 180.0f) * tal_d[pos]) / (distance_earth_sun * distance_earth_sun);
+        // Constantes pré-calculadas e uso de funções intrínsecas
+        float sin_elevation = __sinf(sun_elevation * pi / 180.0f);
+        float dist_squared = distance_earth_sun * distance_earth_sun;
+        short_wave_radiation_d[pos] = (1367.0f * sin_elevation * tal_d[pos]) / dist_squared;
     }
 }
 
+// Kernel combinado para cálculos de radiação de onda longa
+__global__ void large_wave_radiation_combined_kernel(float *surface_temperature_d, float *eo_d, float *ea_d, 
+                                                     float *large_wave_radiation_surface_d, float *large_wave_radiation_atmosphere_d, 
+                                                     float temperature)
+{
+    unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
+    
+    // Constante de Stefan-Boltzmann
+    const float stefan_boltzmann = 5.67f * 1e-8f;
+    
+    if (pos < width_d * height_d) {
+        // Cálculo de radiação de onda longa da superfície
+        float temperature_pixel = surface_temperature_d[pos];
+        float surface_temperature_pow_4 = temperature_pixel * temperature_pixel;
+        surface_temperature_pow_4 *= surface_temperature_pow_4; // t^4 mais eficiente
+        large_wave_radiation_surface_d[pos] = eo_d[pos] * stefan_boltzmann * surface_temperature_pow_4;
+        
+        // Cálculo de radiação de onda longa da atmosfera
+        float temperature_kelvin_pow_4 = temperature * temperature;
+        temperature_kelvin_pow_4 *= temperature_kelvin_pow_4; // t^4 mais eficiente
+        large_wave_radiation_atmosphere_d[pos] = ea_d[pos] * stefan_boltzmann * temperature_kelvin_pow_4;
+    }
+}
+
+// Mantendo kernels individuais para compatibilidade
 __global__ void large_wave_radiation_surface_kernel(float *surface_temperature_d, float *eo_d, float *large_wave_radiation_surface_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
         float temperature_pixel = surface_temperature_d[pos];
-        float surface_temperature_pow_4 = temperature_pixel * temperature_pixel * temperature_pixel * temperature_pixel;
+        // Cálculo mais eficiente de t^4
+        float surface_temperature_pow_4 = temperature_pixel * temperature_pixel;
+        surface_temperature_pow_4 *= surface_temperature_pow_4;
         large_wave_radiation_surface_d[pos] = eo_d[pos] * 5.67f * 1e-8f * surface_temperature_pow_4;
     }
 }
@@ -163,23 +214,81 @@ __global__ void large_wave_radiation_atmosphere_kernel(float *ea_d, float *large
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        float temperature_kelvin_pow_4 = temperature * temperature * temperature * temperature;
+        // Cálculo mais eficiente de t^4
+        float temperature_kelvin_pow_4 = temperature * temperature;
+        temperature_kelvin_pow_4 *= temperature_kelvin_pow_4;
         large_wave_radiation_atmosphere_d[pos] = ea_d[pos] * 5.67f * 1e-8f * temperature_kelvin_pow_4;
     }
 }
 
+// Versão otimizada do kernel de radiação líquida com memória compartilhada
 __global__ void net_radiation_kernel(float *short_wave_radiation_d, float *albedo_d, float *large_wave_radiation_atmosphere_d, float *large_wave_radiation_surface_d, float *eo_d, float *net_radiation_d)
+{
+    unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
+    
+    // Usando memória compartilhada para acessos repetidos
+    __shared__ float shared_radiation[256]; // Tamanho ajustável conforme blockDim.x
+    __shared__ float shared_albedo[256];
+    __shared__ float shared_eo[256];
+    __shared__ float shared_lw_atm[256];
+    __shared__ float shared_lw_surf[256];
+    
+    if (pos < width_d * height_d) {
+        // Carregar dados na memória compartilhada
+        int local_id = threadIdx.x;
+        shared_radiation[local_id] = short_wave_radiation_d[pos];
+        shared_albedo[local_id] = albedo_d[pos];
+        shared_eo[local_id] = eo_d[pos];
+        shared_lw_atm[local_id] = large_wave_radiation_atmosphere_d[pos];
+        shared_lw_surf[local_id] = large_wave_radiation_surface_d[pos];
+        
+        __syncthreads(); // Garantir que todos os threads tenham carregado os dados
+        
+        // Calcular radiação líquida usando os dados da memória compartilhada
+        float net_rad = (1.0f - shared_albedo[local_id]) * shared_radiation[local_id] + 
+                         shared_lw_atm[local_id] - shared_lw_surf[local_id] - 
+                         (1.0f - shared_eo[local_id]) * shared_lw_atm[local_id];
+        
+        net_radiation_d[pos] = (net_rad < 0) ? 0 : net_rad;
+    }
+}
+
+// Kernel combinado de radiação líquida e fluxo de calor do solo para reduzir o número de chamadas
+__global__ void net_radiation_soil_heat_kernel(float *short_wave_radiation_d, float *albedo_d, 
+                                              float *large_wave_radiation_atmosphere_d, 
+                                              float *large_wave_radiation_surface_d, 
+                                              float *eo_d, float *ndvi_d, 
+                                              float *surface_temperature_d, 
+                                              float *net_radiation_d, float *soil_heat_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        net_radiation_d[pos] = (1 - albedo_d[pos]) * short_wave_radiation_d[pos] + large_wave_radiation_atmosphere_d[pos] - large_wave_radiation_surface_d[pos] - (1 - eo_d[pos]) * large_wave_radiation_atmosphere_d[pos];
+        // Primeiro calculamos a radiação líquida
+        float net_rad = (1.0f - albedo_d[pos]) * short_wave_radiation_d[pos] + 
+                         large_wave_radiation_atmosphere_d[pos] - large_wave_radiation_surface_d[pos] - 
+                         (1.0f - eo_d[pos]) * large_wave_radiation_atmosphere_d[pos];
+        
+        net_radiation_d[pos] = (net_rad < 0) ? 0 : net_rad;
+        
+        // Agora calculamos o fluxo de calor do solo
+        if (ndvi_d[pos] >= 0) {
+            float temperature_celcius = surface_temperature_d[pos] - 273.15f;
+            // Cálculo mais eficiente de ndvi^4
+            float ndvi_pixel_pow_2 = ndvi_d[pos] * ndvi_d[pos];
+            float ndvi_pixel_pow_4 = ndvi_pixel_pow_2 * ndvi_pixel_pow_2;
+            soil_heat_d[pos] = temperature_celcius * (0.0038f + 0.0074f * albedo_d[pos]) * 
+                               (1.0f - 0.98f * ndvi_pixel_pow_4) * net_radiation_d[pos];
+        } else {            
+            soil_heat_d[pos] = 0.5f * net_radiation_d[pos];
+        }
 
-        if (net_radiation_d[pos] < 0)
-            net_radiation_d[pos] = 0;
+        if (soil_heat_d[pos] < 0)
+            soil_heat_d[pos] = 0;
     }
 }
 
+// Mantendo o kernel original para compatibilidade
 __global__ void soil_heat_kernel(float *ndvi_d, float *albedo_d, float *surface_temperature_d, float *net_radiation_d, float *soil_heat_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
@@ -187,10 +296,14 @@ __global__ void soil_heat_kernel(float *ndvi_d, float *albedo_d, float *surface_
     if (pos < width_d * height_d) {
         if (ndvi_d[pos] >= 0) {
             float temperature_celcius = surface_temperature_d[pos] - 273.15f;
-            float ndvi_pixel_pow_4 = ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos];
-            soil_heat_d[pos] = temperature_celcius * (0.0038f + 0.0074f * albedo_d[pos]) * (1.0f - 0.98f * ndvi_pixel_pow_4) * net_radiation_d[pos];
-        } else            
+            // Cálculo mais eficiente de ndvi^4
+            float ndvi_pixel_pow_2 = ndvi_d[pos] * ndvi_d[pos];
+            float ndvi_pixel_pow_4 = ndvi_pixel_pow_2 * ndvi_pixel_pow_2;
+            soil_heat_d[pos] = temperature_celcius * (0.0038f + 0.0074f * albedo_d[pos]) * 
+                               (1.0f - 0.98f * ndvi_pixel_pow_4) * net_radiation_d[pos];
+        } else {            
             soil_heat_d[pos] = 0.5f * net_radiation_d[pos];
+        }
 
         if (soil_heat_d[pos] < 0)
             soil_heat_d[pos] = 0;

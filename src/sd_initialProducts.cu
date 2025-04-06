@@ -4,34 +4,8 @@
 #include "sensors.cuh"
 #include "surfaceData.cuh"
 
-string radiance_function(Products products, MTL mtl)
-{
-    int64_t initial_time, final_time;
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-
-    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-    cudaEventRecord(start, 0);
-    // rad_kernel<<<blocks_n, threads_n>>>(products.band_blue_d, products.radiance_blue_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_BLUE_INDEX);
-    // rad_kernel<<<blocks_n, threads_n>>>(products.band_green_d, products.radiance_green_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_GREEN_INDEX);
-    // rad_kernel<<<blocks_n, threads_n>>>(products.band_red_d, products.radiance_red_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_RED_INDEX);
-    // rad_kernel<<<blocks_n, threads_n>>>(products.band_nir_d, products.radiance_nir_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_NIR_INDEX);
-    // rad_kernel<<<blocks_n, threads_n>>>(products.band_swir1_d, products.radiance_swir1_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_SWIR1_INDEX);
-    // rad_kernel<<<blocks_n, threads_n>>>(products.band_swir2_d, products.radiance_swir2_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_SWIR2_INDEX);
-    rad_kernel<<<blocks_n, threads_n>>>(products.band_termal_d, products.radiance_termal_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_TERMAL_INDEX);
-    cudaEventRecord(stop, 0);
-
-    float cuda_time = 0;
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&cuda_time, start, stop);
-    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-    return "KERNELS,RADIANCE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
-}
-
-string reflectance_function(Products products, MTL mtl)
+// Função otimizada que combina os cálculos de radiância e reflectância em streams paralelos
+string rad_ref_combined_function(Products products, MTL mtl)
 {
     const float sin_sun = sin(mtl.sun_elevation * PI / 180);
 
@@ -42,14 +16,48 @@ string reflectance_function(Products products, MTL mtl)
 
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
+    cudaStream_t streams[7];
+    for (int i = 0; i < 7; i++) {
+        HANDLE_ERROR(cudaStreamCreate(&streams[i]));
+    }
+
     cudaEventRecord(start);
-    ref_kernel<<<blocks_n, threads_n>>>(products.band_blue_d, products.reflectance_blue_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_BLUE_INDEX);
-    ref_kernel<<<blocks_n, threads_n>>>(products.band_green_d, products.reflectance_green_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_GREEN_INDEX);
-    ref_kernel<<<blocks_n, threads_n>>>(products.band_red_d, products.reflectance_red_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_RED_INDEX);
-    ref_kernel<<<blocks_n, threads_n>>>(products.band_nir_d, products.reflectance_nir_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_NIR_INDEX);
-    ref_kernel<<<blocks_n, threads_n>>>(products.band_swir1_d, products.reflectance_swir1_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_SWIR1_INDEX);
-    ref_kernel<<<blocks_n, threads_n>>>(products.band_termal_d, products.reflectance_termal_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_TERMAL_INDEX);
-    ref_kernel<<<blocks_n, threads_n>>>(products.band_swir2_d, products.reflectance_swir2_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_SWIR2_INDEX);
+    
+    // Executar kernels combinados em streams paralelos
+    rad_ref_kernel<<<blocks_n, threads_n, 0, streams[0]>>>(products.band_blue_d, products.radiance_blue_d, products.reflectance_blue_d, 
+                                     mtl.rad_add_d, mtl.rad_mult_d, mtl.ref_add_d, mtl.ref_mult_d, 
+                                     sin_sun, PARAM_BAND_BLUE_INDEX);
+    
+    rad_ref_kernel<<<blocks_n, threads_n, 0, streams[1]>>>(products.band_green_d, products.radiance_green_d, products.reflectance_green_d, 
+                                     mtl.rad_add_d, mtl.rad_mult_d, mtl.ref_add_d, mtl.ref_mult_d, 
+                                     sin_sun, PARAM_BAND_GREEN_INDEX);
+    
+    rad_ref_kernel<<<blocks_n, threads_n, 0, streams[2]>>>(products.band_red_d, products.radiance_red_d, products.reflectance_red_d, 
+                                     mtl.rad_add_d, mtl.rad_mult_d, mtl.ref_add_d, mtl.ref_mult_d, 
+                                     sin_sun, PARAM_BAND_RED_INDEX);
+    
+    rad_ref_kernel<<<blocks_n, threads_n, 0, streams[3]>>>(products.band_nir_d, products.radiance_nir_d, products.reflectance_nir_d, 
+                                     mtl.rad_add_d, mtl.rad_mult_d, mtl.ref_add_d, mtl.ref_mult_d, 
+                                     sin_sun, PARAM_BAND_NIR_INDEX);
+    
+    rad_ref_kernel<<<blocks_n, threads_n, 0, streams[4]>>>(products.band_swir1_d, products.radiance_swir1_d, products.reflectance_swir1_d, 
+                                     mtl.rad_add_d, mtl.rad_mult_d, mtl.ref_add_d, mtl.ref_mult_d, 
+                                     sin_sun, PARAM_BAND_SWIR1_INDEX);
+    
+    rad_ref_kernel<<<blocks_n, threads_n, 0, streams[5]>>>(products.band_termal_d, products.radiance_termal_d, products.reflectance_termal_d, 
+                                     mtl.rad_add_d, mtl.rad_mult_d, mtl.ref_add_d, mtl.ref_mult_d, 
+                                     sin_sun, PARAM_BAND_TERMAL_INDEX);
+    
+    rad_ref_kernel<<<blocks_n, threads_n, 0, streams[6]>>>(products.band_swir2_d, products.radiance_swir2_d, products.reflectance_swir2_d, 
+                                     mtl.rad_add_d, mtl.rad_mult_d, mtl.ref_add_d, mtl.ref_mult_d, 
+                                     sin_sun, PARAM_BAND_SWIR2_INDEX);
+    
+    // Sincronizar todos os streams
+    for (int i = 0; i < 7; i++) {
+        HANDLE_ERROR(cudaStreamSynchronize(streams[i]));
+        HANDLE_ERROR(cudaStreamDestroy(streams[i]));
+    }
+    
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -57,8 +65,59 @@ string reflectance_function(Products products, MTL mtl)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,REFLECTANCE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "KERNELS,RAD_REF," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
+
+// // Mantendo as funções originais para compatibilidade
+// string radiance_function(Products products, MTL mtl)
+// {
+//     int64_t initial_time, final_time;
+//     cudaEvent_t start, stop;
+//     cudaEventCreate(&start);
+//     cudaEventCreate(&stop);
+
+//     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+//     cudaEventRecord(start, 0);
+//     rad_kernel<<<blocks_n, threads_n>>>(products.band_termal_d, products.radiance_termal_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_TERMAL_INDEX);
+//     cudaEventRecord(stop, 0);
+
+//     float cuda_time = 0;
+//     cudaEventSynchronize(stop);
+//     cudaEventElapsedTime(&cuda_time, start, stop);
+//     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+//     return "KERNELS,RADIANCE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+// }
+
+// string reflectance_function(Products products, MTL mtl)
+// {
+//     const float sin_sun = sin(mtl.sun_elevation * PI / 180);
+
+//     int64_t initial_time, final_time;
+//     cudaEvent_t start, stop;
+//     cudaEventCreate(&start);
+//     cudaEventCreate(&stop);
+
+//     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+//     cudaEventRecord(start);
+//     ref_kernel<<<blocks_n, threads_n>>>(products.band_blue_d, products.reflectance_blue_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_BLUE_INDEX);
+//     ref_kernel<<<blocks_n, threads_n>>>(products.band_green_d, products.reflectance_green_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_GREEN_INDEX);
+//     ref_kernel<<<blocks_n, threads_n>>>(products.band_red_d, products.reflectance_red_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_RED_INDEX);
+//     ref_kernel<<<blocks_n, threads_n>>>(products.band_nir_d, products.reflectance_nir_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_NIR_INDEX);
+//     ref_kernel<<<blocks_n, threads_n>>>(products.band_swir1_d, products.reflectance_swir1_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_SWIR1_INDEX);
+//     ref_kernel<<<blocks_n, threads_n>>>(products.band_termal_d, products.reflectance_termal_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_TERMAL_INDEX);
+//     ref_kernel<<<blocks_n, threads_n>>>(products.band_swir2_d, products.reflectance_swir2_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_SWIR2_INDEX);
+//     cudaEventRecord(stop);
+
+//     float cuda_time = 0;
+//     cudaEventSynchronize(stop);
+//     cudaEventElapsedTime(&cuda_time, start, stop);
+//     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+//     return "KERNELS,REFLECTANCE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+// }
 
 string albedo_function(Products products, MTL mtl)
 {
@@ -271,7 +330,8 @@ string short_wave_radiation_function(Products products, MTL mtl)
     return "KERNELS,SHORT_WAVE_RADIATION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string large_wave_radiation_surface_function(Products products)
+// Função combinada para calcular radiação de onda longa de superfície e atmosfera
+string large_wave_radiation_combined_function(Products products, float temperature)
 {
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;
@@ -281,7 +341,14 @@ string large_wave_radiation_surface_function(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    large_wave_radiation_surface_kernel<<<blocks_n, threads_n>>>(products.surface_temperature_d, products.eo_d, products.large_wave_radiation_surface_d);
+    large_wave_radiation_combined_kernel<<<blocks_n, threads_n>>>(
+        products.surface_temperature_d, 
+        products.eo_d, 
+        products.ea_d, 
+        products.large_wave_radiation_surface_d,
+        products.large_wave_radiation_atmosphere_d, 
+        temperature
+    );
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -289,10 +356,54 @@ string large_wave_radiation_surface_function(Products products)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,LARGE_WAVE_RADIATION_SURFACE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "KERNELS,LARGE_WAVE_RADIATION_COMBINED," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string large_wave_radiation_atmosphere_function(Products products, float temperature)
+// Mantendo as funções originais para compatibilidade
+// string large_wave_radiation_surface_function(Products products)
+// {
+//     int64_t initial_time, final_time;
+//     cudaEvent_t start, stop;
+//     cudaEventCreate(&start);
+//     cudaEventCreate(&stop);
+
+//     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+//     cudaEventRecord(start);
+//     large_wave_radiation_surface_kernel<<<blocks_n, threads_n>>>(products.surface_temperature_d, products.eo_d, products.large_wave_radiation_surface_d);
+//     cudaEventRecord(stop);
+
+//     float cuda_time = 0;
+//     cudaEventSynchronize(stop);
+//     cudaEventElapsedTime(&cuda_time, start, stop);
+//     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+//     return "KERNELS,LARGE_WAVE_RADIATION_SURFACE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+// };
+
+// string large_wave_radiation_atmosphere_function(Products products, float temperature)
+// {
+//     int64_t initial_time, final_time;
+//     cudaEvent_t start, stop;
+//     cudaEventCreate(&start);
+//     cudaEventCreate(&stop);
+
+//     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+//     cudaEventRecord(start);
+//     large_wave_radiation_atmosphere_kernel<<<blocks_n, threads_n>>>(products.ea_d, products.large_wave_radiation_atmosphere_d, temperature);
+//     cudaEventRecord(stop);
+
+//     float cuda_time = 0;
+//     cudaEventSynchronize(stop);
+//     cudaEventElapsedTime(&cuda_time, start, stop);
+//     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+//     return "KERNELS,LARGE_WAVE_RADIATION_ATMOSPHERE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+// };
+
+// Função combinada para calcular radiação líquida e fluxo de calor do solo em um único kernel
+string net_radiation_soil_heat_combined_function(Products products)
 {
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;
@@ -302,7 +413,17 @@ string large_wave_radiation_atmosphere_function(Products products, float tempera
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    large_wave_radiation_atmosphere_kernel<<<blocks_n, threads_n>>>(products.ea_d, products.large_wave_radiation_atmosphere_d, temperature);
+    net_radiation_soil_heat_kernel<<<blocks_n, threads_n>>>(
+        products.short_wave_radiation_d,
+        products.albedo_d,
+        products.large_wave_radiation_atmosphere_d,
+        products.large_wave_radiation_surface_d,
+        products.eo_d,
+        products.ndvi_d,
+        products.surface_temperature_d,
+        products.net_radiation_d,
+        products.soil_heat_d
+    );
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -310,50 +431,51 @@ string large_wave_radiation_atmosphere_function(Products products, float tempera
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,LARGE_WAVE_RADIATION_ATMOSPHERE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "KERNELS,NET_RADIATION_SOIL_HEAT_COMBINED," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string net_radiation_function(Products products)
-{
-    int64_t initial_time, final_time;
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+// Mantendo as funções originais para compatibilidade
+// string net_radiation_function(Products products)
+// {
+//     int64_t initial_time, final_time;
+//     cudaEvent_t start, stop;
+//     cudaEventCreate(&start);
+//     cudaEventCreate(&stop);
 
-    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+//     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    cudaEventRecord(start);
-    net_radiation_kernel<<<blocks_n, threads_n>>>(products.short_wave_radiation_d, products.albedo_d, products.large_wave_radiation_atmosphere_d, products.large_wave_radiation_surface_d, products.eo_d, products.net_radiation_d);
-    cudaEventRecord(stop);
+//     cudaEventRecord(start);
+//     net_radiation_kernel<<<blocks_n, threads_n>>>(products.short_wave_radiation_d, products.albedo_d, products.large_wave_radiation_atmosphere_d, products.large_wave_radiation_surface_d, products.eo_d, products.net_radiation_d);
+//     cudaEventRecord(stop);
 
-    float cuda_time = 0;
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&cuda_time, start, stop);
-    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+//     float cuda_time = 0;
+//     cudaEventSynchronize(stop);
+//     cudaEventElapsedTime(&cuda_time, start, stop);
+//     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,NET_RADIATION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
-};
+//     return "KERNELS,NET_RADIATION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+// };
 
-string soil_heat_flux_function(Products products)
-{
-    int64_t initial_time, final_time;
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+// string soil_heat_flux_function(Products products)
+// {
+//     int64_t initial_time, final_time;
+//     cudaEvent_t start, stop;
+//     cudaEventCreate(&start);
+//     cudaEventCreate(&stop);
 
-    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+//     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    cudaEventRecord(start);
-    soil_heat_kernel<<<blocks_n, threads_n>>>(products.ndvi_d, products.albedo_d, products.surface_temperature_d, products.net_radiation_d, products.soil_heat_d);
-    cudaEventRecord(stop);
+//     cudaEventRecord(start);
+//     soil_heat_kernel<<<blocks_n, threads_n>>>(products.ndvi_d, products.albedo_d, products.surface_temperature_d, products.net_radiation_d, products.soil_heat_d);
+//     cudaEventRecord(stop);
 
-    float cuda_time = 0;
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&cuda_time, start, stop);
-    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+//     float cuda_time = 0;
+//     cudaEventSynchronize(stop);
+//     cudaEventElapsedTime(&cuda_time, start, stop);
+//     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,SOIL_HEAT_FLUX," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
-};
+//     return "KERNELS,SOIL_HEAT_FLUX," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+// };
 
 string Products::compute_Rn_G(Products products, Station station, MTL mtl)
 {
@@ -365,6 +487,7 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
 
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
+    // Sincronizar streams antes de iniciar o processamento
     HANDLE_ERROR(cudaStreamSynchronize(products.stream_blue));
     HANDLE_ERROR(cudaStreamSynchronize(products.stream_green));
     HANDLE_ERROR(cudaStreamSynchronize(products.stream_red));
@@ -374,34 +497,84 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
     HANDLE_ERROR(cudaStreamSynchronize(products.stream_swir2));
     HANDLE_ERROR(cudaStreamSynchronize(products.stream_tal));
 
+    // Criar streams para processamento paralelo
+    cudaStream_t streams[4];
+    for (int i = 0; i < 4; i++) {
+        HANDLE_ERROR(cudaStreamCreate(&streams[i]));
+    }
+
     cudaEventRecord(start);
-    result += radiance_function(products, mtl);
-    result += reflectance_function(products, mtl);
-    result += albedo_function(products, mtl);
-
-    // Vegetation indices
-    result += ndvi_function(products);
-    result += lai_function(products);
-    if (model_method == 0)
-        result += pai_function(products);
-
-    // Emissivity indices
-    result += enb_emissivity_function(products);
-    result += eo_emissivity_function(products);
-    result += ea_emissivity_function(products);
-    result += surface_temperature_function(products, mtl);
-
-    // Radiation waves
-    result += short_wave_radiation_function(products, mtl);
-    result += large_wave_radiation_surface_function(products);
-    result += large_wave_radiation_atmosphere_function(products, station.temperature_image);
-
-    // Main products
-    result += net_radiation_function(products);
-    result += soil_heat_flux_function(products);
+    
+    // Fase 1: Radiância e reflectância combinados em streams
+    result += rad_ref_combined_function(products, mtl);
+    
+    // Fase 2: Índices de vegetação e emissividade em paralelo usando streams
+    // Stream 0: índices de vegetação
+    ndvi_kernel<<<blocks_n, threads_n, 0, streams[0]>>>(products.reflectance_nir_d, products.reflectance_red_d, products.ndvi_d);
+    lai_kernel<<<blocks_n, threads_n, 0, streams[0]>>>(products.reflectance_nir_d, products.reflectance_red_d, products.lai_d);
+    if (model_method == 0) {
+        pai_kernel<<<blocks_n, threads_n, 0, streams[0]>>>(products.reflectance_nir_d, products.reflectance_red_d, products.pai_d);
+    }
+    
+    // Stream 1: cálculos de albedo
+    albedo_kernel<<<blocks_n, threads_n, 0, streams[1]>>>(
+        products.reflectance_blue_d, products.reflectance_green_d, products.reflectance_red_d, 
+        products.reflectance_nir_d, products.reflectance_swir1_d, products.reflectance_swir2_d, 
+        products.tal_d, products.albedo_d, mtl.ref_w_coeff_d
+    );
+    
+    // Stream 2: cálculos de emissividade
+    enb_kernel<<<blocks_n, threads_n, 0, streams[2]>>>(products.lai_d, products.ndvi_d, products.enb_d);
+    eo_kernel<<<blocks_n, threads_n, 0, streams[2]>>>(products.lai_d, products.ndvi_d, products.eo_d);
+    ea_kernel<<<blocks_n, threads_n, 0, streams[2]>>>(products.tal_d, products.ea_d);
+    
+    // Sincronizar streams antes de prosseguir
+    for (int i = 0; i < 3; i++) {
+        HANDLE_ERROR(cudaStreamSynchronize(streams[i]));
+    }
+    
+    // Fase 3: Temperatura de superfície e radiação
+    surface_temperature_kernel<<<blocks_n, threads_n, 0, streams[0]>>>(
+        products.enb_d, products.radiance_termal_d, products.surface_temperature_d, 
+        (mtl.number_sensor == 5) ? 607.76f : (mtl.number_sensor == 7) ? 666.09f : 774.8853f,
+        (mtl.number_sensor == 5) ? 1260.56f : (mtl.number_sensor == 7) ? 1282.71f : 1321.0789f
+    );
+    
+    short_wave_radiation_kernel<<<blocks_n, threads_n, 0, streams[1]>>>(
+        products.tal_d, products.short_wave_radiation_d, mtl.sun_elevation, 
+        mtl.distance_earth_sun, PI
+    );
+    
+    // Sincronizar streams antes de prosseguir
+    HANDLE_ERROR(cudaStreamSynchronize(streams[0]));
+    HANDLE_ERROR(cudaStreamSynchronize(streams[1]));
+    
+    // Fase 4: Cálculos de radiação de onda longa (combinados)
+    large_wave_radiation_combined_kernel<<<blocks_n, threads_n, 0, streams[0]>>>(
+        products.surface_temperature_d, products.eo_d, products.ea_d,
+        products.large_wave_radiation_surface_d, products.large_wave_radiation_atmosphere_d,
+        station.temperature_image
+    );
+    
+    // Sincronizar streams
+    HANDLE_ERROR(cudaStreamSynchronize(streams[0]));
+    
+    // Fase 5: Cálculos finais combinados (radiação líquida e fluxo de calor do solo)
+    net_radiation_soil_heat_kernel<<<blocks_n, threads_n>>>(
+        products.short_wave_radiation_d, products.albedo_d,
+        products.large_wave_radiation_atmosphere_d, products.large_wave_radiation_surface_d,
+        products.eo_d, products.ndvi_d, products.surface_temperature_d,
+        products.net_radiation_d, products.soil_heat_d
+    );
+    
     cudaEventRecord(stop);
 
+    // Destruir streams
+    for (int i = 0; i < 4; i++) {
+        HANDLE_ERROR(cudaStreamDestroy(streams[i]));
+    }
 
+    // Destruir streams originais
     HANDLE_ERROR(cudaStreamDestroy(products.stream_blue));
     HANDLE_ERROR(cudaStreamDestroy(products.stream_green));
     HANDLE_ERROR(cudaStreamDestroy(products.stream_red));
