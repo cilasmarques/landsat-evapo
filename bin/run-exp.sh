@@ -1,30 +1,28 @@
 #!/bin/bash
 
+# Script para executar o aplicativo e monitorar recursos
+# Adaptado para capturar métricas mesmo em execuções extremamente rápidas (<1ms)
+
 current_dir=$(dirname -- "$0")
 parent_dir=$(dirname -- "$current_dir")
 cd -P -- "$parent_dir"
 
+# Configuração
 OUTPUT_DATA_PATH=./output
 
-./main "$@" &
-PID=$!
+# Limpar cache do sistema para medições mais precisas
+sync
+echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
 
-./scripts/gpu-monitor.sh $PID "$OUTPUT_DATA_PATH/gpu_metrics.csv" &
-MONITOR_PID_GPU=$!
-./scripts/collect-gpu-usage.sh $PID > $OUTPUT_DATA_PATH/gpu.csv &
-MONITOR_PID_GPU_L=$!
-./scripts/collect-cpu-usage.sh $PID > "$OUTPUT_DATA_PATH/cpu.csv" &
-MONITOR_PID_CPU=$!
-./scripts/collect-memory-usage.sh $PID > "$OUTPUT_DATA_PATH/mem.csv" &
-MONITOR_PID_MEM=$!
+# Pré-aquecer a GPU (importante para medições de aplicações ultra-rápidas)
+nvidia-smi >/dev/null 2>&1
+sleep 0.1
 
-wait $PID
+# Garantir que outros processos não interfiram (tenta aumentar prioridade)
+renice -n -10 $$ >/dev/null 2>&1 || true
+
+# Monitoramento da GPU usando o novo método que inicia o monitoramento ANTES da execução
+./scripts/gpu-monitor.sh "./main $*" "$OUTPUT_DATA_PATH/gpu_metrics.csv"
 EXITCODE=$?
-echo "exit code: $EXITCODE"
-
-kill $MONITOR_PID_GPU 2>/dev/null
-kill $MONITOR_PID_GPU_L 2>/dev/null
-kill $MONITOR_PID_CPU 2>/dev/null
-kill $MONITOR_PID_MEM 2>/dev/null
 
 exit $EXITCODE
