@@ -183,6 +183,9 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMalloc((void **)&this->latent_heat_flux_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->net_radiation_24h_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_24h_d, band_bytes));
+
+    for (int i = 0; i < 8; ++i)
+        cudaEventCreate(&copy_done_events[i]);
 };
 
 string Products::read_data(TIFF **landsat_bands)
@@ -214,7 +217,8 @@ string Products::read_data(TIFF **landsat_bands)
 
     // Determine the number of consumer threads
     unsigned int num_consumers = std::thread::hardware_concurrency() - num_producers;
-    if (num_consumers == 0) num_consumers = 8;
+    if (num_consumers == 0)
+        num_consumers = 8;
     std::vector<std::thread> consumer_threads;
     for (int i = 0; i < num_consumers; ++i)
         consumer_threads.emplace_back(consumer_function, std::ref(task_queue), std::ref(task_queue_mutex),
@@ -235,7 +239,10 @@ string Products::read_data(TIFF **landsat_bands)
 
     // Transfer data to device
     for (int i = 0; i < 8; ++i)
+    {
         HANDLE_ERROR(cudaMemcpyAsync(device_bands[i], host_bands[i], band_bytes, cudaMemcpyHostToDevice, streams[i]));
+        cudaEventRecord(copy_done_events[i], streams[i]);
+    }
 
     end = system_clock::now();
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
@@ -347,60 +354,60 @@ string Products::print_products(string output_path)
     std::streambuf *coutbuf = std::cout.rdbuf();
     std::cout.rdbuf(out.rdbuf());
 
-//    std::cout << "==== Albedo" << std::endl;
-//    printLinearPointer(albedo, height_band, width_band);
-//
-//    std::cout << "==== NDVI" << std::endl;
-//    printLinearPointer(ndvi, height_band, width_band);
-//
-//    std::cout << "==== PAI" << std::endl;
-//    printLinearPointer(pai, height_band, width_band);
-//
-//    std::cout << "==== LAI" << std::endl;
-//    printLinearPointer(lai, height_band, width_band);
-//
-//    std::cout << "==== ENB Emissivity" << std::endl;
-//    printLinearPointer(enb_emissivity, height_band, width_band);
-//
-//    std::cout << "==== EO Emissivity" << std::endl;
-//    printLinearPointer(eo_emissivity, height_band, width_band);
-//
-//    std::cout << "==== EA Emissivity" << std::endl;
-//    printLinearPointer(ea_emissivity, height_band, width_band);
-//
-//    std::cout << "==== Surface Temperature" << std::endl;
-//    printLinearPointer(surface_temperature, height_band, width_band);
-//
-//    std::cout << "==== Net Radiation" << std::endl;
-//    printLinearPointer(net_radiation, height_band, width_band);
-//
-//    std::cout << "==== Soil Heat Flux" << std::endl;
-//    printLinearPointer(soil_heat, height_band, width_band);
-//
-//    std::cout << "==== D0" << std::endl;
-//    printLinearPointer(d0, height_band, width_band);
-//
-//    std::cout << "==== ZOM" << std::endl;
-//    printLinearPointer(zom, height_band, width_band);
-//
-//    std::cout << "==== Ustar" << std::endl;
-//    printLinearPointer(ustar, height_band, width_band);
-//
-//    std::cout << "==== KB" << std::endl;
-//    printLinearPointer(kb1, height_band, width_band);
-//
-//    std::cout << "==== RAH" << std::endl;
-//    printLinearPointer(aerodynamic_resistance, height_band, width_band);
-//
-//    std::cout << "==== Sensible Heat Flux" << std::endl;
-//    printLinearPointer(sensible_heat_flux, height_band, width_band);
-//
-//    std::cout << "==== Latent Heat Flux" << std::endl;
-//    printLinearPointer(latent_heat_flux, height_band, width_band);
-//
-//    std::cout << "==== Net Radiation 24h" << std::endl;
-//    printLinearPointer(net_radiation_24h, height_band, width_band);
-//
+    //    std::cout << "==== Albedo" << std::endl;
+    //    printLinearPointer(albedo, height_band, width_band);
+    //
+    //    std::cout << "==== NDVI" << std::endl;
+    //    printLinearPointer(ndvi, height_band, width_band);
+    //
+    //    std::cout << "==== PAI" << std::endl;
+    //    printLinearPointer(pai, height_band, width_band);
+    //
+    //    std::cout << "==== LAI" << std::endl;
+    //    printLinearPointer(lai, height_band, width_band);
+    //
+    //    std::cout << "==== ENB Emissivity" << std::endl;
+    //    printLinearPointer(enb_emissivity, height_band, width_band);
+    //
+    //    std::cout << "==== EO Emissivity" << std::endl;
+    //    printLinearPointer(eo_emissivity, height_band, width_band);
+    //
+    //    std::cout << "==== EA Emissivity" << std::endl;
+    //    printLinearPointer(ea_emissivity, height_band, width_band);
+    //
+    //    std::cout << "==== Surface Temperature" << std::endl;
+    //    printLinearPointer(surface_temperature, height_band, width_band);
+    //
+    //    std::cout << "==== Net Radiation" << std::endl;
+    //    printLinearPointer(net_radiation, height_band, width_band);
+    //
+    //    std::cout << "==== Soil Heat Flux" << std::endl;
+    //    printLinearPointer(soil_heat, height_band, width_band);
+    //
+    //    std::cout << "==== D0" << std::endl;
+    //    printLinearPointer(d0, height_band, width_band);
+    //
+    //    std::cout << "==== ZOM" << std::endl;
+    //    printLinearPointer(zom, height_band, width_band);
+    //
+    //    std::cout << "==== Ustar" << std::endl;
+    //    printLinearPointer(ustar, height_band, width_band);
+    //
+    //    std::cout << "==== KB" << std::endl;
+    //    printLinearPointer(kb1, height_band, width_band);
+    //
+    //    std::cout << "==== RAH" << std::endl;
+    //    printLinearPointer(aerodynamic_resistance, height_band, width_band);
+    //
+    //    std::cout << "==== Sensible Heat Flux" << std::endl;
+    //    printLinearPointer(sensible_heat_flux, height_band, width_band);
+    //
+    //    std::cout << "==== Latent Heat Flux" << std::endl;
+    //    printLinearPointer(latent_heat_flux, height_band, width_band);
+    //
+    //    std::cout << "==== Net Radiation 24h" << std::endl;
+    //    printLinearPointer(net_radiation_24h, height_band, width_band);
+    //
     std::cout << "==== Evapotranspiration 24h" << std::endl;
     printLinearPointer(evapotranspiration_24h, height_band, width_band);
 
@@ -413,7 +420,8 @@ string Products::print_products(string output_path)
 
 void Products::close(TIFF **landsat_bands)
 {
-    for (int i = 1; i < 8; i++) {
+    for (int i = 1; i < 8; i++)
+    {
         TIFFClose(landsat_bands[i]);
     }
 
@@ -520,4 +528,13 @@ void Products::close(TIFF **landsat_bands)
     HANDLE_ERROR(cudaFree(this->latent_heat_flux_d));
     HANDLE_ERROR(cudaFree(this->net_radiation_24h_d));
     HANDLE_ERROR(cudaFree(this->evapotranspiration_24h_d));
+
+    HANDLE_ERROR(cudaStreamDestroy(stream_1));
+    HANDLE_ERROR(cudaStreamDestroy(stream_2));
+    HANDLE_ERROR(cudaStreamDestroy(stream_3));
+    HANDLE_ERROR(cudaStreamDestroy(stream_4));
+    HANDLE_ERROR(cudaStreamDestroy(stream_5));
+    HANDLE_ERROR(cudaStreamDestroy(stream_6));
+    HANDLE_ERROR(cudaStreamDestroy(stream_7));
+    HANDLE_ERROR(cudaStreamDestroy(stream_8));
 };

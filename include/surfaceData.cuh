@@ -179,6 +179,7 @@ struct Products {
     cudaStream_t stream_6; 
     cudaStream_t stream_7;
     cudaStream_t stream_8;
+    cudaEvent_t copy_done_events[8];
 
     /**
      * @brief  Constructor.
