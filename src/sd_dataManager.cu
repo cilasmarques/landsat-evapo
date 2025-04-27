@@ -1,7 +1,68 @@
 #include "cuda_utils.h"
 #include "kernels.cuh"
 #include "surfaceData.cuh"
+#include "utils.cuh"
 
+Barrier barrier(8);
+std::mutex queue_mutex;
+std::queue<Task> task_queue;
+std::condition_variable queue_cv;
+std::atomic<bool> producers_done{false};    
+
+// Auxiliary functions
+void read_band(TIFF* tiff, float* band, int height, int width, int band_idx) {
+    for(int line = 0; line < height; line++) {
+        tdata_t buf = _TIFFmalloc(TIFFScanlineSize(tiff));
+        TIFFReadScanline(tiff, buf, line);
+        unsigned short line_size = TIFFScanlineSize(tiff) / width;
+        for(int col = 0; col < width; col++) {
+            float value = 0;
+            memcpy(&value, static_cast<unsigned char*>(buf) + col * line_size, line_size);
+            band[line * width + col] = (band_idx == 7) ? 
+                (0.75 + 2 * pow(10, -5) * value) : value;
+        }
+        _TIFFfree(buf);
+    }
+}
+
+void producer(TIFF* tiff, float* band, int height, int width, int band_idx) {
+    read_band(tiff, band, height, width, band_idx);        
+    {
+        std::lock_guard<std::mutex> lock(queue_mutex);
+        task_queue.push({band_idx, tiff, band, height, width});
+    }    
+    queue_cv.notify_one();
+}
+
+void consumer(float** host_bands, float** device_bands, cudaStream_t* streams, size_t band_bytes) {
+    while (true) {
+        Task task;        
+        {
+            std::unique_lock<std::mutex> lock(queue_mutex);
+            queue_cv.wait(lock, [] { return !task_queue.empty() || producers_done; });
+            if (task_queue.empty() && producers_done) {
+                break;
+            }
+            if (task_queue.empty()) {
+                continue;
+            }
+            task = task_queue.front();
+            task_queue.pop();
+        }
+
+        HANDLE_ERROR(cudaMemcpyAsync(
+            device_bands[task.band_idx], 
+            host_bands[task.band_idx], 
+            band_bytes, 
+            cudaMemcpyHostToDevice, 
+            streams[task.band_idx]
+        ));
+        
+        barrier.decrease();
+    }
+}
+
+// Products functions
 Products::Products(uint32_t width_band, uint32_t height_band)
 {
     this->width_band = width_band;
@@ -131,21 +192,6 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_24h_d, band_bytes));
 };
 
-void read_band(TIFF* tiff, float* band, int height, int width, int band_idx) {
-    for(int line = 0; line < height; line++) {
-        tdata_t buf = _TIFFmalloc(TIFFScanlineSize(tiff));
-        TIFFReadScanline(tiff, buf, line);
-        unsigned short line_size = TIFFScanlineSize(tiff) / width;
-        for(int col = 0; col < width; col++) {
-            float value = 0;
-            memcpy(&value, static_cast<unsigned char*>(buf) + col * line_size, line_size);
-            band[line * width + col] = (band_idx == 7) ? 
-                (0.75 + 2 * pow(10, -5) * value) : value;
-        }
-        _TIFFfree(buf);
-    }
-}
-
 string Products::read_data(TIFF **landsat_bands)
 {
     system_clock::time_point begin, end;
@@ -153,21 +199,36 @@ string Products::read_data(TIFF **landsat_bands)
     float general_time;
     string result = "";
     
-    vector<thread> threads;
     float* host_bands[] = {band_blue, band_green, band_red, band_nir, band_swir1, band_termal, band_swir2, tal};
     float* device_bands[] = {band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d, tal_d};
     cudaStream_t streams[] = {stream_blue, stream_green, stream_red, stream_nir, stream_swir1, stream_termal, stream_swir2, stream_tal};
-
+    
     begin = system_clock::now();
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-    for(int i = 0; i < INPUT_BAND_ELEV_INDEX; i++) 
-        threads.emplace_back(read_band, landsat_bands[i], host_bands[i], height_band, width_band, i);    
-
-    for(auto& t : threads) t.join();   
     
-    for(int i = 0; i < 8; i++) 
-        HANDLE_ERROR(cudaMemcpyAsync(device_bands[i], host_bands[i], band_bytes, cudaMemcpyHostToDevice, streams[i]));    
+    producers_done = false;
+    barrier.reset();
+    
+    std::vector<std::thread> consumer_threads;
+    for (int i = 0; i < INPUT_BAND_ELEV_INDEX; i++) {
+        consumer_threads.emplace_back(consumer, host_bands, device_bands, streams, band_bytes);
+    }    
+
+    std::vector<std::thread> producer_threads;
+    for (int i = 0; i < INPUT_BAND_ELEV_INDEX; i++) {
+        producer_threads.emplace_back(producer, landsat_bands[i], host_bands[i], height_band, width_band, i);
+    }
+
+    for (auto& thread : producer_threads) {
+        thread.join();
+    }
+    
+    producers_done = true;
+    queue_cv.notify_all();
+    
+    for (auto& thread : consumer_threads) {
+        thread.join();
+    }    
 
     end = system_clock::now();
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();

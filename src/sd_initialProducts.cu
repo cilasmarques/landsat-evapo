@@ -3,8 +3,8 @@
 #include "kernels.cuh"
 #include "sensors.cuh"
 #include "surfaceData.cuh"
+#include "utils.cuh"
 
-// Função otimizada que combina os cálculos de radiância e reflectância em streams paralelos
 string rad_ref_combined_function(Products products, MTL mtl)
 {
     const float sin_sun = sin(mtl.sun_elevation * PI / 180);
@@ -67,57 +67,6 @@ string rad_ref_combined_function(Products products, MTL mtl)
 
     return "KERNELS,RAD_REF," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 }
-
-// // Mantendo as funções originais para compatibilidade
-// string radiance_function(Products products, MTL mtl)
-// {
-//     int64_t initial_time, final_time;
-//     cudaEvent_t start, stop;
-//     cudaEventCreate(&start);
-//     cudaEventCreate(&stop);
-
-//     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-//     cudaEventRecord(start, 0);
-//     rad_kernel<<<blocks_n, threads_n>>>(products.band_termal_d, products.radiance_termal_d, mtl.rad_add_d, mtl.rad_mult_d, PARAM_BAND_TERMAL_INDEX);
-//     cudaEventRecord(stop, 0);
-
-//     float cuda_time = 0;
-//     cudaEventSynchronize(stop);
-//     cudaEventElapsedTime(&cuda_time, start, stop);
-//     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-//     return "KERNELS,RADIANCE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
-// }
-
-// string reflectance_function(Products products, MTL mtl)
-// {
-//     const float sin_sun = sin(mtl.sun_elevation * PI / 180);
-
-//     int64_t initial_time, final_time;
-//     cudaEvent_t start, stop;
-//     cudaEventCreate(&start);
-//     cudaEventCreate(&stop);
-
-//     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-//     cudaEventRecord(start);
-//     ref_kernel<<<blocks_n, threads_n>>>(products.band_blue_d, products.reflectance_blue_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_BLUE_INDEX);
-//     ref_kernel<<<blocks_n, threads_n>>>(products.band_green_d, products.reflectance_green_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_GREEN_INDEX);
-//     ref_kernel<<<blocks_n, threads_n>>>(products.band_red_d, products.reflectance_red_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_RED_INDEX);
-//     ref_kernel<<<blocks_n, threads_n>>>(products.band_nir_d, products.reflectance_nir_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_NIR_INDEX);
-//     ref_kernel<<<blocks_n, threads_n>>>(products.band_swir1_d, products.reflectance_swir1_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_SWIR1_INDEX);
-//     ref_kernel<<<blocks_n, threads_n>>>(products.band_termal_d, products.reflectance_termal_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_TERMAL_INDEX);
-//     ref_kernel<<<blocks_n, threads_n>>>(products.band_swir2_d, products.reflectance_swir2_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_SWIR2_INDEX);
-//     cudaEventRecord(stop);
-
-//     float cuda_time = 0;
-//     cudaEventSynchronize(stop);
-//     cudaEventElapsedTime(&cuda_time, start, stop);
-//     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-//     return "KERNELS,REFLECTANCE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
-// }
 
 string albedo_function(Products products, MTL mtl)
 {
@@ -330,7 +279,6 @@ string short_wave_radiation_function(Products products, MTL mtl)
     return "KERNELS,SHORT_WAVE_RADIATION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-// Função combinada para calcular radiação de onda longa de superfície e atmosfera
 string large_wave_radiation_combined_function(Products products, float temperature)
 {
     int64_t initial_time, final_time;
@@ -359,50 +307,6 @@ string large_wave_radiation_combined_function(Products products, float temperatu
     return "KERNELS,LARGE_WAVE_RADIATION_COMBINED," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-// Mantendo as funções originais para compatibilidade
-// string large_wave_radiation_surface_function(Products products)
-// {
-//     int64_t initial_time, final_time;
-//     cudaEvent_t start, stop;
-//     cudaEventCreate(&start);
-//     cudaEventCreate(&stop);
-
-//     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-//     cudaEventRecord(start);
-//     large_wave_radiation_surface_kernel<<<blocks_n, threads_n>>>(products.surface_temperature_d, products.eo_d, products.large_wave_radiation_surface_d);
-//     cudaEventRecord(stop);
-
-//     float cuda_time = 0;
-//     cudaEventSynchronize(stop);
-//     cudaEventElapsedTime(&cuda_time, start, stop);
-//     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-//     return "KERNELS,LARGE_WAVE_RADIATION_SURFACE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
-// };
-
-// string large_wave_radiation_atmosphere_function(Products products, float temperature)
-// {
-//     int64_t initial_time, final_time;
-//     cudaEvent_t start, stop;
-//     cudaEventCreate(&start);
-//     cudaEventCreate(&stop);
-
-//     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-//     cudaEventRecord(start);
-//     large_wave_radiation_atmosphere_kernel<<<blocks_n, threads_n>>>(products.ea_d, products.large_wave_radiation_atmosphere_d, temperature);
-//     cudaEventRecord(stop);
-
-//     float cuda_time = 0;
-//     cudaEventSynchronize(stop);
-//     cudaEventElapsedTime(&cuda_time, start, stop);
-//     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-//     return "KERNELS,LARGE_WAVE_RADIATION_ATMOSPHERE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
-// };
-
-// Função combinada para calcular radiação líquida e fluxo de calor do solo em um único kernel
 string net_radiation_soil_heat_combined_function(Products products)
 {
     int64_t initial_time, final_time;
@@ -434,49 +338,6 @@ string net_radiation_soil_heat_combined_function(Products products)
     return "KERNELS,NET_RADIATION_SOIL_HEAT_COMBINED," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-// Mantendo as funções originais para compatibilidade
-// string net_radiation_function(Products products)
-// {
-//     int64_t initial_time, final_time;
-//     cudaEvent_t start, stop;
-//     cudaEventCreate(&start);
-//     cudaEventCreate(&stop);
-
-//     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-//     cudaEventRecord(start);
-//     net_radiation_kernel<<<blocks_n, threads_n>>>(products.short_wave_radiation_d, products.albedo_d, products.large_wave_radiation_atmosphere_d, products.large_wave_radiation_surface_d, products.eo_d, products.net_radiation_d);
-//     cudaEventRecord(stop);
-
-//     float cuda_time = 0;
-//     cudaEventSynchronize(stop);
-//     cudaEventElapsedTime(&cuda_time, start, stop);
-//     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-//     return "KERNELS,NET_RADIATION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
-// };
-
-// string soil_heat_flux_function(Products products)
-// {
-//     int64_t initial_time, final_time;
-//     cudaEvent_t start, stop;
-//     cudaEventCreate(&start);
-//     cudaEventCreate(&stop);
-
-//     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-//     cudaEventRecord(start);
-//     soil_heat_kernel<<<blocks_n, threads_n>>>(products.ndvi_d, products.albedo_d, products.surface_temperature_d, products.net_radiation_d, products.soil_heat_d);
-//     cudaEventRecord(stop);
-
-//     float cuda_time = 0;
-//     cudaEventSynchronize(stop);
-//     cudaEventElapsedTime(&cuda_time, start, stop);
-//     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-//     return "KERNELS,SOIL_HEAT_FLUX," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
-// };
-
 string Products::compute_Rn_G(Products products, Station station, MTL mtl)
 {
     string result = "";
@@ -485,9 +346,8 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 
-    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    barrier.wait(); 
 
-    // Sincronizar streams antes de iniciar o processamento
     HANDLE_ERROR(cudaStreamSynchronize(products.stream_blue));
     HANDLE_ERROR(cudaStreamSynchronize(products.stream_green));
     HANDLE_ERROR(cudaStreamSynchronize(products.stream_red));
@@ -496,6 +356,17 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
     HANDLE_ERROR(cudaStreamSynchronize(products.stream_termal));
     HANDLE_ERROR(cudaStreamSynchronize(products.stream_swir2));
     HANDLE_ERROR(cudaStreamSynchronize(products.stream_tal));
+
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_blue));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_green));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_red));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_nir));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_swir1));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_termal));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_swir2));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_tal));
+
+    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     // Criar streams para processamento paralelo
     cudaStream_t streams[4];
@@ -573,17 +444,7 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
     for (int i = 0; i < 4; i++) {
         HANDLE_ERROR(cudaStreamDestroy(streams[i]));
     }
-
-    // Destruir streams originais
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_blue));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_green));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_red));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_nir));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_swir1));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_termal));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_swir2));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_tal));
-
+    
     float cuda_time = 0;
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&cuda_time, start, stop);
