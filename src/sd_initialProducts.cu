@@ -348,102 +348,81 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
 
     barrier.wait(); 
 
-    HANDLE_ERROR(cudaStreamSynchronize(products.stream_blue));
-    HANDLE_ERROR(cudaStreamSynchronize(products.stream_green));
-    HANDLE_ERROR(cudaStreamSynchronize(products.stream_red));
-    HANDLE_ERROR(cudaStreamSynchronize(products.stream_nir));
-    HANDLE_ERROR(cudaStreamSynchronize(products.stream_swir1));
-    HANDLE_ERROR(cudaStreamSynchronize(products.stream_termal));
-    HANDLE_ERROR(cudaStreamSynchronize(products.stream_swir2));
-    HANDLE_ERROR(cudaStreamSynchronize(products.stream_tal));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_1));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_2));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_3));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_4));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_5));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_6));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_7));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_8));
 
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_blue));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_green));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_red));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_nir));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_swir1));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_termal));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_swir2));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_tal));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_1));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_2));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_3));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_4));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_5));
 
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-    // Criar streams para processamento paralelo
-    cudaStream_t streams[4];
-    for (int i = 0; i < 4; i++) {
-        HANDLE_ERROR(cudaStreamCreate(&streams[i]));
-    }
-
     cudaEventRecord(start);
     
-    // Fase 1: Radiância e reflectância combinados em streams
     result += rad_ref_combined_function(products, mtl);
     
-    // Fase 2: Índices de vegetação e emissividade em paralelo usando streams
-    // Stream 0: índices de vegetação
-    ndvi_kernel<<<blocks_n, threads_n, 0, streams[0]>>>(products.reflectance_nir_d, products.reflectance_red_d, products.ndvi_d);
-    lai_kernel<<<blocks_n, threads_n, 0, streams[0]>>>(products.reflectance_nir_d, products.reflectance_red_d, products.lai_d);
+    // ========== Compute this products asynchronously with streams (6, 7, 8)
+    ndvi_kernel<<<blocks_n, threads_n, 0, products.stream_6>>>(products.reflectance_nir_d, products.reflectance_red_d, products.ndvi_d);
+    lai_kernel<<<blocks_n, threads_n, 0, products.stream_6>>>(products.reflectance_nir_d, products.reflectance_red_d, products.lai_d);
     if (model_method == 0) {
-        pai_kernel<<<blocks_n, threads_n, 0, streams[0]>>>(products.reflectance_nir_d, products.reflectance_red_d, products.pai_d);
+        pai_kernel<<<blocks_n, threads_n, 0, products.stream_6>>>(products.reflectance_nir_d, products.reflectance_red_d, products.pai_d);
     }
     
-    // Stream 1: cálculos de albedo
-    albedo_kernel<<<blocks_n, threads_n, 0, streams[1]>>>(
+    albedo_kernel<<<blocks_n, threads_n, 0, products.stream_7>>>(
         products.reflectance_blue_d, products.reflectance_green_d, products.reflectance_red_d, 
         products.reflectance_nir_d, products.reflectance_swir1_d, products.reflectance_swir2_d, 
         products.tal_d, products.albedo_d, mtl.ref_w_coeff_d
     );
     
-    // Stream 2: cálculos de emissividade
-    enb_kernel<<<blocks_n, threads_n, 0, streams[2]>>>(products.lai_d, products.ndvi_d, products.enb_d);
-    eo_kernel<<<blocks_n, threads_n, 0, streams[2]>>>(products.lai_d, products.ndvi_d, products.eo_d);
-    ea_kernel<<<blocks_n, threads_n, 0, streams[2]>>>(products.tal_d, products.ea_d);
-    
-    // Sincronizar streams antes de prosseguir
-    for (int i = 0; i < 3; i++) {
-        HANDLE_ERROR(cudaStreamSynchronize(streams[i]));
-    }
-    
-    // Fase 3: Temperatura de superfície e radiação
-    surface_temperature_kernel<<<blocks_n, threads_n, 0, streams[0]>>>(
+    enb_kernel<<<blocks_n, threads_n, 0, products.stream_8>>>(products.lai_d, products.ndvi_d, products.enb_d);
+    eo_kernel<<<blocks_n, threads_n, 0, products.stream_8>>>(products.lai_d, products.ndvi_d, products.eo_d);
+    ea_kernel<<<blocks_n, threads_n, 0, products.stream_8>>>(products.tal_d, products.ea_d);
+
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_6));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_7));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_8));
+
+    // ========== Compute this products asynchronously with streams (6, 7) 
+    surface_temperature_kernel<<<blocks_n, threads_n, 0, products.stream_6>>>(
         products.enb_d, products.radiance_termal_d, products.surface_temperature_d, 
         (mtl.number_sensor == 5) ? 607.76f : (mtl.number_sensor == 7) ? 666.09f : 774.8853f,
         (mtl.number_sensor == 5) ? 1260.56f : (mtl.number_sensor == 7) ? 1282.71f : 1321.0789f
     );
-    
-    short_wave_radiation_kernel<<<blocks_n, threads_n, 0, streams[1]>>>(
+
+    short_wave_radiation_kernel<<<blocks_n, threads_n, 0, products.stream_7>>>(
         products.tal_d, products.short_wave_radiation_d, mtl.sun_elevation, 
         mtl.distance_earth_sun, PI
     );
-    
-    // Sincronizar streams antes de prosseguir
-    HANDLE_ERROR(cudaStreamSynchronize(streams[0]));
-    HANDLE_ERROR(cudaStreamSynchronize(streams[1]));
-    
-    // Fase 4: Cálculos de radiação de onda longa (combinados)
-    large_wave_radiation_combined_kernel<<<blocks_n, threads_n, 0, streams[0]>>>(
+
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_6));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_7));
+
+    // ========== Compute this products synchronously 
+    large_wave_radiation_combined_kernel<<<blocks_n, threads_n>>>(
         products.surface_temperature_d, products.eo_d, products.ea_d,
         products.large_wave_radiation_surface_d, products.large_wave_radiation_atmosphere_d,
         station.temperature_image
     );
     
-    // Sincronizar streams
-    HANDLE_ERROR(cudaStreamSynchronize(streams[0]));
-    
-    // Fase 5: Cálculos finais combinados (radiação líquida e fluxo de calor do solo)
     net_radiation_soil_heat_kernel<<<blocks_n, threads_n>>>(
         products.short_wave_radiation_d, products.albedo_d,
         products.large_wave_radiation_atmosphere_d, products.large_wave_radiation_surface_d,
         products.eo_d, products.ndvi_d, products.surface_temperature_d,
         products.net_radiation_d, products.soil_heat_d
     );
-    
-    cudaEventRecord(stop);
 
-    // Destruir streams
-    for (int i = 0; i < 4; i++) {
-        HANDLE_ERROR(cudaStreamDestroy(streams[i]));
-    }
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_6));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_7));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_8));
+
+    cudaEventRecord(stop);
     
     float cuda_time = 0;
     cudaEventSynchronize(stop);

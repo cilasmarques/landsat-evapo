@@ -78,14 +78,14 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     this->band_swir2 = (float *)malloc(band_bytes);
     this->tal = (float *)malloc(band_bytes);
 
-    HANDLE_ERROR(cudaStreamCreate(&this->stream_blue));
-    HANDLE_ERROR(cudaStreamCreate(&this->stream_green));
-    HANDLE_ERROR(cudaStreamCreate(&this->stream_red));
-    HANDLE_ERROR(cudaStreamCreate(&this->stream_nir));
-    HANDLE_ERROR(cudaStreamCreate(&this->stream_swir1));
-    HANDLE_ERROR(cudaStreamCreate(&this->stream_termal));
-    HANDLE_ERROR(cudaStreamCreate(&this->stream_swir2));
-    HANDLE_ERROR(cudaStreamCreate(&this->stream_tal));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_1));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_2));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_3));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_4));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_5));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_6));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_7));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_8));
 
     this->radiance_blue = (float *)malloc(band_bytes);
     this->radiance_green = (float *)malloc(band_bytes);
@@ -201,7 +201,7 @@ string Products::read_data(TIFF **landsat_bands)
     
     float* host_bands[] = {band_blue, band_green, band_red, band_nir, band_swir1, band_termal, band_swir2, tal};
     float* device_bands[] = {band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d, tal_d};
-    cudaStream_t streams[] = {stream_blue, stream_green, stream_red, stream_nir, stream_swir1, stream_termal, stream_swir2, stream_tal};
+    cudaStream_t streams[] = {stream_1, stream_2, stream_3, stream_4, stream_5, stream_6, stream_7, stream_8};
     
     begin = system_clock::now();
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
