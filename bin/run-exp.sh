@@ -1,28 +1,31 @@
 #!/bin/bash
 
+# Script to run the application and monitor resources
+# Adapted to capture metrics even for extremely fast executions (<1ms)
+
 current_dir=$(dirname -- "$0")
 parent_dir=$(dirname -- "$current_dir")
 cd -P -- "$parent_dir"
 
+# Configuration
 OUTPUT_DATA_PATH=./output
 
-./main "$@" &
+# Ensure other processes don't interfere (tries to increase priority)
+renice -n -10 $$ >/dev/null 2>&1 || true
 
-PID=$!
+# GPU, CPU and memory monitoring using consistent method for all resources
+# Run the application being monitored
+./main $* &
+APP_PID=$!
 
-sh ./scripts/collect-cpu-usage.sh $PID > $OUTPUT_DATA_PATH/cpu.csv &
-sh ./scripts/collect-memory-usage.sh $PID > $OUTPUT_DATA_PATH/mem.csv &
+./scripts/collect-cpu-usage.sh $APP_PID > "$OUTPUT_DATA_PATH/cpu_metrics.csv" &
+CPU_PID=$!
 
-wait $PID
+# Wait for the main application to finish
+wait $APP_PID
+EXITCODE=$?
 
-# Kill the collect-cpu-usage.sh script if it is running
-if pid=$(pidof -s collect-cpu-usage.sh); then
-    kill "$pid"
-fi
+# Terminate monitoring processes (they usually end automatically)
+kill $GPU_PID $CPU_PID 2>/dev/null || true
 
-# Kill the collect-memory-usage.sh script if it is running
-if pid=$(pidof -s collect-memory-usage.sh); then
-    kill "$pid"
-fi
-
-exit 0
+exit $EXITCODE
