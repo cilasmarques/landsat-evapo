@@ -294,7 +294,7 @@ string short_wave_radiation_function(Products products, MTL mtl)
     return "SERIAL,SHORT_WAVE_RADIATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string large_wave_radiation_surface_function(Products products)
+string large_waves_radiations_function(Products products, float temperature)
 {
     int64_t initial_time, final_time;
     system_clock::time_point begin, end;
@@ -307,33 +307,15 @@ string large_wave_radiation_surface_function(Products products)
         float temperature_pixel = products.surface_temperature[i];
         float surface_temperature_pow_4 = temperature_pixel * temperature_pixel * temperature_pixel * temperature_pixel;
         products.large_wave_radiation_surface[i] = products.eo_emissivity[i] * 5.67f * 1e-8f * surface_temperature_pow_4;
+
+        float station_temperature_kelvin_pow_4 = temperature * temperature * temperature * temperature;
+        products.large_wave_radiation_atmosphere[i] = products.ea_emissivity[i] * 5.67f * 1e-8f * station_temperature_kelvin_pow_4;
     }
     end = system_clock::now();
 
     general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-    return "SERIAL,LARGE_WAVE_RADIATION_SURFACE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
-};
-
-string large_wave_radiation_atmosphere_function(Products products, float temperature)
-{
-    int64_t initial_time, final_time;
-    system_clock::time_point begin, end;
-    float general_time;
-
-    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-    begin = system_clock::now();
-    for (int i = 0; i < products.height_band * products.width_band; i++) {
-        float temperature_pixel = products.surface_temperature[i];
-        float surface_temperature_pow_4 = temperature_pixel * temperature_pixel * temperature_pixel * temperature_pixel;
-        products.large_wave_radiation_surface[i] = products.eo_emissivity[i] * 5.67f * 1e-8f * surface_temperature_pow_4;
-    }
-    end = system_clock::now();
-
-    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
-    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-    return "SERIAL,LARGE_WAVE_RADIATION_ATMOSPHERE," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "SERIAL,LARGE_WAVES_RADIATION," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string net_radiation_function(Products products)
@@ -413,8 +395,7 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
 
     // Radiation waves
     result += short_wave_radiation_function(products, mtl);
-    result += large_wave_radiation_surface_function(products);
-    result += large_wave_radiation_atmosphere_function(products, station.temperature_image);
+    result += large_waves_radiations_function(products, station.temperature_image);
 
     // Main products
     result += net_radiation_function(products);

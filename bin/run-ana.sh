@@ -6,7 +6,7 @@ cd -P -- "$parent_dir"
 
 OUTPUT_DATA_PATH=./output
 
-for i in $(seq -f "%02g" 1 5); do
+for i in $(seq -f "%02g" 1 1100); do
     # Ensure other processes don't interfere (tries to increase priority)
     renice -n -10 $$ >/dev/null 2>&1 || true
 
@@ -23,7 +23,7 @@ for i in $(seq -f "%02g" 1 5); do
     EXITCODE=$?
 
     # Terminate monitoring processes (they usually end automatically)
-    kill $GPU_PID $CPU_PID 2>/dev/null || true
+    kill $CPU_PID 2>/dev/null || true
 
     METHOD=`echo "$@" | grep -oP '(?<=-meth=)[0-9]+'`
     ANALYSIS_OUTPUT_PATH=$OUTPUT_DATA_PATH/kernels-$METHOD

@@ -26,6 +26,6 @@ wait $APP_PID
 EXITCODE=$?
 
 # Terminate monitoring processes (they usually end automatically)
-kill $GPU_PID $CPU_PID 2>/dev/null || true
+kill $CPU_PID 2>/dev/null || true
 
 exit $EXITCODE
