@@ -271,7 +271,7 @@ string short_wave_radiation_function(Products products, MTL mtl)
     return "KERNELS,SHORT_WAVE_RADIATION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string large_wave_radiation_surface_function(Products products)
+string large_waves_radiation_function(Products products, float temperature)
 {
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;
@@ -281,7 +281,7 @@ string large_wave_radiation_surface_function(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    large_wave_radiation_surface_kernel<<<blocks_n, threads_n>>>(products.surface_temperature_d, products.eo_d, products.large_wave_radiation_surface_d);
+    large_waves_radiation_kernel<<<blocks_n, threads_n>>>(products.surface_temperature_d, products.eo_d, products.ea_d, products.large_wave_radiation_atmosphere_d, products.large_wave_radiation_surface_d, temperature);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -289,28 +289,7 @@ string large_wave_radiation_surface_function(Products products)
     cudaEventElapsedTime(&cuda_time, start, stop);
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    return "KERNELS,LARGE_WAVE_RADIATION_SURFACE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
-};
-
-string large_wave_radiation_atmosphere_function(Products products, float temperature)
-{
-    int64_t initial_time, final_time;
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-
-    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-    cudaEventRecord(start);
-    large_wave_radiation_atmosphere_kernel<<<blocks_n, threads_n>>>(products.ea_d, products.large_wave_radiation_atmosphere_d, temperature);
-    cudaEventRecord(stop);
-
-    float cuda_time = 0;
-    cudaEventSynchronize(stop);
-    cudaEventElapsedTime(&cuda_time, start, stop);
-    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-
-    return "KERNELS,LARGE_WAVE_RADIATION_ATMOSPHERE," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+    return "KERNELS,LARGE_WAVES_RADIATION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
 string net_radiation_function(Products products)
@@ -365,15 +344,6 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
 
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    HANDLE_ERROR(cudaStreamSynchronize(products.stream_blue));
-    HANDLE_ERROR(cudaStreamSynchronize(products.stream_green));
-    HANDLE_ERROR(cudaStreamSynchronize(products.stream_red));
-    HANDLE_ERROR(cudaStreamSynchronize(products.stream_nir));
-    HANDLE_ERROR(cudaStreamSynchronize(products.stream_swir1));
-    HANDLE_ERROR(cudaStreamSynchronize(products.stream_termal));
-    HANDLE_ERROR(cudaStreamSynchronize(products.stream_swir2));
-    HANDLE_ERROR(cudaStreamSynchronize(products.stream_tal));
-
     cudaEventRecord(start);
     result += radiance_function(products, mtl);
     result += reflectance_function(products, mtl);
@@ -393,23 +363,12 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
 
     // Radiation waves
     result += short_wave_radiation_function(products, mtl);
-    result += large_wave_radiation_surface_function(products);
-    result += large_wave_radiation_atmosphere_function(products, station.temperature_image);
+    result += large_waves_radiation_function(products, station.temperature_image);
 
     // Main products
     result += net_radiation_function(products);
     result += soil_heat_flux_function(products);
     cudaEventRecord(stop);
-
-
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_blue));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_green));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_red));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_nir));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_swir1));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_termal));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_swir2));
-    HANDLE_ERROR(cudaStreamDestroy(products.stream_tal));
 
     float cuda_time = 0;
     cudaEventSynchronize(stop);

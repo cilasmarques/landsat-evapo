@@ -17,15 +17,6 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     this->band_swir2 = (float *)malloc(band_bytes);
     this->tal = (float *)malloc(band_bytes);
 
-    HANDLE_ERROR(cudaStreamCreate(&this->stream_blue));
-    HANDLE_ERROR(cudaStreamCreate(&this->stream_green));
-    HANDLE_ERROR(cudaStreamCreate(&this->stream_red));
-    HANDLE_ERROR(cudaStreamCreate(&this->stream_nir));
-    HANDLE_ERROR(cudaStreamCreate(&this->stream_swir1));
-    HANDLE_ERROR(cudaStreamCreate(&this->stream_termal));
-    HANDLE_ERROR(cudaStreamCreate(&this->stream_swir2));
-    HANDLE_ERROR(cudaStreamCreate(&this->stream_tal));
-
     this->radiance_blue = (float *)malloc(band_bytes);
     this->radiance_green = (float *)malloc(band_bytes);
     this->radiance_red = (float *)malloc(band_bytes);
@@ -131,49 +122,73 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_24h_d, band_bytes));
 };
 
-void read_band(TIFF* tiff, float* band, int height, int width, int band_idx) {
-    for(int line = 0; line < height; line++) {
-        tdata_t buf = _TIFFmalloc(TIFFScanlineSize(tiff));
-        TIFFReadScanline(tiff, buf, line);
-        unsigned short line_size = TIFFScanlineSize(tiff) / width;
-        for(int col = 0; col < width; col++) {
-            float value = 0;
-            memcpy(&value, static_cast<unsigned char*>(buf) + col * line_size, line_size);
-            band[line * width + col] = (band_idx == 7) ? 
-                (0.75 + 2 * pow(10, -5) * value) : value;
-        }
-        _TIFFfree(buf);
-    }
-}
-
 string Products::read_data(TIFF **landsat_bands)
 {
     system_clock::time_point begin, end;
     int64_t initial_time, final_time;
     float general_time;
-    string result = "";
-    
-    vector<thread> threads;
-    float* host_bands[] = {band_blue, band_green, band_red, band_nir, band_swir1, band_termal, band_swir2, tal};
-    float* device_bands[] = {band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d, tal_d};
-    cudaStream_t streams[] = {stream_blue, stream_green, stream_red, stream_nir, stream_swir1, stream_termal, stream_swir2, stream_tal};
 
     begin = system_clock::now();
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
-    for(int i = 0; i < INPUT_BAND_ELEV_INDEX; i++) 
-        threads.emplace_back(read_band, landsat_bands[i], host_bands[i], height_band, width_band, i);    
+    for (int i = 0; i < INPUT_BAND_ELEV_INDEX; i++) {
+        for (int line = 0; line < height_band; line++) {
+            TIFF *curr_band = landsat_bands[i];
+            tdata_t band_line_buff = _TIFFmalloc(TIFFScanlineSize(curr_band));
+            unsigned short curr_band_line_size = TIFFScanlineSize(curr_band) / width_band;
+            TIFFReadScanline(curr_band, band_line_buff, line);
 
-    for(auto& t : threads) t.join();   
-    
-    for(int i = 0; i < 8; i++) 
-        HANDLE_ERROR(cudaMemcpyAsync(device_bands[i], host_bands[i], band_bytes, cudaMemcpyHostToDevice, streams[i]));    
+            for (int col = 0; col < width_band; col++) {
+                float value = 0;
+                memcpy(&value, static_cast<unsigned char *>(band_line_buff) + col * curr_band_line_size, curr_band_line_size);
+
+                switch (i) {
+                case 0:
+                    band_blue[line * width_band + col] = value;
+                    break;
+                case 1:
+                    band_green[line * width_band + col] = value;
+                    break;
+                case 2:
+                    band_red[line * width_band + col] = value;
+                    break;
+                case 3:
+                    band_nir[line * width_band + col] = value;
+                    break;
+                case 4:
+                    band_swir1[line * width_band + col] = value;
+                    break;
+                case 5:
+                    band_termal[line * width_band + col] = value;
+                    break;
+                case 6:
+                    band_swir2[line * width_band + col] = value;
+                    break;
+                case 7:
+                    tal[line * width_band + col] = 0.75 + 2 * pow(10, -5) * value;
+                    break;
+                default:
+                    break;
+                }
+            }
+            _TIFFfree(band_line_buff);
+        }
+    }
+
+    HANDLE_ERROR(cudaMemcpy(band_blue_d, band_blue, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(band_green_d, band_green, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(band_red_d, band_red, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(band_nir_d, band_nir, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(band_swir1_d, band_swir1, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(band_termal_d, band_termal, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(band_swir2_d, band_swir2, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(tal_d, tal, band_bytes, cudaMemcpyHostToDevice));
 
     end = system_clock::now();
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
     return "SERIAL,P0_READ_INPUT," + to_string(general_time) + "," + to_string(initial_time) + "," + to_string(final_time) + "\n";
-}   
+}
 
 string Products::host_data()
 {

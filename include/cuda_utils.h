@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <thrust/sort.h>
+#include <thrust/device_ptr.h>
 
 #ifdef __has_include
 #if __has_include(<cuda.h>)

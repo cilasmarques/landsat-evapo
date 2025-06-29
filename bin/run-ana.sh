@@ -6,46 +6,37 @@ cd -P -- "$parent_dir"
 
 OUTPUT_DATA_PATH=./output
 
-for i in $(seq -f "%02g" 1 120); do
-  ./main "$@" &
+for i in $(seq -f "%02g" 1 1100); do
+    # Ensure other processes don't interfere (tries to increase priority)
+    renice -n -10 $$ >/dev/null 2>&1 || true
 
-  PID=$!
+    # GPU, CPU and memory monitoring using consistent method for all resources
+    # Run the application being monitored
+    ./main $* &
+    APP_PID=$!
 
-  sh ./scripts/collect-cpu-usage.sh $PID > $OUTPUT_DATA_PATH/cpu.csv &
-  sh ./scripts/collect-memory-usage.sh $PID > $OUTPUT_DATA_PATH/mem.csv &
-  sh ./scripts/collect-gpu-usage.sh $PID > $OUTPUT_DATA_PATH/gpu.csv &
-  sh ./scripts/collect-gpu-memory-usage.sh $PID > $OUTPUT_DATA_PATH/mem-gpu.csv &
+    # Start resource monitoring
+    ./scripts/collect-gpu-usage.sh $APP_PID > "$OUTPUT_DATA_PATH/gpu_metrics.csv" &
+    GPU_PID=$!
 
-  wait $PID
+    ./scripts/collect-cpu-usage.sh $APP_PID > "$OUTPUT_DATA_PATH/cpu_metrics.csv" &
+    CPU_PID=$!
 
-  # Kill the collect-cpu-usage.sh script if it is running
-  if pid=$(pidof -s collect-cpu-usage.sh); then
-      kill "$pid"
-  fi
+    # Wait for the main application to finish
+    wait $APP_PID
+    EXITCODE=$?
 
-  # Kill the collect-memory-usage.sh script if it is running
-  if pid=$(pidof -s collect-memory-usage.sh); then
-      kill "$pid"
-  fi
+    # Terminate monitoring processes (they usually end automatically)
+    kill $GPU_PID $CPU_PID 2>/dev/null || true
 
-  # Kill the collect-gpu-usage.sh script if it is running
-  if pid=$(pidof -s collect-gpu-usage.sh); then
-      kill "$pid"
-  fi
+    METHOD=`echo "$@" | grep -oP '(?<=-meth=)[0-9]+'`
+    ANALYSIS_OUTPUT_PATH=$OUTPUT_DATA_PATH/kernels-$METHOD
+    
+    mkdir -p $ANALYSIS_OUTPUT_PATH/experiment${i}
+    mv $OUTPUT_DATA_PATH/*.csv $ANALYSIS_OUTPUT_PATH/experiment${i}
+    mv $OUTPUT_DATA_PATH/*.txt $ANALYSIS_OUTPUT_PATH/experiment${i}
 
-  # Kill the collect-gpu-memory-usage.sh script if it is running
-  if pid=$(pidof -s collect-gpu-memory-usage.sh); then
-      kill "$pid"
-  fi
-
-  METHOD=`echo "$@" | grep -oP '(?<=-meth=)[0-9]+'`
-  ANALYSIS_OUTPUT_PATH=$OUTPUT_DATA_PATH/kernels-$METHOD
-  
-  mkdir -p $ANALYSIS_OUTPUT_PATH/experiment${i}
-  mv $OUTPUT_DATA_PATH/*.csv $ANALYSIS_OUTPUT_PATH/experiment${i}
-  mv $OUTPUT_DATA_PATH/*.txt $ANALYSIS_OUTPUT_PATH/experiment${i}
-
-  sleep 1
+    sleep 1
 done
 
 exit 0

@@ -130,18 +130,12 @@ __global__ void short_wave_radiation_kernel(float *tal_d, float *short_wave_radi
  *
  * @param surface_temperature_d  The surface temperature.
  * @param eo_d  The EO.
- * @param large_wave_radiation_surface_d  The large wave radiation surface.
- */
-__global__ void large_wave_radiation_surface_kernel(float *surface_temperature_d, float *eo_d, float *large_wave_radiation_surface_d);
-
-/**
- * @brief  Compute the large wave radiation of the bands.
- *
  * @param ea_d  The EA.
  * @param large_wave_radiation_atmosphere_d  The large wave radiation atmosphere.
+ * @param large_wave_radiation_surface_d  The large wave radiation surface.
  * @param temperature  The surface temperature.
  */
-__global__ void large_wave_radiation_atmosphere_kernel(float *ea_d, float *large_wave_radiation_atmosphere_d, float temperature);
+__global__ void large_waves_radiation_kernel(float *surface_temperature_d, float *eo_d, float *ea_d, float *large_wave_radiation_atmosphere_d, float *large_wave_radiation_surface_d, float temperature);
 
 /**
  * @brief  Compute the net radiation of the bands.

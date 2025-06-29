@@ -147,7 +147,7 @@ __global__ void short_wave_radiation_kernel(float *tal_d, float *short_wave_radi
     }
 }
 
-__global__ void large_wave_radiation_surface_kernel(float *surface_temperature_d, float *eo_d, float *large_wave_radiation_surface_d)
+__global__ void large_waves_radiation_kernel(float *surface_temperature_d, float *eo_d, float *ea_d, float *large_wave_radiation_atmosphere_d, float *large_wave_radiation_surface_d, float temperature)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -155,16 +155,9 @@ __global__ void large_wave_radiation_surface_kernel(float *surface_temperature_d
         float temperature_pixel = surface_temperature_d[pos];
         float surface_temperature_pow_4 = temperature_pixel * temperature_pixel * temperature_pixel * temperature_pixel;
         large_wave_radiation_surface_d[pos] = eo_d[pos] * 5.67f * 1e-8f * surface_temperature_pow_4;
-    }
-}
-
-__global__ void large_wave_radiation_atmosphere_kernel(float *ea_d, float *large_wave_radiation_atmosphere_d, float temperature)
-{
-    unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
-
-    if (pos < width_d * height_d) {
-        float temperature_kelvin_pow_4 = temperature * temperature * temperature * temperature;
-        large_wave_radiation_atmosphere_d[pos] = ea_d[pos] * 5.67f * 1e-8f * temperature_kelvin_pow_4;
+        
+        float station_temperature_kelvin_pow_4 = temperature * temperature * temperature * temperature;
+        large_wave_radiation_atmosphere_d[pos] = ea_d[pos] * 5.67f * 1e-8f * station_temperature_kelvin_pow_4;
     }
 }
 

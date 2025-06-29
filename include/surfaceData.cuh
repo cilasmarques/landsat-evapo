@@ -171,15 +171,6 @@ struct Products {
     float *evapotranspiration_24h_d;
     float *evapotranspiration_d;
 
-    cudaStream_t stream_blue;
-    cudaStream_t stream_green;
-    cudaStream_t stream_red;
-    cudaStream_t stream_nir;
-    cudaStream_t stream_swir1;
-    cudaStream_t stream_termal; 
-    cudaStream_t stream_swir2;
-    cudaStream_t stream_tal;
-
     /**
      * @brief  Constructor.
      */

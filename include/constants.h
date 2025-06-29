@@ -14,8 +14,6 @@
 #include <string.h>
 #include <string>
 #include <thread>
-#include <thrust/device_ptr.h>
-#include <thrust/sort.h>
 #include <tiffio.h>
 #include <time.h>
 #include <vector>
