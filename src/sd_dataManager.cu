@@ -456,4 +456,13 @@ void Products::close(TIFF **landsat_bands)
     HANDLE_ERROR(cudaFree(this->latent_heat_flux_d));
     HANDLE_ERROR(cudaFree(this->net_radiation_24h_d));
     HANDLE_ERROR(cudaFree(this->evapotranspiration_24h_d));
+
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_1));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_2));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_3));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_4));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_5));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_6));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_7));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_8));
 };
