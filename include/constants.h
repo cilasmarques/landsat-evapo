@@ -24,8 +24,6 @@ using namespace std::chrono;
 
 // GLOBAL VARIABLES DECLARATION
 extern int model_method;
-extern int threads_n;
-extern int blocks_n;
 
 // CONSTANTS DECLARATION
 #define PARAM_BAND_BLUE_INDEX 0
@@ -41,7 +39,6 @@ extern int blocks_n;
 #define INPUT_STATION_DATA_INDEX 10
 #define OUTPUT_FOLDER 11
 #define METHOD_INDEX 12
-#define THREADS_INDEX 13
 
 // Epsilon
 const float EPS = 1e-7;

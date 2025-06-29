@@ -2,8 +2,6 @@
 #include "sensors.h"
 #include "surfaceData.h"
 
-int blocks_n;
-int threads_n;
 int model_method;
 
 /**
@@ -45,15 +43,6 @@ int main(int argc, char *argv[])
             model_method = flag[6] - '0';
     }
 
-    // Load the number of threads for each block
-    if (argc >= THREADS_INDEX) {
-        string threads_flag = argv[THREADS_INDEX];
-        if (threads_flag.substr(0, 9) == "-threads=")
-            threads_n = atoi(threads_flag.substr(9, threads_flag.size()).c_str());
-        else
-            threads_n = 32;
-    }
-
     // Save output paths
     string output_folder = argv[OUTPUT_FOLDER];
     string output_time = output_folder + "/time.csv";
@@ -71,7 +60,6 @@ int main(int argc, char *argv[])
     Landsat landsat = Landsat(bands_paths);
     Station station = Station(station_data_path, mtl.image_hour);
     Products products = Products(landsat.width_band, landsat.height_band);
-    blocks_n = (landsat.width_band * landsat.height_band + threads_n - 1) / threads_n;
 
     // ===== RUN ALGORITHM =====
     begin = system_clock::now();    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();

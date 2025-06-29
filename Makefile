@@ -15,7 +15,6 @@ IMAGE_DATE="2017-05-11"
 
 ## ==== Execution
 METHOD=0
-THREADS=32
 OUTPUT_DATA_PATH=./output
 INPUT_DATA_PATH=$(IMAGES_DIR)/$(IMAGE_LANDSAT)_$(IMAGE_PATHROW)_$(IMAGE_DATE)/6502x7295
 
@@ -55,7 +54,7 @@ exec-landsat8:
 		$(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF $(INPUT_DATA_PATH)/B10.TIF \
 		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
 		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
-		-meth=$(METHOD) -threads=$(THREADS) & 
+		-meth=$(METHOD) & 
 
 exec-landsat5-7:
 	./bin/run-exp.sh \
@@ -63,39 +62,7 @@ exec-landsat5-7:
 		$(INPUT_DATA_PATH)/B4.TIF $(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF \
 		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
 		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
-		-meth=$(METHOD) -threads=$(THREADS) &
-
-nsys-landsat8:
-	./bin/run-nsys.sh \
-		$(INPUT_DATA_PATH)/B2.TIF $(INPUT_DATA_PATH)/B3.TIF $(INPUT_DATA_PATH)/B4.TIF \
-		$(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF $(INPUT_DATA_PATH)/B10.TIF \
-		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
-		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
-		-meth=$(METHOD) -threads=$(THREADS) & 
-
-nsys-landsat5-7:
-	./bin/run-nsys.sh \
-		$(INPUT_DATA_PATH)/B1.TIF $(INPUT_DATA_PATH)/B2.TIF $(INPUT_DATA_PATH)/B3.TIF \
-		$(INPUT_DATA_PATH)/B4.TIF $(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF \
-		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
-		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
-		-meth=$(METHOD) -threads=$(THREADS) &
-
-ncu-landsat5-7:
-	./bin/run-ncu.sh \
-		$(INPUT_DATA_PATH)/B1.TIF $(INPUT_DATA_PATH)/B2.TIF $(INPUT_DATA_PATH)/B3.TIF \
-		$(INPUT_DATA_PATH)/B4.TIF $(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF \
-		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
-		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
-		-meth=$(METHOD) -threads=$(THREADS) &
-
-ncu-landsat8:
-	./bin/run-ncu.sh \
-		$(INPUT_DATA_PATH)/B2.TIF $(INPUT_DATA_PATH)/B3.TIF $(INPUT_DATA_PATH)/B4.TIF \
-		$(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF $(INPUT_DATA_PATH)/B10.TIF \
-		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
-		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
-		-meth=$(METHOD) -threads=$(THREADS) & 
+		-meth=$(METHOD) &
 
 analisys-landsat8:
 	./bin/run-ana.sh \
@@ -103,7 +70,7 @@ analisys-landsat8:
 		$(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF $(INPUT_DATA_PATH)/B10.TIF \
 		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
 		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
-		-meth=$(METHOD) -threads=$(THREADS) &
+		-meth=$(METHOD) &
 
 analisys-landsat5-7:
 	./bin/run-ana.sh \
@@ -111,4 +78,4 @@ analisys-landsat5-7:
 		$(INPUT_DATA_PATH)/B4.TIF $(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF \
 		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
 		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
-		-meth=$(METHOD) -threads=$(THREADS) &
+		-meth=$(METHOD) &

@@ -13,7 +13,7 @@ OUTPUT_DATA_PATH=./output
 # Ensure other processes don't interfere (tries to increase priority)
 renice -n -10 $$ >/dev/null 2>&1 || true
 
-# GPU, CPU and memory monitoring using consistent method for all resources
+# CPU and memory monitoring
 # Run the application being monitored
 ./main $* &
 APP_PID=$!
