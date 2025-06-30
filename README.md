@@ -64,6 +64,11 @@ sudo apt-get install gdal-bin libtiff5-dev
    make docker-build
    ```
 
+2. **Test the Docker container**
+   ```bash
+   make docker-run
+   ```
+
 ## Usage
 
 ### Data Preparation
@@ -104,7 +109,9 @@ INPUT_DATA_PATH=./input/landsat_8_215065_2017-05-11/6502x7295
 OUTPUT_DATA_PATH=./output
 ```
 
-#### Landsat 8 Processing
+#### Native Execution
+
+##### Landsat 8 Processing
 ```bash
 # Standard execution
 make exec-landsat8
@@ -113,7 +120,7 @@ make exec-landsat8
 make analisys-landsat8 # Multiple execution analysis
 ```
 
-#### Landsat 5/7 Processing
+##### Landsat 5/7 Processing
 ```bash
 # Standard execution
 make exec-landsat5-7
@@ -123,10 +130,29 @@ make analisys-landsat5-7
 ```
 
 #### Docker Execution
+
+##### Landsat 8 Processing
 ```bash
-# Run in container
+# Standard execution
 make docker-run-landsat8
+```
+
+##### Landsat 5/7 Processing
+```bash
+# Standard execution
 make docker-run-landsat5-7
+```
+
+##### Interactive Docker Shell
+```bash
+# Run interactive shell in container
+make docker-run
+```
+
+##### Clean Docker Resources
+```bash
+# Remove Docker image and containers
+make docker-clean
 ```
 
 ## Input Data Structure

@@ -18,6 +18,10 @@ METHOD=0
 OUTPUT_DATA_PATH=./output
 INPUT_DATA_PATH=$(IMAGES_DIR)/$(IMAGE_LANDSAT)_$(IMAGE_PATHROW)_$(IMAGE_DATE)/6502x7295
 
+## ==== Docker
+DOCKER_IMAGE_NAME=landsat-evapo
+DOCKER_CONTAINER_NAME=landsat-evapo-container
+
 clean:
 	rm $(OUTPUT_DATA_PATH)/*
 
@@ -79,3 +83,43 @@ analisys-landsat5-7:
 		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
 		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
 		-meth=$(METHOD) &
+
+docker-build:
+	docker build -t $(DOCKER_IMAGE_NAME) .
+
+docker-run:
+	docker run --rm -it \
+		-v $(PWD)/input:/app/input \
+		-v $(PWD)/output:/app/output \
+		--name $(DOCKER_CONTAINER_NAME) \
+		$(DOCKER_IMAGE_NAME)
+
+docker-run-landsat8:
+	docker run --rm -it \
+		-v $(PWD)/input:/app/input \
+		-v $(PWD)/output:/app/output \
+		--name $(DOCKER_CONTAINER_NAME) \
+		$(DOCKER_IMAGE_NAME) \
+		./bin/run-exp.sh \
+		$(INPUT_DATA_PATH)/B2.TIF $(INPUT_DATA_PATH)/B3.TIF $(INPUT_DATA_PATH)/B4.TIF \
+		$(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF $(INPUT_DATA_PATH)/B10.TIF \
+		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
+		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
+		-meth=$(METHOD)
+
+docker-run-landsat5-7:
+	docker run --rm -it \
+		-v $(PWD)/input:/app/input \
+		-v $(PWD)/output:/app/output \
+		--name $(DOCKER_CONTAINER_NAME) \
+		$(DOCKER_IMAGE_NAME) \
+		./bin/run-exp.sh \
+		$(INPUT_DATA_PATH)/B1.TIF $(INPUT_DATA_PATH)/B2.TIF $(INPUT_DATA_PATH)/B3.TIF \
+		$(INPUT_DATA_PATH)/B4.TIF $(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF \
+		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
+		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
+		-meth=$(METHOD)
+
+docker-clean:
+	docker rmi $(DOCKER_IMAGE_NAME) 2>/dev/null || true
+	docker container prune -f
