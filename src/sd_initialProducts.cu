@@ -3,7 +3,6 @@
 #include "kernels.cuh"
 #include "sensors.cuh"
 #include "surfaceData.cuh"
-#include "utils.cuh"
 
 string rad_ref_combined_function(Products products, MTL mtl)
 {
