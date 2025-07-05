@@ -93,11 +93,45 @@ struct Landsat {
 void printLinearPointer(float *pointer, int height, int width);
 
 /**
- * @brief  Saves a TIFF file.
+ * @brief  Saves a TIFF file without compression.
  *
  * @param path: Path to save the TIFF file.
  * @param data: Data to be saved.
  * @param height: Height of the data.
  * @param width: Width of the data.
+ * @return true if successful, false otherwise.
  */
-void saveTiff(string path, float *data, int height, int width);
+bool saveTiff(string path, float *data, int height, int width);
+
+/**
+ * @brief  Saves a TIFF file with specified compression.
+ *
+ * @param path: Path to save the TIFF file.
+ * @param data: Data to be saved.
+ * @param height: Height of the data.
+ * @param width: Width of the data.
+ * @param compression: Compression type (e.g., COMPRESSION_NONE, COMPRESSION_LZW).
+ * @return true if successful, false otherwise.
+ */
+bool saveTiff(string path, float *data, int height, int width, uint16_t compression);
+
+/**
+ * @brief  Saves multiple TIFF files without compression.
+ *
+ * @param files: Vector of pairs containing file paths and data pointers.
+ * @param height: Height of the data.
+ * @param width: Width of the data.
+ * @return true if all files were saved successfully, false otherwise.
+ */
+bool saveMultipleTiffs(const vector<pair<string, float*>>& files, int height, int width);
+
+/**
+ * @brief  Saves multiple TIFF files with specified compression.
+ *
+ * @param files: Vector of pairs containing file paths and data pointers.
+ * @param height: Height of the data.
+ * @param width: Width of the data.
+ * @param compression: Compression type (e.g., COMPRESSION_NONE, COMPRESSION_LZW).
+ * @return true if all files were saved successfully, false otherwise.
+ */
+bool saveMultipleTiffs(const vector<pair<string, float*>>& files, int height, int width, uint16_t compression);

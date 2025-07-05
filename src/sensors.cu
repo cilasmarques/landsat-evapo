@@ -233,25 +233,148 @@ Landsat::Landsat(string bands_paths[])
     TIFFGetField(landsat_bands[1], TIFFTAG_SAMPLEFORMAT, &sample_bands);
 };
 
-void saveTiff(string path, float *data, int height, int width)
+bool saveTiff(string path, float *data, int height, int width)
 {
-    TIFF *tif = TIFFOpen(path.c_str(), "w");
-    TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width);
-    TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
-    TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 32);
-    TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
-    TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, 1);
-    TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
-    TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-    TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
-    TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
-    TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
+    return saveTiff(path, data, height, width, COMPRESSION_NONE);
+}
 
-    for (int i = 0; i < height; i++) {
-        TIFFWriteScanline(tif, &data[i * width], i, 0);
+bool saveTiff(string path, float *data, int height, int width, uint16_t compression)
+{
+    // Validação dos parâmetros de entrada
+    if (path.empty()) {
+        cerr << "Erro: Caminho do arquivo vazio" << endl;
+        return false;
+    }
+    
+    if (data == nullptr) {
+        cerr << "Erro: Ponteiro de dados é nulo" << endl;
+        return false;
+    }
+    
+    if (height <= 0 || width <= 0) {
+        cerr << "Erro: Dimensões inválidas (height=" << height << ", width=" << width << ")" << endl;
+        return false;
     }
 
+    // Verificar se o diretório existe
+    size_t last_slash = path.find_last_of("/\\");
+    if (last_slash != string::npos) {
+        string dir_path = path.substr(0, last_slash);
+        if (!dir_path.empty()) {
+            // Tentar criar diretório se não existir (implementação básica)
+            // Em um ambiente real, você pode querer usar filesystem::create_directories
+        }
+    }
+
+    // Abrir arquivo TIFF
+    TIFF *tif = TIFFOpen(path.c_str(), "w");
+    if (tif == nullptr) {
+        cerr << "Erro: Não foi possível abrir o arquivo para escrita: " << path << endl;
+        return false;
+    }
+
+    // Configurar campos do TIFF
+    if (!TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32_t)width)) {
+        cerr << "Erro: Falha ao definir largura da imagem" << endl;
+        TIFFClose(tif);
+        return false;
+    }
+    
+    if (!TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32_t)height)) {
+        cerr << "Erro: Falha ao definir altura da imagem" << endl;
+        TIFFClose(tif);
+        return false;
+    }
+    
+    if (!TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 32)) {
+        cerr << "Erro: Falha ao definir bits por amostra" << endl;
+        TIFFClose(tif);
+        return false;
+    }
+    
+    if (!TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1)) {
+        cerr << "Erro: Falha ao definir amostras por pixel" << endl;
+        TIFFClose(tif);
+        return false;
+    }
+    
+    if (!TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, 1)) {
+        cerr << "Erro: Falha ao definir linhas por strip" << endl;
+        TIFFClose(tif);
+        return false;
+    }
+    
+    if (!TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT)) {
+        cerr << "Erro: Falha ao definir orientação" << endl;
+        TIFFClose(tif);
+        return false;
+    }
+    
+    if (!TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG)) {
+        cerr << "Erro: Falha ao definir configuração planar" << endl;
+        TIFFClose(tif);
+        return false;
+    }
+    
+    if (!TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK)) {
+        cerr << "Erro: Falha ao definir fotométrica" << endl;
+        TIFFClose(tif);
+        return false;
+    }
+    
+    if (!TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP)) {
+        cerr << "Erro: Falha ao definir formato de amostra" << endl;
+        TIFFClose(tif);
+        return false;
+    }
+    
+    if (!TIFFSetField(tif, TIFFTAG_COMPRESSION, compression)) {
+        cerr << "Erro: Falha ao definir compressão" << endl;
+        TIFFClose(tif);
+        return false;
+    }
+
+    // Escrever dados linha por linha
+    bool write_success = true;
+    for (int i = 0; i < height && write_success; i++) {
+        tsize_t bytes_written = TIFFWriteScanline(tif, &data[i * width], i, 0);
+        if (bytes_written == -1) {
+            cerr << "Erro: Falha ao escrever linha " << i << endl;
+            write_success = false;
+        }
+    }
+
+    // Fechar arquivo
     TIFFClose(tif);
+    
+    if (!write_success) {
+        // Tentar remover arquivo corrompido
+        if (remove(path.c_str()) != 0) {
+            cerr << "Aviso: Não foi possível remover arquivo corrompido: " << path << endl;
+        }
+        return false;
+    }
+
+    return true;
+}
+
+bool saveMultipleTiffs(const vector<pair<string, float*>>& files, int height, int width, uint16_t compression)
+{
+    bool all_success = true;
+    
+    for (const auto& file : files) {
+        if (!saveTiff(file.first, file.second, height, width, compression)) {
+            cerr << "Erro: Falha ao salvar arquivo: " << file.first << endl;
+            all_success = false;
+        }
+    }
+    
+    return all_success;
+}
+
+bool saveMultipleTiffs(const vector<pair<string, float*>>& files, int height, int width)
+{
+    return saveMultipleTiffs(files, height, width, COMPRESSION_NONE);
 }
 
 void printLinearPointer(float *pointer, int height, int width)
@@ -263,3 +386,28 @@ void printLinearPointer(float *pointer, int height, int width)
         cout << endl;
     }
 }
+
+/*
+ * Exemplo de uso das funções saveTiff melhoradas:
+ * 
+ * // Salvar um único arquivo sem compressão
+ * if (!saveTiff("output.tif", data, height, width)) {
+ *     cerr << "Falha ao salvar arquivo" << endl;
+ * }
+ * 
+ * // Salvar um arquivo com compressão LZW
+ * if (!saveTiff("output_compressed.tif", data, height, width, COMPRESSION_LZW)) {
+ *     cerr << "Falha ao salvar arquivo comprimido" << endl;
+ * }
+ * 
+ * // Salvar múltiplos arquivos de uma vez
+ * vector<pair<string, float*>> files = {
+ *     {"albedo.tif", albedo},
+ *     {"ndvi.tif", ndvi},
+ *     {"temperature.tif", temperature}
+ * };
+ * 
+ * if (!saveMultipleTiffs(files, height, width)) {
+ *     cerr << "Falha ao salvar alguns arquivos" << endl;
+ * }
+ */

@@ -330,7 +330,9 @@ string Products::save_products(string output_path)
     // saveTiff(output_path + "/sensible_heat_flux.tif", sensible_heat_flux, height_band, width_band);
     // saveTiff(output_path + "/latent_heat_flux.tif", latent_heat_flux, height_band, width_band);
     // saveTiff(output_path + "/net_radiation_24h.tif", net_radiation_24h, height_band, width_band);
-    saveTiff(output_path + "/evapotranspiration_24h.tif", evapotranspiration_24h, height_band, width_band);
+    if (!saveTiff(output_path + "/evapotranspiration_24h.tif", evapotranspiration_24h, height_band, width_band)) {
+        cerr << "Erro: Falha ao salvar arquivo evapotranspiration_24h.tif" << endl;
+    }
 
     end = system_clock::now();
     general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
