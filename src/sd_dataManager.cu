@@ -122,6 +122,10 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_24h_d, band_bytes));
 };
 
+#include <cmath>
+#include <chrono>
+using namespace std::chrono;
+
 string Products::read_data(TIFF **landsat_bands)
 {
     system_clock::time_point begin, end;
@@ -129,66 +133,82 @@ string Products::read_data(TIFF **landsat_bands)
     float general_time;
 
     begin = system_clock::now();
-    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    initial_time = duration_cast<nanoseconds>(begin.time_since_epoch()).count();
 
-    for (int i = 0; i < INPUT_BAND_ELEV_INDEX; i++) {
-        for (int line = 0; line < height_band; line++) {
-            TIFF *curr_band = landsat_bands[i];
-            tdata_t band_line_buff = _TIFFmalloc(TIFFScanlineSize(curr_band));
-            unsigned short curr_band_line_size = TIFFScanlineSize(curr_band) / width_band;
-            TIFFReadScanline(curr_band, band_line_buff, line);
+    // Aloca buffers em CPU (caso ainda não estejam alocados)
+    band_blue  = (float *)malloc(band_bytes);
+    band_green = (float *)malloc(band_bytes);
+    band_red   = (float *)malloc(band_bytes);
+    band_nir   = (float *)malloc(band_bytes);
+    band_swir1 = (float *)malloc(band_bytes);
+    band_termal= (float *)malloc(band_bytes);
+    band_swir2 = (float *)malloc(band_bytes);
+    tal        = (float *)malloc(band_bytes);
 
-            for (int col = 0; col < width_band; col++) {
-                float value = 0;
-                memcpy(&value, static_cast<unsigned char *>(band_line_buff) + col * curr_band_line_size, curr_band_line_size);
+    const int num_bands = INPUT_BAND_ELEV_INDEX;
 
-                switch (i) {
-                case 0:
-                    band_blue[line * width_band + col] = value;
-                    break;
-                case 1:
-                    band_green[line * width_band + col] = value;
-                    break;
-                case 2:
-                    band_red[line * width_band + col] = value;
-                    break;
-                case 3:
-                    band_nir[line * width_band + col] = value;
-                    break;
-                case 4:
-                    band_swir1[line * width_band + col] = value;
-                    break;
-                case 5:
-                    band_termal[line * width_band + col] = value;
-                    break;
-                case 6:
-                    band_swir2[line * width_band + col] = value;
-                    break;
-                case 7:
-                    tal[line * width_band + col] = 0.75 + 2 * pow(10, -5) * value;
-                    break;
-                default:
-                    break;
+    for (int i = 0; i < num_bands; i++) {
+        TIFF *curr_band = landsat_bands[i];
+        tstrip_t num_strips = TIFFNumberOfStrips(curr_band);
+        size_t offset = 0;
+
+        tsize_t strip_size = TIFFStripSize(curr_band);
+        tdata_t strip_buffer = _TIFFmalloc(strip_size);
+        if (!strip_buffer) throw std::runtime_error("Erro alocando strip_buffer");
+
+        float* band_ptr = nullptr;
+        switch (i) {
+            case 0: band_ptr = band_blue;  break;
+            case 1: band_ptr = band_green; break;
+            case 2: band_ptr = band_red;   break;
+            case 3: band_ptr = band_nir;   break;
+            case 4: band_ptr = band_swir1; break;
+            case 5: band_ptr = band_termal;break;
+            case 6: band_ptr = band_swir2; break;
+            case 7: band_ptr = tal;        break;
+        }
+
+        for (tstrip_t strip = 0; strip < num_strips; strip++) {
+            tsize_t bytes_read = TIFFReadEncodedStrip(curr_band, strip, strip_buffer, strip_size);
+            if (bytes_read == -1) {
+                _TIFFfree(strip_buffer);
+                throw std::runtime_error("Erro lendo strip");
+            }
+
+            unsigned int pixels_in_strip = bytes_read / sizeof(float);
+            float* strip_data = static_cast<float*>(strip_buffer);
+
+            if (i != 7) {
+                memcpy(band_ptr + offset, strip_data, bytes_read);
+            } else {
+                for (unsigned int p = 0; p < pixels_in_strip; p++) {
+                    band_ptr[offset + p] = 0.75f + 2.0f * powf(10.0f, -5.0f) * strip_data[p];
                 }
             }
-            _TIFFfree(band_line_buff);
+
+            offset += pixels_in_strip;
         }
+
+        _TIFFfree(strip_buffer);
     }
 
-    HANDLE_ERROR(cudaMemcpy(band_blue_d, band_blue, band_bytes, cudaMemcpyHostToDevice));
+    // Copia os dados para a GPU
+    HANDLE_ERROR(cudaMemcpy(band_blue_d,  band_blue,  band_bytes, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpy(band_green_d, band_green, band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(band_red_d, band_red, band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(band_nir_d, band_nir, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(band_red_d,   band_red,   band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(band_nir_d,   band_nir,   band_bytes, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpy(band_swir1_d, band_swir1, band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(band_termal_d, band_termal, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(band_termal_d,band_termal,band_bytes, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpy(band_swir2_d, band_swir2, band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(tal_d, tal, band_bytes, cudaMemcpyHostToDevice));
+    HANDLE_ERROR(cudaMemcpy(tal_d,        tal,        band_bytes, cudaMemcpyHostToDevice));
 
     end = system_clock::now();
-    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
+    final_time = duration_cast<nanoseconds>(end.time_since_epoch()).count();
+    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000.0f / 1000.0f;
+
     return "SERIAL,P0_READ_INPUT," + to_string(general_time) + "," + to_string(initial_time) + "," + to_string(final_time) + "\n";
 }
+
 
 string Products::host_data()
 {
