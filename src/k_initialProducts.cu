@@ -63,10 +63,19 @@ __global__ void pai_kernel(float *reflectance_nir_d, float *reflectance_red_d, f
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        pai_d[pos] = 10.1f * (reflectance_nir_d[pos] - sqrtf(reflectance_red_d[pos])) + 3.1f;
+        // Verificar se os valores de entrada são válidos
+        if (!isnan(reflectance_nir_d[pos]) && !isnan(reflectance_red_d[pos]) && 
+            !isinf(reflectance_nir_d[pos]) && !isinf(reflectance_red_d[pos]) &&
+            reflectance_red_d[pos] >= 0) {
+            
+            pai_d[pos] = 10.1f * (reflectance_nir_d[pos] - sqrtf(reflectance_red_d[pos])) + 3.1f;
 
-        if (pai_d[pos] < 0)
-            pai_d[pos] = 0;
+            if (pai_d[pos] < 0)
+                pai_d[pos] = 0;
+        } else {
+            // Se os valores de entrada são inválidos, usar um valor padrão
+            pai_d[pos] = 0.5f; // Valor padrão para PAI
+        }
     }
 }
 

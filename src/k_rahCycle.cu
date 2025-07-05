@@ -8,9 +8,24 @@ __global__ void d0_kernel(float *pai_d, float *d0_d, float CD1, float HGHT)
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        float cd1_pai_root = sqrtf(CD1 * pai_d[pos]);
-
-        d0_d[pos] = HGHT * ((1.0f - (1.0f / cd1_pai_root)) + (powf(expf(1.0f), -cd1_pai_root) / cd1_pai_root));
+        // Verificar se PAI é válido e maior que zero
+        if (!isnan(pai_d[pos]) && !isinf(pai_d[pos]) && pai_d[pos] > 0.001f) {
+            float cd1_pai_root = sqrtf(CD1 * pai_d[pos]);
+            
+            // Verificar se cd1_pai_root é válido
+            if (!isnan(cd1_pai_root) && !isinf(cd1_pai_root) && cd1_pai_root > 0.001f) {
+                d0_d[pos] = HGHT * ((1.0f - (1.0f / cd1_pai_root)) + (powf(expf(1.0f), -cd1_pai_root) / cd1_pai_root));
+                
+                // Verificar se o resultado é válido
+                if (isnan(d0_d[pos]) || isinf(d0_d[pos]) || d0_d[pos] < 0) {
+                    d0_d[pos] = 0.1f; // Valor padrão para d0
+                }
+            } else {
+                d0_d[pos] = 0.1f; // Valor padrão para d0
+            }
+        } else {
+            d0_d[pos] = 0.1f; // Valor padrão para d0
+        }
     }
 }
 
@@ -19,7 +34,25 @@ __global__ void ustar_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, fl
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        ustar_d[pos] = (u10 * VON_KARMAN) / logf((10 - d0_d[pos]) / zom_d[pos]);
+        // Verificar se zom e d0 são válidos
+        if (!isnan(zom_d[pos]) && !isinf(zom_d[pos]) && zom_d[pos] > 0 &&
+            !isnan(d0_d[pos]) && !isinf(d0_d[pos]) && d0_d[pos] >= 0 &&
+            (10 - d0_d[pos]) > zom_d[pos]) {
+            
+            float log_arg = (10 - d0_d[pos]) / zom_d[pos];
+            if (log_arg > 0) {
+                ustar_d[pos] = (u10 * VON_KARMAN) / logf(log_arg);
+                
+                // Verificar se o resultado é válido
+                if (isnan(ustar_d[pos]) || isinf(ustar_d[pos]) || ustar_d[pos] <= 0) {
+                    ustar_d[pos] = 0.1f; // Valor padrão para ustar
+                }
+            } else {
+                ustar_d[pos] = 0.1f; // Valor padrão para ustar
+            }
+        } else {
+            ustar_d[pos] = 0.1f; // Valor padrão para ustar
+        }
     }
 }
 
@@ -42,11 +75,23 @@ __global__ void zom_kernel_STEEP(float *d0_d, float *pai_d, float *zom_d, float 
     float PSICORR = 0.2f;
 
     if (pos < width_d * height_d) {
-        float gama = powf((CD + CR * (pai_d[pos] / 2)), -0.5f);
-        if (gama < 3.3f)
-            gama = 3.3;
+        // Verificar se PAI e d0 são válidos
+        if (!isnan(pai_d[pos]) && !isinf(pai_d[pos]) && pai_d[pos] > 0 &&
+            !isnan(d0_d[pos]) && !isinf(d0_d[pos]) && d0_d[pos] >= 0) {
+            
+            float gama = powf((CD + CR * (pai_d[pos] / 2)), -0.5f);
+            if (gama < 3.3f)
+                gama = 3.3f;
 
-        zom_d[pos] = (HGHT - d0_d[pos]) * exp(-VON_KARMAN * gama) + PSICORR;
+            zom_d[pos] = (HGHT - d0_d[pos]) * exp(-VON_KARMAN * gama) + PSICORR;
+            
+            // Verificar se o resultado é válido
+            if (isnan(zom_d[pos]) || isinf(zom_d[pos]) || zom_d[pos] <= 0) {
+                zom_d[pos] = 0.1f; // Valor padrão para zom
+            }
+        } else {
+            zom_d[pos] = 0.1f; // Valor padrão para zom
+        }
     }
 }
 
@@ -104,10 +149,31 @@ __global__ void aerodynamic_resistance_kernel_STEEP(float *zom_d, float *d0_d, f
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        float rah_fst_part = 1 / (ustar_d[pos] * VON_KARMAN);
-        float rah_sec_part = logf((10 - d0_d[pos]) / zom_d[pos]);
-        float rah_trd_part = rah_fst_part * kb1_d[pos];
-        rah_d[pos] = (rah_fst_part * rah_sec_part) + rah_trd_part;
+        // Verificar se todos os parâmetros são válidos
+        if (!isnan(ustar_d[pos]) && !isinf(ustar_d[pos]) && ustar_d[pos] > 0 &&
+            !isnan(zom_d[pos]) && !isinf(zom_d[pos]) && zom_d[pos] > 0 &&
+            !isnan(d0_d[pos]) && !isinf(d0_d[pos]) && d0_d[pos] >= 0 &&
+            !isnan(kb1_d[pos]) && !isinf(kb1_d[pos]) &&
+            (10 - d0_d[pos]) > zom_d[pos]) {
+            
+            float rah_fst_part = 1 / (ustar_d[pos] * VON_KARMAN);
+            float log_arg = (10 - d0_d[pos]) / zom_d[pos];
+            
+            if (log_arg > 0) {
+                float rah_sec_part = logf(log_arg);
+                float rah_trd_part = rah_fst_part * kb1_d[pos];
+                rah_d[pos] = (rah_fst_part * rah_sec_part) + rah_trd_part;
+                
+                // Verificar se o resultado é válido
+                if (isnan(rah_d[pos]) || isinf(rah_d[pos]) || rah_d[pos] <= 0) {
+                    rah_d[pos] = 50.0f; // Valor padrão para rah
+                }
+            } else {
+                rah_d[pos] = 50.0f; // Valor padrão para rah
+            }
+        } else {
+            rah_d[pos] = 50.0f; // Valor padrão para rah
+        }
     }
 }
 
