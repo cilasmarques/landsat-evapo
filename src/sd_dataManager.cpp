@@ -62,70 +62,99 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     this->evapotranspiration_24h = (float *)malloc(band_bytes);
 };
 
+
 string Products::read_data(TIFF **landsat_bands)
 {
     system_clock::time_point begin, end;
     int64_t initial_time, final_time;
     float general_time;
 
-    begin = system_clock::now();    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    begin = system_clock::now();
+    initial_time = duration_cast<nanoseconds>(begin.time_since_epoch()).count();
 
-    band_blue = (float *)malloc(band_bytes);
+    // Aloca as bandas
+    band_blue  = (float *)malloc(band_bytes);
     band_green = (float *)malloc(band_bytes);
-    band_red = (float *)malloc(band_bytes);
-    band_nir = (float *)malloc(band_bytes);
+    band_red   = (float *)malloc(band_bytes);
+    band_nir   = (float *)malloc(band_bytes);
     band_swir1 = (float *)malloc(band_bytes);
-    band_termal = (float *)malloc(band_bytes);
+    band_termal= (float *)malloc(band_bytes);
     band_swir2 = (float *)malloc(band_bytes);
-    tal = (float *)malloc(band_bytes);
+    tal        = (float *)malloc(band_bytes);
 
-    for (int i = 0; i < INPUT_BAND_ELEV_INDEX; i++) {
-        for (int line = 0; line < height_band; line++) {
-            TIFF *curr_band = landsat_bands[i];
-            tdata_t band_line_buff = _TIFFmalloc(TIFFScanlineSize(curr_band));
-            unsigned short curr_band_line_size = TIFFScanlineSize(curr_band) / width_band;
-            TIFFReadScanline(curr_band, band_line_buff, line);
+    const int num_bands = INPUT_BAND_ELEV_INDEX; // 8
 
-            for (int col = 0; col < width_band; col++) {
-                float value = 0;
-                memcpy(&value, static_cast<unsigned char *>(band_line_buff) + col * curr_band_line_size, curr_band_line_size);
+    for (int i = 0; i < num_bands; i++) {
+        TIFF *curr_band = landsat_bands[i];
 
-                switch (i) {
-                case 0:
-                    band_blue[line * width_band + col] = value;
-                    break;
-                case 1:
-                    band_green[line * width_band + col] = value;
-                    break;
-                case 2:
-                    band_red[line * width_band + col] = value;
-                    break;
-                case 3:
-                    band_nir[line * width_band + col] = value;
-                    break;
-                case 4:
-                    band_swir1[line * width_band + col] = value;
-                    break;
-                case 5:
-                    band_termal[line * width_band + col] = value;
-                    break;
-                case 6:
-                    band_swir2[line * width_band + col] = value;
-                    break;
-                case 7:
-                    tal[line * width_band + col] = 0.75f + 2.0f * powf(10.0f, -5.0f) * value;
-                    break;
-                default:
-                    break;
+        // Número de strips e tamanho total dos dados na banda
+        tstrip_t strips_per_band = TIFFNumberOfStrips(curr_band);
+
+        size_t strip_size = 0;
+        tdata_t strip_buffer = nullptr;
+
+        size_t offset = 0; // offset em bytes no buffer final da banda
+
+        for (tstrip_t strip = 0; strip < strips_per_band; strip++) {
+            strip_size = TIFFStripSize(curr_band);
+
+            if (!strip_buffer) {
+                strip_buffer = (tdata_t) _TIFFmalloc(strip_size);
+                if (!strip_buffer) {
+                    // tratamento de erro alocação
+                    throw std::runtime_error("Erro alocando buffer de strip");
                 }
             }
-            _TIFFfree(band_line_buff);
+
+            // Leitura do strip (bloco grande)
+            if (TIFFReadEncodedStrip(curr_band, strip, strip_buffer, strip_size) == -1) {
+                _TIFFfree(strip_buffer);
+                throw std::runtime_error("Erro lendo strip");
+            }
+
+            // Número de pixels no strip
+            // Obs: TIFFScanlineSize dá tamanho em bytes de uma linha, precisa converter para pixels
+            unsigned int bytes_per_pixel = sizeof(float); // assumindo float armazenado (confirme no TIFF!)
+            unsigned int pixels_per_strip = strip_size / bytes_per_pixel;
+
+            // Agora copia e converte valores para o buffer final (float*)
+            float* band_ptr = nullptr;
+            switch (i) {
+                case 0: band_ptr = band_blue;  break;
+                case 1: band_ptr = band_green; break;
+                case 2: band_ptr = band_red;   break;
+                case 3: band_ptr = band_nir;   break;
+                case 4: band_ptr = band_swir1; break;
+                case 5: band_ptr = band_termal;break;
+                case 6: band_ptr = band_swir2; break;
+                case 7: band_ptr = tal;        break;
+            }
+
+            if (i != 7) {
+                // para bandas normais: copiar diretamente
+                memcpy(band_ptr + offset / bytes_per_pixel, strip_buffer, strip_size);
+            } else {
+                // para banda tal: aplicar fórmula especial por pixel
+                // precisamos percorrer os floats do strip_buffer
+                float* strip_float = (float*) strip_buffer;
+                for (unsigned int p = 0; p < pixels_per_strip; p++) {
+                    band_ptr[offset/bytes_per_pixel + p] = 0.75f + 2.0f * powf(10.0f, -5.0f) * strip_float[p];
+                }
+            }
+
+            offset += strip_size;
+        }
+
+        if (strip_buffer) {
+            _TIFFfree(strip_buffer);
+            strip_buffer = nullptr;
         }
     }
 
     end = system_clock::now();
-    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
-    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    general_time = duration_cast<nanoseconds>(end - begin).count() / 1e6;
+    final_time = duration_cast<nanoseconds>(end.time_since_epoch()).count();
+
     return "SERIAL,P0_READ_INPUT," + to_string(general_time) + "," + to_string(initial_time) + "," + to_string(final_time) + "\n";
 }
 
