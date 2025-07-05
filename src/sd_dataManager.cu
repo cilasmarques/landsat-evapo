@@ -122,10 +122,6 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_24h_d, band_bytes));
 };
 
-#include <cmath>
-#include <chrono>
-using namespace std::chrono;
-
 string Products::read_data(TIFF **landsat_bands)
 {
     system_clock::time_point begin, end;
@@ -208,7 +204,6 @@ string Products::read_data(TIFF **landsat_bands)
 
     return "SERIAL,P0_READ_INPUT," + to_string(general_time) + "," + to_string(initial_time) + "," + to_string(final_time) + "\n";
 }
-
 
 string Products::host_data()
 {
