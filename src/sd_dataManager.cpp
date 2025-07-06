@@ -1,4 +1,5 @@
 #include "surfaceData.h"
+#include "thread_utils.h"
 
 Products::Products(uint32_t width_band, uint32_t height_band)
 {
@@ -74,10 +75,11 @@ string Products::read_data(TIFF **landsat_bands)
 
     const int num_bands = INPUT_BAND_ELEV_INDEX; // 8
 
-    for (int i = 0; i < num_bands; i++) {
-        TIFF *curr_band = landsat_bands[i];
+    parallel_for(num_bands, [&](int start_band_idx, int end_band_idx) {
+        for (int i = start_band_idx; i < end_band_idx; i++) {
+            TIFF *curr_band = landsat_bands[i];
 
-        // Número de strips e tamanho total dos dados na banda
+            // Número de strips e tamanho total dos dados na banda
         tstrip_t strips_per_band = TIFFNumberOfStrips(curr_band);
 
         size_t strip_size = 0;
@@ -139,13 +141,14 @@ string Products::read_data(TIFF **landsat_bands)
             _TIFFfree(strip_buffer);
             strip_buffer = nullptr;
         }
-    }
+    } // End of inner loop (bands for this thread)
+}); // End of parallel_for
 
     end = system_clock::now();
     general_time = duration_cast<nanoseconds>(end - begin).count() / 1e6;
     final_time = duration_cast<nanoseconds>(end.time_since_epoch()).count();
 
-    return "SERIAL,P0_READ_INPUT," + to_string(general_time) + "," + to_string(initial_time) + "," + to_string(final_time) + "\n";
+    return "PARALLEL,P0_READ_INPUT," + to_string(general_time) + "," + to_string(initial_time) + "," + to_string(final_time) + "\n";
 }
 
 string Products::save_products(string output_path)
