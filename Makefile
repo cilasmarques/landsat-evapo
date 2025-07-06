@@ -29,7 +29,7 @@ clean-all:
 	rm -rf $(OUTPUT_DATA_PATH)/*
 
 build:
-	g++ -I./include -g ./src/*.cpp -o ./main -std=c++14 -ltiff -pthread
+	g++ -I./include -O3 ./src/*.cpp -o ./main -std=c++14 -ltiff -pthread
 
 fix-permissions:
 	sudo chmod -R 755 $(INPUT_DATA_PATH)/*
