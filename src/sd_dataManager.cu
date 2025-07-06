@@ -1,6 +1,71 @@
 #include "cuda_utils.h"
 #include "kernels.cuh"
 #include "surfaceData.cuh"
+#include "async.cuh"
+
+// Auxiliary functions
+void producer_function(TIFF **landsat_bands, int producer_id, std::queue<Task> &task_queue, std::mutex &task_queue_mutex, std::condition_variable &task_queue_cv) 
+{
+    for (int band_idx = producer_id; band_idx < 8; band_idx += 4)
+    {
+        TIFF *tiff = landsat_bands[band_idx];
+        tstrip_t num_strips = TIFFNumberOfStrips(tiff);
+        tsize_t strip_size = TIFFStripSize(tiff);
+
+        for (tstrip_t strip_idx = 0; strip_idx < num_strips; ++strip_idx)
+        {
+            tdata_t buffer = _TIFFmalloc(strip_size);
+            if (!buffer) continue;
+
+            tsize_t read_bytes = TIFFReadEncodedStrip(tiff, strip_idx, buffer, strip_size);
+            if (read_bytes == -1) {
+                _TIFFfree(buffer);
+                continue;
+            }
+
+            uint32_t pixels = read_bytes / sizeof(float);
+            Task task{band_idx, static_cast<int>(strip_idx), buffer, pixels};
+
+            {
+                std::lock_guard<std::mutex> lock(task_queue_mutex);
+                task_queue.push(std::move(task));
+            }
+            task_queue_cv.notify_one();
+        }
+    }
+}
+
+void consumer_function(std::queue<Task> &task_queue, std::mutex &task_queue_mutex, std::condition_variable &task_queue_cv, bool &producers_done, float **host_bands)
+{
+    while (true)
+    {
+        Task task;
+        {
+            std::unique_lock<std::mutex> lock(task_queue_mutex);
+            task_queue_cv.wait(lock, [&] {
+                return !task_queue.empty() || producers_done;
+            });
+
+            if (task_queue.empty() && producers_done)
+                break;
+
+            task = std::move(task_queue.front());
+            task_queue.pop();
+        }
+
+        float *dst = host_bands[task.band_idx] + task.strip_idx * task.pixels_in_strip;
+        float *src = static_cast<float *>(task.buffer);
+
+        if (task.band_idx != 7) {
+            memcpy(dst, src, task.pixels_in_strip * sizeof(float));
+        } else {
+            for (uint32_t i = 0; i < task.pixels_in_strip; ++i)
+                dst[i] = 0.75f + 2e-5f * src[i];
+        }
+
+        _TIFFfree(task.buffer);
+    }
+}
 
 Products::Products(uint32_t width_band, uint32_t height_band)
 {
@@ -134,69 +199,55 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_24h_d, band_bytes));
 };
 
-void read_band(TIFF* tiff, float* band, int width, int band_idx) {
-    tstrip_t num_strips = TIFFNumberOfStrips(tiff);
-    tsize_t strip_size = TIFFStripSize(tiff);
-    tdata_t strip_buffer = _TIFFmalloc(strip_size);
-    if (!strip_buffer) throw std::runtime_error("Erro alocando strip_buffer");
-
-    size_t offset = 0;
-
-    for (tstrip_t s = 0; s < num_strips; s++) {
-        tsize_t bytes_read = TIFFReadEncodedStrip(tiff, s, strip_buffer, strip_size);
-        if (bytes_read == -1) {
-            _TIFFfree(strip_buffer);
-            throw std::runtime_error("Erro lendo strip");
-        }
-
-        unsigned int pixels_in_strip = bytes_read / sizeof(float);
-        float* strip_data = static_cast<float*>(strip_buffer);
-
-        if (band_idx != 7) {
-            memcpy(band + offset, strip_data, bytes_read);
-        } else {
-            for (unsigned int p = 0; p < pixels_in_strip; p++) {
-                band[offset + p] = 0.75f + 2.0f * powf(10.0f, -5.0f) * strip_data[p];
-            }
-        }
-
-        offset += pixels_in_strip;
-    }
-
-    _TIFFfree(strip_buffer);
-}
-
 string Products::read_data(TIFF **landsat_bands)
 {
-    system_clock::time_point begin, end;
-    int64_t initial_time, final_time;
-    float general_time;
-    
-    vector<thread> threads;
-    float* host_bands[]   = {band_blue, band_green, band_red, band_nir, band_swir1, band_termal, band_swir2, tal};
-    float* device_bands[] = {band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d, tal_d};
+    using namespace std::chrono;
+
+    system_clock::time_point begin = system_clock::now();
+    int64_t initial_time = duration_cast<nanoseconds>(begin.time_since_epoch()).count();
+
+    float *host_bands[] = {band_blue, band_green, band_red, band_nir, band_swir1, band_termal, band_swir2, tal};
+    float *device_bands[] = {band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d, tal_d};
     cudaStream_t streams[] = {stream_1, stream_2, stream_3, stream_4, stream_5, stream_6, stream_7, stream_8};
 
-    begin = system_clock::now();
-    initial_time = duration_cast<nanoseconds>(begin.time_since_epoch()).count();
+    std::queue<Task> task_queue;
+    std::mutex task_queue_mutex;
+    std::condition_variable task_queue_cv;
+    bool producers_done = false;
 
-    for (int i = 0; i < INPUT_BAND_ELEV_INDEX; i++) {
-        threads.emplace_back(read_band, landsat_bands[i], host_bands[i], width_band, i);
+    unsigned int num_producers = 4;
+    std::vector<std::thread> producer_threads;
+    for (int i = 0; i < num_producers; ++i) {
+        producer_threads.emplace_back(producer_function, landsat_bands, i, std::ref(task_queue),
+                                      std::ref(task_queue_mutex), std::ref(task_queue_cv));
     }
 
-    for (auto& t : threads) t.join();
+    unsigned int num_consumers = std::max(std::thread::hardware_concurrency() - num_producers, 8u);
+    std::vector<std::thread> consumer_threads;
+    for (int i = 0; i < num_consumers; ++i) {
+        consumer_threads.emplace_back(consumer_function, std::ref(task_queue), std::ref(task_queue_mutex),
+                                      std::ref(task_queue_cv), std::ref(producers_done), host_bands);
+    }
 
-    for (int i = 0; i < 8; i++) {
+    for (auto &t : producer_threads) t.join();
+    {
+        std::unique_lock<std::mutex> lock(task_queue_mutex);
+        producers_done = true;
+    }
+    task_queue_cv.notify_all();
+    for (auto &t : consumer_threads) t.join();
+
+    for (int i = 0; i < 8; ++i) {
         HANDLE_ERROR(cudaMemcpyAsync(device_bands[i], host_bands[i], band_bytes, cudaMemcpyHostToDevice, streams[i]));
         cudaEventRecord(copy_done_events[i], streams[i]);
     }
 
-    end = system_clock::now();
-    final_time = duration_cast<nanoseconds>(end.time_since_epoch()).count();
-    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
+    system_clock::time_point end = system_clock::now();
+    int64_t final_time = duration_cast<nanoseconds>(end.time_since_epoch()).count();
+    float general_time = duration_cast<nanoseconds>(end - begin).count() / 1e6;
 
     return "SERIAL,P0_READ_INPUT," + to_string(general_time) + "," + to_string(initial_time) + "," + to_string(final_time) + "\n";
-}  
+}
 
 string Products::host_data()
 {
