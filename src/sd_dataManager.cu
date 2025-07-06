@@ -131,16 +131,6 @@ string Products::read_data(TIFF **landsat_bands)
     begin = system_clock::now();
     initial_time = duration_cast<nanoseconds>(begin.time_since_epoch()).count();
 
-    // Aloca buffers em CPU (caso ainda não estejam alocados)
-    band_blue  = (float *)malloc(band_bytes);
-    band_green = (float *)malloc(band_bytes);
-    band_red   = (float *)malloc(band_bytes);
-    band_nir   = (float *)malloc(band_bytes);
-    band_swir1 = (float *)malloc(band_bytes);
-    band_termal= (float *)malloc(band_bytes);
-    band_swir2 = (float *)malloc(band_bytes);
-    tal        = (float *)malloc(band_bytes);
-
     const int num_bands = INPUT_BAND_ELEV_INDEX;
 
     for (int i = 0; i < num_bands; i++) {
@@ -154,14 +144,14 @@ string Products::read_data(TIFF **landsat_bands)
 
         float* band_ptr = nullptr;
         switch (i) {
-            case 0: band_ptr = band_blue;  break;
-            case 1: band_ptr = band_green; break;
-            case 2: band_ptr = band_red;   break;
-            case 3: band_ptr = band_nir;   break;
-            case 4: band_ptr = band_swir1; break;
-            case 5: band_ptr = band_termal;break;
-            case 6: band_ptr = band_swir2; break;
-            case 7: band_ptr = tal;        break;
+            case 0: band_ptr = this->band_blue;  break;
+            case 1: band_ptr = this->band_green; break;
+            case 2: band_ptr = this->band_red;   break;
+            case 3: band_ptr = this->band_nir;   break;
+            case 4: band_ptr = this->band_swir1; break;
+            case 5: band_ptr = this->band_termal;break;
+            case 6: band_ptr = this->band_swir2; break;
+            case 7: band_ptr = this->tal;        break;
         }
 
         for (tstrip_t strip = 0; strip < num_strips; strip++) {
