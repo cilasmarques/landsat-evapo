@@ -4,6 +4,31 @@
 #include "cuda_utils.h"
 #include "surfaceData.cuh"
 
+// Functors para Thrust que filtram valores NaN
+struct is_valid_ndvi {
+    __host__ __device__ bool operator()(float x) const {
+        return !isnan(x) && !isinf(x);
+    }
+};
+
+// Functor para encontrar mínimo válido
+struct min_valid {
+    __host__ __device__ float operator()(float a, float b) const {
+        if (isnan(a) || isinf(a)) return b;
+        if (isnan(b) || isinf(b)) return a;
+        return min(a, b);
+    }
+};
+
+// Functor para encontrar máximo válido
+struct max_valid {
+    __host__ __device__ float operator()(float a, float b) const {
+        if (isnan(a) || isinf(a)) return b;
+        if (isnan(b) || isinf(b)) return a;
+        return max(a, b);
+    }
+};
+
 extern __device__ int width_d;
 extern __device__ int height_d;
 

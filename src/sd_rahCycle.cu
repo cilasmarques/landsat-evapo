@@ -223,17 +223,17 @@ string Products::converge_rah_cycle(Products products, Station station)
     float u10 = (ustar_station / VON_KARMAN) * log(10 / station.SURFACE_ROUGHNESS);
     float u200 = (ustar_station / VON_KARMAN) * log(200 / station.SURFACE_ROUGHNESS);
 
-    float ndvi_min = thrust::reduce(thrust::device,
-                                    products.ndvi_d,
-                                    products.ndvi_d + products.height_band * products.width_band,
-                                    1.0f, // Initial value
-                                    thrust::minimum<float>());
-
-    float ndvi_max = thrust::reduce(thrust::device,
-                                    products.ndvi_d,
-                                    products.ndvi_d + products.height_band * products.width_band,
-                                    -1.0f, // Initial value
-                                    thrust::maximum<float>());
+    thrust::device_ptr<float> ndvi_ptr = thrust::device_pointer_cast(products.ndvi_d);
+    
+    float ndvi_min = thrust::reduce(ndvi_ptr, 
+                                   ndvi_ptr + products.height_band * products.width_band,
+                                   1.0f, // Initial value
+                                   min_valid());
+    
+    float ndvi_max = thrust::reduce(ndvi_ptr, 
+                                   ndvi_ptr + products.height_band * products.width_band,
+                                   -1.0f, // Initial value
+                                   max_valid());
 
     if (model_method == 0) { // STEEP
         result += d0_fuction(products);
