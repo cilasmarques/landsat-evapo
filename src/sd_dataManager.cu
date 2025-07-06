@@ -60,6 +60,18 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     this->net_radiation_24h = (float *)malloc(band_bytes);
     this->evapotranspiration_24h = (float *)malloc(band_bytes);
 
+    for (int i = 0; i < 8; ++i)
+        cudaEventCreate(&copy_done_events[i]);
+
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_1));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_2));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_3));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_4));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_5));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_6));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_7));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_8));
+
     HANDLE_ERROR(cudaMemcpyToSymbol(width_d, &width_band, sizeof(int), 0, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpyToSymbol(height_d, &height_band, sizeof(int), 0, cudaMemcpyHostToDevice));
 
@@ -122,78 +134,69 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_24h_d, band_bytes));
 };
 
+void read_band(TIFF* tiff, float* band, int width, int band_idx) {
+    tstrip_t num_strips = TIFFNumberOfStrips(tiff);
+    tsize_t strip_size = TIFFStripSize(tiff);
+    tdata_t strip_buffer = _TIFFmalloc(strip_size);
+    if (!strip_buffer) throw std::runtime_error("Erro alocando strip_buffer");
+
+    size_t offset = 0;
+
+    for (tstrip_t s = 0; s < num_strips; s++) {
+        tsize_t bytes_read = TIFFReadEncodedStrip(tiff, s, strip_buffer, strip_size);
+        if (bytes_read == -1) {
+            _TIFFfree(strip_buffer);
+            throw std::runtime_error("Erro lendo strip");
+        }
+
+        unsigned int pixels_in_strip = bytes_read / sizeof(float);
+        float* strip_data = static_cast<float*>(strip_buffer);
+
+        if (band_idx != 7) {
+            memcpy(band + offset, strip_data, bytes_read);
+        } else {
+            for (unsigned int p = 0; p < pixels_in_strip; p++) {
+                band[offset + p] = 0.75f + 2.0f * powf(10.0f, -5.0f) * strip_data[p];
+            }
+        }
+
+        offset += pixels_in_strip;
+    }
+
+    _TIFFfree(strip_buffer);
+}
+
 string Products::read_data(TIFF **landsat_bands)
 {
     system_clock::time_point begin, end;
     int64_t initial_time, final_time;
     float general_time;
+    
+    vector<thread> threads;
+    float* host_bands[]   = {band_blue, band_green, band_red, band_nir, band_swir1, band_termal, band_swir2, tal};
+    float* device_bands[] = {band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d, tal_d};
+    cudaStream_t streams[] = {stream_1, stream_2, stream_3, stream_4, stream_5, stream_6, stream_7, stream_8};
 
     begin = system_clock::now();
     initial_time = duration_cast<nanoseconds>(begin.time_since_epoch()).count();
 
-    const int num_bands = INPUT_BAND_ELEV_INDEX;
-
-    for (int i = 0; i < num_bands; i++) {
-        TIFF *curr_band = landsat_bands[i];
-        tstrip_t num_strips = TIFFNumberOfStrips(curr_band);
-        size_t offset = 0;
-
-        tsize_t strip_size = TIFFStripSize(curr_band);
-        tdata_t strip_buffer = _TIFFmalloc(strip_size);
-        if (!strip_buffer) throw std::runtime_error("Erro alocando strip_buffer");
-
-        float* band_ptr = nullptr;
-        switch (i) {
-            case 0: band_ptr = this->band_blue;  break;
-            case 1: band_ptr = this->band_green; break;
-            case 2: band_ptr = this->band_red;   break;
-            case 3: band_ptr = this->band_nir;   break;
-            case 4: band_ptr = this->band_swir1; break;
-            case 5: band_ptr = this->band_termal;break;
-            case 6: band_ptr = this->band_swir2; break;
-            case 7: band_ptr = this->tal;        break;
-        }
-
-        for (tstrip_t strip = 0; strip < num_strips; strip++) {
-            tsize_t bytes_read = TIFFReadEncodedStrip(curr_band, strip, strip_buffer, strip_size);
-            if (bytes_read == -1) {
-                _TIFFfree(strip_buffer);
-                throw std::runtime_error("Erro lendo strip");
-            }
-
-            unsigned int pixels_in_strip = bytes_read / sizeof(float);
-            float* strip_data = static_cast<float*>(strip_buffer);
-
-            if (i != 7) {
-                memcpy(band_ptr + offset, strip_data, bytes_read);
-            } else {
-                for (unsigned int p = 0; p < pixels_in_strip; p++) {
-                    band_ptr[offset + p] = 0.75f + 2.0f * powf(10.0f, -5.0f) * strip_data[p];
-                }
-            }
-
-            offset += pixels_in_strip;
-        }
-
-        _TIFFfree(strip_buffer);
+    for (int i = 0; i < INPUT_BAND_ELEV_INDEX; i++) {
+        threads.emplace_back(read_band, landsat_bands[i], host_bands[i], width_band, i);
     }
 
-    // Copia os dados para a GPU
-    HANDLE_ERROR(cudaMemcpy(band_blue_d,  band_blue,  band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(band_green_d, band_green, band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(band_red_d,   band_red,   band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(band_nir_d,   band_nir,   band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(band_swir1_d, band_swir1, band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(band_termal_d,band_termal,band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(band_swir2_d, band_swir2, band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(tal_d,        tal,        band_bytes, cudaMemcpyHostToDevice));
+    for (auto& t : threads) t.join();
+
+    for (int i = 0; i < 8; i++) {
+        HANDLE_ERROR(cudaMemcpyAsync(device_bands[i], host_bands[i], band_bytes, cudaMemcpyHostToDevice, streams[i]));
+        cudaEventRecord(copy_done_events[i], streams[i]);
+    }
 
     end = system_clock::now();
     final_time = duration_cast<nanoseconds>(end.time_since_epoch()).count();
-    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000.0f / 1000.0f;
+    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
 
     return "SERIAL,P0_READ_INPUT," + to_string(general_time) + "," + to_string(initial_time) + "," + to_string(final_time) + "\n";
-}
+}  
 
 string Products::host_data()
 {

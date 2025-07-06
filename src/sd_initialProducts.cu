@@ -344,6 +344,15 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
 
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_1));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_2));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_3));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_4));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_5));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_6));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_7));
+    HANDLE_ERROR(cudaStreamSynchronize(products.stream_8));
+
     cudaEventRecord(start);
     result += radiance_function(products, mtl);
     result += reflectance_function(products, mtl);
@@ -369,6 +378,16 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
     result += net_radiation_function(products);
     result += soil_heat_flux_function(products);
     cudaEventRecord(stop);
+
+
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_1));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_2));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_3));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_4));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_5));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_6));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_7));
+    HANDLE_ERROR(cudaStreamDestroy(products.stream_8));
 
     float cuda_time = 0;
     cudaEventSynchronize(stop);
