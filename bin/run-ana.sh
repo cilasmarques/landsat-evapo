@@ -22,12 +22,18 @@ for i in $(seq -f "%02g" 1 1100); do
     ./scripts/collect-cpu-usage.sh $APP_PID > "$OUTPUT_DATA_PATH/cpu_metrics.csv" &
     CPU_PID=$!
 
+    ./scripts/collect-cpu-power.sh $APP_PID > "$OUTPUT_DATA_PATH/cpu_power_metrics.csv" &
+    CPU_POWER_PID=$!
+
+    ./scripts/collect-ssd-io.sh $APP_PID > "$OUTPUT_DATA_PATH/ssd_io_metrics.csv" &
+    SSD_IO_PID=$!
+
     # Wait for the main application to finish
     wait $APP_PID
     EXITCODE=$?
 
     # Terminate monitoring processes (they usually end automatically)
-    kill $GPU_PID $CPU_PID 2>/dev/null || true
+    kill $GPU_PID $CPU_PID $CPU_POWER_PID $SSD_IO_PID 2>/dev/null || true
 
     METHOD=`echo "$@" | grep -oP '(?<=-meth=)[0-9]+'`
     ANALYSIS_OUTPUT_PATH=$OUTPUT_DATA_PATH/kernels-$METHOD
