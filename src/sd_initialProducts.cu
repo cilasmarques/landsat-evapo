@@ -343,6 +343,7 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
     cudaEventCreate(&stop);
 
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    HANDLE_ERROR(cudaDeviceSynchronize());
 
     cudaEventRecord(start);
     result += radiance_function(products, mtl);
