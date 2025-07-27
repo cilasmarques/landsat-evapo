@@ -181,12 +181,12 @@ string rah_correction_function_STEEP(Products products, float ndvi_min, float nd
 
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
+    int hot_pos = products.hotEndmemberPos[0] * products.width_band + products.hotEndmemberPos[1];
+    int cold_pos = products.coldEndmemberPos[0] * products.width_band + products.coldEndmemberPos[1];
+
     begin = system_clock::now();
     for (int i = 0; i < 2; i++)
     {
-        int hot_pos = products.hotEndmemberPos[0] * products.width_band + products.hotEndmemberPos[1];
-        int cold_pos = products.coldEndmemberPos[0] * products.width_band + products.coldEndmemberPos[1];
-
         float rah_ini_hot = products.aerodynamic_resistance[hot_pos];
         float rah_ini_cold = products.aerodynamic_resistance[cold_pos];
 
@@ -221,7 +221,7 @@ string rah_correction_function_STEEP(Products products, float ndvi_min, float nd
             if (!isnan(L) && L > 0)
             {
                 psi2 = -5.0f * ((10.0f - products.d0[i]) / L);
-                psi200 = -5 * ((10 - products.d0[i]) / L);
+                psi200 = -5.0f * ((10.0f - products.d0[i]) / L);
             }
             else
             {
@@ -252,13 +252,13 @@ string rah_correction_function_ASEBAL(Products products, float u200)
 
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
+    int hot_pos = products.hotEndmemberPos[0] * products.width_band + products.hotEndmemberPos[1];
+    int cold_pos = products.coldEndmemberPos[0] * products.width_band + products.coldEndmemberPos[1];
+
     begin = system_clock::now();
     int i = 0;
     while (true)
     {
-        int hot_pos = products.hotEndmemberPos[0] * products.width_band + products.hotEndmemberPos[1];
-        int cold_pos = products.coldEndmemberPos[0] * products.width_band + products.coldEndmemberPos[1];
-
         float rah_ini_hot = products.aerodynamic_resistance[hot_pos];
         float rah_ini_cold = products.aerodynamic_resistance[cold_pos];
 
@@ -302,7 +302,7 @@ string rah_correction_function_ASEBAL(Products products, float u200)
             products.aerodynamic_resistance[i] = (logf(2.0f / 0.1f) - psi2 + psi1) / (products.ustar[i] * VON_KARMAN);
         }
 
-        if ((i > 0) && (fabsf(1 - (rah_ini_hot / products.aerodynamic_resistance[hot_pos])) < 0.05))
+        if ((i > 0) && (fabsf(1.0f - (rah_ini_hot / products.aerodynamic_resistance[hot_pos])) < 0.05f))
             break;
         else
             i++;
@@ -354,10 +354,12 @@ string Products::converge_rah_cycle(Products products, Station station)
     float ndvi_max = -1.0f;
     for (int i = 0; i < this->height_band * this->width_band; i++)
     {
-        if (products.ndvi[i] < ndvi_min)
-            ndvi_min = products.ndvi[i];
-        if (products.ndvi[i] > ndvi_max)
-            ndvi_max = products.ndvi[i];
+        if (!isnan(products.ndvi[i]) && !isinf(products.ndvi[i])) {
+            if (products.ndvi[i] < ndvi_min)
+                ndvi_min = products.ndvi[i];
+            if (products.ndvi[i] > ndvi_max)
+                ndvi_max = products.ndvi[i];
+        }
     }
 
     if (model_method == 0)
