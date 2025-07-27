@@ -180,7 +180,7 @@ __global__ void soil_heat_kernel(float *ndvi_d, float *albedo_d, float *surface_
     if (pos < width_d * height_d) {
         if (ndvi_d[pos] >= 0) {
             float temperature_celcius = surface_temperature_d[pos] - 273.15f;
-            float ndvi_pixel_pow_4 = ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos];
+            float ndvi_pixel_pow_4 = powf(ndvi_d[pos], 4.0f);
             soil_heat_d[pos] = temperature_celcius * (0.0038f + 0.0074f * albedo_d[pos]) * (1.0f - 0.98f * ndvi_pixel_pow_4) * net_radiation_d[pos];
         } else            
             soil_heat_d[pos] = 0.5f * net_radiation_d[pos];

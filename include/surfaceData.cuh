@@ -18,9 +18,6 @@ struct Endmember {
      * @brief  Constructor with initialization values to attributes.
      * @param  ndvi: Pixel's NDVI.
      * @param  temperature: Pixel's surface temperature.
-     * @param  net_radiation: Pixel's net radiation.
-     * @param  soil_heat_flux: Pixel's soil heat flux.
-     * @param  ho: Pixel's ho.
      * @param  line: Pixel's line on TIFF.
      * @param  col: Pixel's column on TIFF.
      */
@@ -52,7 +49,6 @@ struct Products {
     int band_size;
     int band_bytes;
 
-    int *stop_condition, *stop_condition_d;
     Endmember *hotCandidates_d, *coldCandidates_d;
 
     // Host pointers

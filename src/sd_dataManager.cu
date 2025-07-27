@@ -72,9 +72,6 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMemcpyToSymbol(width_d, &width_band, sizeof(int), 0, cudaMemcpyHostToDevice));
     HANDLE_ERROR(cudaMemcpyToSymbol(height_d, &height_band, sizeof(int), 0, cudaMemcpyHostToDevice));
 
-    this->stop_condition = (int *)malloc(sizeof(int));
-    HANDLE_ERROR(cudaMalloc((void **)&this->stop_condition_d, sizeof(int)));
-
     const size_t MAXC = sizeof(Endmember) * height_band * width_band;
     HANDLE_ERROR(cudaMalloc((void **)&this->hotCandidates_d, MAXC));
     HANDLE_ERROR(cudaMalloc((void **)&this->coldCandidates_d, MAXC));

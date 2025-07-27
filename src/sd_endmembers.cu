@@ -2,6 +2,9 @@
 #include "kernels.cuh"
 #include "surfaceData.cuh"
 
+Endmember hotCandidate;
+Endmember coldCandidate;
+
 __host__ __device__ Endmember::Endmember()
 {
     this->ndvi = 0;
@@ -68,7 +71,7 @@ string getEndmembersSTEEP(Products products, int *indexes_d)
     get_quartiles_cuda(products.albedo_d, albedoQuartile.data(), products.height_band, products.width_band, 0.25, 0.50, 0.75, blocks_n, threads_n);
     get_quartiles_cuda(products.surface_temperature_d, tsQuartile.data(), products.height_band, products.width_band, 0.20, 0.85, 0.97, blocks_n, threads_n);
 
-    process_pixels_STEEP<<<blocks_n, threads_n>>>(products.hotCandidates_d, products.coldCandidates_d, indexes_d, products.ndvi_d, products.surface_temperature_d, products.albedo_d, products.net_radiation_d, products.soil_heat_d, ndviQuartile[0], ndviQuartile[1], tsQuartile[0], tsQuartile[1], tsQuartile[2], albedoQuartile[0], albedoQuartile[1], albedoQuartile[2]);
+    process_pixels_STEEP<<<blocks_n, threads_n>>>(products.hotCandidates_d, products.coldCandidates_d, indexes_d, products.ndvi_d, products.surface_temperature_d, products.albedo_d, ndviQuartile[0], ndviQuartile[1], tsQuartile[0], tsQuartile[1], tsQuartile[2], albedoQuartile[0], albedoQuartile[1], albedoQuartile[2]);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -97,7 +100,7 @@ string getEndmembersASEBAL(Products products, int *indexes_d)
     get_quartiles_cuda(products.albedo_d, albedoQuartile.data(), products.height_band, products.width_band, 0.25, 0.50, 0.75, blocks_n, threads_n);
     get_quartiles_cuda(products.surface_temperature_d, tsQuartile.data(), products.height_band, products.width_band, 0.25, 0.50, 0.75, blocks_n, threads_n);
 
-    process_pixels_ASEBAL<<<blocks_n, threads_n>>>(products.hotCandidates_d, products.coldCandidates_d, indexes_d, products.ndvi_d, products.surface_temperature_d, products.albedo_d, products.net_radiation_d, products.soil_heat_d, ndviQuartile[0], ndviQuartile[2], tsQuartile[2], tsQuartile[0], albedoQuartile[2], albedoQuartile[1]);
+    process_pixels_ASEBAL<<<blocks_n, threads_n>>>(products.hotCandidates_d, products.coldCandidates_d, indexes_d, products.ndvi_d, products.surface_temperature_d, products.albedo_d, ndviQuartile[0], ndviQuartile[2], tsQuartile[2], tsQuartile[0], albedoQuartile[1], albedoQuartile[1]);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -146,9 +149,6 @@ string Products::select_endmembers(Products products)
         // The dev_ptr_cold sort also sorts the coldCandidates_d array
         thrust::device_ptr<Endmember> dev_ptr_cold(products.coldCandidates_d);
         thrust::sort(dev_ptr_cold, dev_ptr_cold + indexes[1], CompareEndmemberTemperature());
-
-        Endmember hotCandidate = Endmember();
-        Endmember coldCandidate = Endmember();
 
         cudaMemcpy(&hotCandidate, products.hotCandidates_d + hot_pos, sizeof(Endmember), cudaMemcpyDeviceToHost);
         cudaMemcpy(&coldCandidate, products.coldCandidates_d + cold_pos, sizeof(Endmember), cudaMemcpyDeviceToHost);
