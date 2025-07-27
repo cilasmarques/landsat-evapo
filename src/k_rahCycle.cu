@@ -1,3 +1,4 @@
+#include "constants.h"
 #include "kernels.cuh"
 
 __device__ float a_d;
@@ -88,12 +89,12 @@ __global__ void kb_kernel(float *zom_d, float *ustar_d, float *pai_d, float *kb1
         float nec = (cd * pai_d[pos]) / (ratio * ratio * 2);
         float kbs = 2.46f * powf(Re, 0.25f) - 2;
 
-        float kb1_fst_part = (cd * VON_KARMAN) / (4 * ct * ratio * (1 - exp(nec * -0.5f)));
+        float kb1_fst_part = (cd * VON_KARMAN) / (4.0f * ct * ratio * (1.0f - expf(nec * -0.5f)));
         float kb1_sec_part = powf(fc, 2) + (VON_KARMAN * ratio * (zom_d[pos] / HGHT) / Ct);
         float kb1_trd_part = powf(fc, 2) * powf(fs, 2) + kbs * powf(fs, 2);
         float kb_ini = kb1_fst_part * kb1_sec_part * kb1_trd_part;
 
-        float SF = sf_c + (1 / (1 + exp(sf_d - sf_e * soil_moisture_day_rel)));
+	float SF = sf_c + (1.0f / (1.0f + expf(sf_d - sf_e * soil_moisture_day_rel)));
 
         kb1_d[pos] = kb_ini * SF;
     }
@@ -162,7 +163,7 @@ __global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_h
             psi200 = -5.0f * ((10.0f - d0_d[pos]) / L);
         } else {
             psi2 = 2.0f * logf((1.0f + y2 * y2) / 2.0f);
-            psi200 = 2.0f * logf((1.0f + x200) / 2.0f) + logf((1.0f + x200 * x200) / 2.0f) - 2.0f * atanf(x200) + 0.5f * M_PI;
+            psi200 = 2.0f * logf((1.0f + x200) / 2.0f) + logf((1.0f + x200 * x200) / 2.0f) - 2.0f * atanf(x200) + 0.5f * PI;
         }
 
         ustar_d[pos] = (VON_KARMAN * ustar_d[pos]) / (logf((10.0f - d0_d[pos]) / zom_d[pos]) - psi200);
@@ -214,7 +215,7 @@ __global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_
         } else {
             psi1 = 2.0f * logf((1.0f + x1 * x1) / 2.0f);
             psi2 = 2.0f * logf((1.0f + x2 * x2) / 2.0f);
-            psi200 = 2.0f * logf((1.0f + x200) / 2.0f) + logf((1.0f + x200 * x200) / 2.0f) - 2.0f * atanf(x200) + 0.5f * M_PI;
+            psi200 = 2.0f * logf((1.0f + x200) / 2.0f) + logf((1.0f + x200 * x200) / 2.0f) - 2.0f * atanf(x200) + 0.5f * PI;
         }
 
         ustar_d[pos] = (VON_KARMAN * u200) / (logf(200.0f / zom_d[pos]) - psi200);

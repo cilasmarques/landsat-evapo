@@ -219,9 +219,9 @@ string Products::converge_rah_cycle(Products products, Station station)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    float ustar_station = (VON_KARMAN * station.v6) / (log(station.WIND_SPEED / station.SURFACE_ROUGHNESS));
-    float u10 = (ustar_station / VON_KARMAN) * log(10 / station.SURFACE_ROUGHNESS);
-    float u200 = (ustar_station / VON_KARMAN) * log(200 / station.SURFACE_ROUGHNESS);
+    float ustar_station = (VON_KARMAN * station.v6) / (logf(station.WIND_SPEED / station.SURFACE_ROUGHNESS));
+    float u10 = (ustar_station / VON_KARMAN) * logf(10.0f / station.SURFACE_ROUGHNESS);
+    float u200 = (ustar_station / VON_KARMAN) * logf(200.0f / station.SURFACE_ROUGHNESS);
 
     thrust::device_ptr<float> ndvi_ptr = thrust::device_pointer_cast(products.ndvi_d);
     
