@@ -3,14 +3,16 @@
 
 Endmember::Endmember()
 {
+    this->albedo = 0;
     this->ndvi = 0;
     this->temperature = 0;
     this->line = 0;
     this->col = 0;
 }
 
-Endmember::Endmember(float ndvi, float temperature, int line, int col)
+Endmember::Endmember(float albedo, float ndvi, float temperature, int line, int col)
 {
+    this->albedo = albedo;
     this->ndvi = ndvi;
     this->temperature = temperature;
     this->line = line;
@@ -70,22 +72,22 @@ string getEndmembersSTEEP(Products products, vector<Endmember>& hotCandidates, v
 
     for (int i = 0; i < products.height_band * products.width_band; i++)
     {
-        bool hotNDVI = !std::isnan(products.ndvi[i]) && products.ndvi[i] > 0.10 && products.ndvi[i] < ndviQuartile[0];
-        bool hotAlbedo = !std::isnan(products.albedo[i]) && products.albedo[i] > albedoQuartile[1] && products.albedo[i] < albedoQuartile[2];
-        bool hotTS = !std::isnan(products.surface_temperature[i]) && products.surface_temperature[i] > tsQuartile[1] && products.surface_temperature[i] < tsQuartile[2];
+        bool hotNDVI = !isnan(products.ndvi[i]) && products.ndvi[i] > 0.10f && products.ndvi[i] < ndviQuartile[0];
+        bool hotAlbedo = !isnan(products.albedo[i]) && products.albedo[i] > albedoQuartile[1] && products.albedo[i] < albedoQuartile[2];
+        bool hotTS = !isnan(products.surface_temperature[i]) && products.surface_temperature[i] > tsQuartile[1] && products.surface_temperature[i] < tsQuartile[2];
 
-        bool coldNDVI = !std::isnan(products.ndvi[i]) && products.ndvi[i] > ndviQuartile[2];
-        bool coldAlbedo = !std::isnan(products.albedo[i]) && products.albedo[i] > albedoQuartile[0] && products.albedo[i] < albedoQuartile[1];
-        bool coldTS = !std::isnan(products.surface_temperature[i]) && products.surface_temperature[i] < tsQuartile[0];
+        bool coldNDVI = !isnan(products.ndvi[i]) && products.ndvi[i] > ndviQuartile[2];
+        bool coldAlbedo = !isnan(products.albedo[i]) && products.albedo[i] > albedoQuartile[0] && products.albedo[i] < albedoQuartile[1];
+        bool coldTS = !isnan(products.surface_temperature[i]) && products.surface_temperature[i] < tsQuartile[0];
 
         int line = i / products.width_band;
         int col = i % products.width_band;
 
         if (hotAlbedo && hotNDVI && hotTS)
-            hotCandidates.emplace_back(products.ndvi[i], products.surface_temperature[i], line, col);
+            hotCandidates.emplace_back(products.albedo[i], products.ndvi[i], products.surface_temperature[i], line, col);
 
         if (coldNDVI && coldAlbedo && coldTS)
-            coldCandidates.emplace_back(products.ndvi[i], products.surface_temperature[i], line, col);
+            coldCandidates.emplace_back(products.albedo[i], products.ndvi[i], products.surface_temperature[i], line, col);
     }
     end = system_clock::now();
     general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
@@ -113,7 +115,7 @@ string getEndmembersASEBAL(Products products, vector<Endmember>& hotCandidates, 
 
     for (int i = 0; i < products.height_band * products.width_band; i++)
     {
-        bool hotNDVI = !isnan(products.ndvi[i]) && products.ndvi[i] > 0.10 && products.ndvi[i] < ndviQuartile[0];
+        bool hotNDVI = !isnan(products.ndvi[i]) && products.ndvi[i] > 0.10f && products.ndvi[i] < ndviQuartile[0];
         bool hotAlbedo = !isnan(products.albedo[i]) && products.albedo[i] > albedoQuartile[1];
         bool hotTS = !isnan(products.surface_temperature[i]) && products.surface_temperature[i] > tsQuartile[2];
 
@@ -125,10 +127,10 @@ string getEndmembersASEBAL(Products products, vector<Endmember>& hotCandidates, 
         int col = i % products.width_band;
 
         if (hotAlbedo && hotNDVI && hotTS)
-            hotCandidates.emplace_back(products.ndvi[i], products.surface_temperature[i], line, col);
+            hotCandidates.emplace_back(products.albedo[i], products.ndvi[i], products.surface_temperature[i], line, col);
 
         if (coldNDVI && coldAlbedo && coldTS)
-            coldCandidates.emplace_back(products.ndvi[i], products.surface_temperature[i], line, col);
+            coldCandidates.emplace_back(products.albedo[i], products.ndvi[i], products.surface_temperature[i], line, col);
     }
     end = system_clock::now();
     general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;

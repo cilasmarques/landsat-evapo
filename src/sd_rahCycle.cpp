@@ -261,16 +261,16 @@ string rah_correction_function_ASEBAL(Products products, float u200)
     {
         float rah_ini_hot = products.aerodynamic_resistance[hot_pos];
         float rah_ini_cold = products.aerodynamic_resistance[cold_pos];
-
+        
         float H_cold = products.net_radiation[cold_pos] - products.soil_heat[cold_pos];
         float dt_cold = H_cold * rah_ini_cold / (RHO * SPECIFIC_HEAT_AIR);
-
+        
         float H_hot = products.net_radiation[hot_pos] - products.soil_heat[hot_pos];
         float dt_hot = H_hot * rah_ini_hot / (RHO * SPECIFIC_HEAT_AIR);
-
+        
         float b = (dt_hot - dt_cold) / (products.surface_temperature[hot_pos] - products.surface_temperature[cold_pos]);
         float a = dt_cold - (b * (products.surface_temperature[cold_pos]));
-
+        
         global_a = a;
         global_b = b;
 
