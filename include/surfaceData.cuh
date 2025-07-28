@@ -7,7 +7,7 @@
  */
 struct Endmember {
     int line, col;
-    float ndvi, temperature;
+    float albedo, ndvi, temperature;
 
     /**
      * @brief  Empty constructor, all attributes are initialized with 0.
@@ -16,26 +16,34 @@ struct Endmember {
 
     /**
      * @brief  Constructor with initialization values to attributes.
+     * @param  albedo: Pixel's albedo.
      * @param  ndvi: Pixel's NDVI.
      * @param  temperature: Pixel's surface temperature.
      * @param  line: Pixel's line on TIFF.
      * @param  col: Pixel's column on TIFF.
      */
-    __host__ __device__ Endmember(float ndvi, float temperature, int line, int col);
+    __host__ __device__ Endmember(float albedo, float ndvi, float temperature, int line, int col);
 };
 
 /**
  * @brief  Struct to compare two candidates by their NDVI and temperature.
  */
-struct CompareEndmemberTemperature {
+ struct CompareEndmemberTemperature {
     __host__ __device__ bool operator()(Endmember a, Endmember b)
     {
-        bool result = a.temperature < b.temperature;
-
-        if (a.temperature == b.temperature)
-            result = a.ndvi < b.ndvi;
-
-        return result;
+        if (a.temperature != b.temperature)
+            return a.temperature < b.temperature;
+        
+        if (a.ndvi != b.ndvi)
+            return a.ndvi > b.ndvi;
+        
+        if (a.albedo != b.albedo)
+            return a.albedo < b.albedo;
+        
+        if (a.line != b.line)
+            return a.line < b.line;
+        
+        return a.col < b.col;
     }
 };
 

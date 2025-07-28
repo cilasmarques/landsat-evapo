@@ -7,14 +7,16 @@ Endmember coldCandidate;
 
 __host__ __device__ Endmember::Endmember()
 {
+    this->albedo = 0;
     this->ndvi = 0;
     this->temperature = 0;
     this->line = 0;
     this->col = 0;
 }
 
-__host__ __device__ Endmember::Endmember(float ndvi, float temperature, int line, int col)
+__host__ __device__ Endmember::Endmember(float albedo, float ndvi, float temperature, int line, int col)
 {
+    this->albedo = albedo;
     this->ndvi = ndvi;
     this->temperature = temperature;
     this->line = line;

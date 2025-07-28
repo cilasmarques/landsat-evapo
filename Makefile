@@ -33,7 +33,7 @@ clean-all:
 	rm -rf $(OUTPUT_DATA_PATH)/*
 
 build:
-	nvcc -arch=$(ARCH) -I ./include -O3 --use_fast_math -g ./src/*.cu -o ./main -std=c++14 -ltiff -rdc=true
+	nvcc -arch=$(ARCH) -I ./include -O3 -g ./src/*.cu -o ./main -std=c++14 -ltiff -rdc=true
 
 fix-permissions:
 	sudo chmod -R 755 $(INPUT_DATA_PATH)/*

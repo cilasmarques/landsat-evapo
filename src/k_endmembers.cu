@@ -35,14 +35,14 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
             unsigned int row = pos / width_d;
             unsigned int col = pos % width_d;
             int ih = atomicAdd(&indexes_d[0], 1);
-            hotCandidates_d[ih] = Endmember(ndvi_d[pos], surface_temperature_d[pos], row, col);
+            hotCandidates_d[ih] = Endmember(albedo_d[pos], ndvi_d[pos], surface_temperature_d[pos], row, col);
         }
 
         if (coldNDVI && coldAlbedo && coldTS) {
             unsigned int row = pos / width_d;
             unsigned int col = pos % width_d;
             int ic = atomicAdd(&indexes_d[1], 1);
-            coldCandidates_d[ic] = Endmember(ndvi_d[pos], surface_temperature_d[pos], row, col);
+            coldCandidates_d[ic] = Endmember(albedo_d[pos], ndvi_d[pos], surface_temperature_d[pos], row, col);
         }
     }
 }
@@ -64,14 +64,14 @@ __global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *col
             unsigned int row = pos / width_d;
             unsigned int col = pos % width_d;
             int ih = atomicAdd(&indexes_d[0], 1);
-            hotCandidates_d[ih] = Endmember(ndvi_d[pos], surface_temperature_d[pos], row, col);
+            hotCandidates_d[ih] = Endmember(albedo_d[pos], ndvi_d[pos], surface_temperature_d[pos], row, col);
         }
 
         if (coldNDVI && coldAlbedo && coldTS) {
             unsigned int row = pos / width_d;
             unsigned int col = pos % width_d;
             int ic = atomicAdd(&indexes_d[1], 1);
-            coldCandidates_d[ic] = Endmember(ndvi_d[pos], surface_temperature_d[pos], row, col);
+            coldCandidates_d[ic] = Endmember(albedo_d[pos], ndvi_d[pos], surface_temperature_d[pos], row, col);
         }
     }
 }
