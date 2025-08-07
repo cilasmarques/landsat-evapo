@@ -179,7 +179,7 @@ string rah_correction_function_blocks_STEEP(Products products, float ndvi_min, f
         HANDLE_ERROR(cudaMemcpyToSymbol(a_d, &a, sizeof(float), 0, cudaMemcpyHostToDevice));
         HANDLE_ERROR(cudaMemcpyToSymbol(b_d, &b, sizeof(float), 0, cudaMemcpyHostToDevice));
 
-        rah_correction_cycle_STEEP<<<blocks_n, threads_n>>>(products.net_radiation_d, products.soil_heat_d, products.ndvi_d, products.surface_temperature_d, products.d0_d, products.kb1_d, products.zom_d, products.ustar_d, products.rah_d, products.sensible_heat_flux_d, ndvi_max, ndvi_min);
+        rah_correction_cycle_STEEP<<<blocks_n, threads_n>>>(products.surface_temperature_d, products.d0_d, products.kb1_d, products.zom_d, products.ustar_d, products.rah_d, products.sensible_heat_flux_d);
     }
     cudaEventRecord(stop);
 
@@ -240,7 +240,7 @@ string rah_correction_function_blocks_ASEBAL(Products products, float u200)
         HANDLE_ERROR(cudaMemcpyToSymbol(a_d, &a, sizeof(float), 0, cudaMemcpyHostToDevice));
         HANDLE_ERROR(cudaMemcpyToSymbol(b_d, &b, sizeof(float), 0, cudaMemcpyHostToDevice));
 
-        rah_correction_cycle_ASEBAL<<<blocks_n, threads_n>>>(products.net_radiation_d, products.soil_heat_d, products.ndvi_d, products.surface_temperature_d, products.kb1_d, products.zom_d, products.ustar_d, products.rah_d, products.sensible_heat_flux_d, u200);
+        rah_correction_cycle_ASEBAL<<<blocks_n, threads_n>>>(products.surface_temperature_d, products.zom_d, products.ustar_d, products.rah_d, products.sensible_heat_flux_d, u200);
 
         HANDLE_ERROR(cudaMemcpy(&rah_hot_new, products.rah_d + hot_pos, sizeof(float), cudaMemcpyDeviceToHost));
 

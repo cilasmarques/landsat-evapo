@@ -121,7 +121,7 @@ __global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_
     }
 }
 
-__global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surface_temperature_d, float *d0_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min)
+__global__ void rah_correction_cycle_STEEP(float *surface_temperature_d, float *d0_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -151,7 +151,7 @@ __global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_h
     }
 }
 
-__global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surface_temperature_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float u200)
+__global__ void rah_correction_cycle_ASEBAL(float *surface_temperature_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float u200)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 

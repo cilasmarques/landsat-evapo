@@ -324,9 +324,6 @@ __global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_
 /**
  * @brief  Compute the rah correction cycle. (STEEP algorithm)
  *
- * @param net_radiation_d  Net radiation
- * @param soil_heat_flux_d  Soil heat flux
- * @param ndvi_d  NDVI
  * @param surface_temperature_d  Surface temperature
  * @param d0_d  Zero plane displacement height_d
  * @param kb1_d  KB-1 stability parameter
@@ -334,26 +331,20 @@ __global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_
  * @param ustar_d  Ustar pointer
  * @param rah_d  Rah pointer
  * @param H_d  Sensible heat flux
- * @param ndvi_max  NDVI max value
- * @param ndvi_min  NDVI min value
  */
-__global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surface_temperature_d, float *d0_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min);
+__global__ void rah_correction_cycle_STEEP(float *surface_temperature_d, float *d0_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d);
 
 /**
- * @brief  Compute the rah correction cycle. (STEEP algorithm)
+ * @brief  Compute the rah correction cycle. (ASEBAL algorithm)
  *
- * @param net_radiation_d  Net radiation
- * @param soil_heat_flux_d  Soil heat flux
- * @param ndvi_d  NDVI
  * @param surface_temperature_d  Surface temperature
- * @param kb1_d  KB-1 stability parameter
  * @param zom_d  Roughness length for momentum
  * @param ustar_d  Ustar pointer
  * @param rah_d  Rah pointer
  * @param H_d  Sensible heat flux
  * @param u200 U200
  */
-__global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surface_temperature_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float u200);
+__global__ void rah_correction_cycle_ASEBAL(float *surface_temperature_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float u200);
 
 /**
  * @brief  Compute the sensible heat flux of the bands.
