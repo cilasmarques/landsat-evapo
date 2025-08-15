@@ -3,7 +3,7 @@
 __device__ float a_d;
 __device__ float b_d;
 
-__global__ void d0_kernel(float *pai_d, float *d0_d, float CD1, float HGHT)
+__global__ void d0_kernel(double *pai_d, double *d0_d, float CD1, float HGHT)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -14,7 +14,7 @@ __global__ void d0_kernel(float *pai_d, float *d0_d, float CD1, float HGHT)
     }
 }
 
-__global__ void ustar_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, float u10)
+__global__ void ustar_kernel_STEEP(double *zom_d, double *d0_d, double *ustar_d, float u10)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -23,7 +23,7 @@ __global__ void ustar_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, fl
     }
 }
 
-__global__ void ustar_kernel_ASEBAL(float *zom_d, float *ustar_d, float u200)
+__global__ void ustar_kernel_ASEBAL(double *zom_d, double *ustar_d, float u200)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -32,7 +32,7 @@ __global__ void ustar_kernel_ASEBAL(float *zom_d, float *ustar_d, float u200)
     }
 }
 
-__global__ void zom_kernel_STEEP(float *d0_d, float *pai_d, float *zom_d, float A_ZOM, float B_ZOM)
+__global__ void zom_kernel_STEEP(double *d0_d, double *pai_d, double *zom_d, float A_ZOM, float B_ZOM)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -50,7 +50,7 @@ __global__ void zom_kernel_STEEP(float *d0_d, float *pai_d, float *zom_d, float 
     }
 }
 
-__global__ void zom_kernel_ASEBAL(float *ndvi_d, float *albedo_d, float *zom_d, float A_ZOM, float B_ZOM)
+__global__ void zom_kernel_ASEBAL(double *ndvi_d, double *albedo_d, double *zom_d, float A_ZOM, float B_ZOM)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -59,7 +59,7 @@ __global__ void zom_kernel_ASEBAL(float *ndvi_d, float *albedo_d, float *zom_d, 
     }
 }
 
-__global__ void kb_kernel(float *zom_d, float *ustar_d, float *pai_d, float *kb1_d, float *ndvi_d, float ndvi_max, float ndvi_min)
+__global__ void kb_kernel(double *zom_d, double *ustar_d, double *pai_d, double *kb1_d, double *ndvi_d, float ndvi_max, float ndvi_min)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -99,7 +99,7 @@ __global__ void kb_kernel(float *zom_d, float *ustar_d, float *pai_d, float *kb1
     }
 }
 
-__global__ void aerodynamic_resistance_kernel_STEEP(float *zom_d, float *d0_d, float *ustar_d, float *kb1_d, float *rah_d)
+__global__ void aerodynamic_resistance_kernel_STEEP(double *zom_d, double *d0_d, double *ustar_d, double *kb1_d, double *rah_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -111,7 +111,7 @@ __global__ void aerodynamic_resistance_kernel_STEEP(float *zom_d, float *d0_d, f
     }
 }
 
-__global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_d)
+__global__ void aerodynamic_resistance_kernel_ASEBAL(double *ustar_d, double *rah_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -120,7 +120,7 @@ __global__ void aerodynamic_resistance_kernel_ASEBAL(float *ustar_d, float *rah_
     }
 }
 
-__global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surface_temperature_d, float *d0_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float ndvi_max, float ndvi_min)
+__global__ void rah_correction_cycle_STEEP(double *net_radiation_d, double *soil_heat_flux_d, double *ndvi_d, double *surface_temperature_d, double *d0_d, double *kb1_d, double *zom_d, double *ustar_d, double *rah_d, double *H_d, float ndvi_max, float ndvi_min)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -174,7 +174,7 @@ __global__ void rah_correction_cycle_STEEP(float *net_radiation_d, float *soil_h
     }
 }
 
-__global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_heat_flux_d, float *ndvi_d, float *surface_temperature_d, float *kb1_d, float *zom_d, float *ustar_d, float *rah_d, float *H_d, float u200, int *stop_condition)
+__global__ void rah_correction_cycle_ASEBAL(double *net_radiation_d, double *soil_heat_flux_d, double *ndvi_d, double *surface_temperature_d, double *kb1_d, double *zom_d, double *ustar_d, double *rah_d, double *H_d, float u200, int *stop_condition)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -226,7 +226,7 @@ __global__ void rah_correction_cycle_ASEBAL(float *net_radiation_d, float *soil_
     }
 }
 
-__global__ void sensible_heat_flux_kernel(float *surface_temperature_d, float *rah_d, float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d)
+__global__ void sensible_heat_flux_kernel(double *surface_temperature_d, double *rah_d, double *net_radiation_d, double *soil_heat_d, double *sensible_heat_flux_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 

@@ -5,7 +5,7 @@ __device__ int hotEndmemberCol_d;
 __device__ int coldEndmemberLine_d;
 __device__ int coldEndmemberCol_d;
 
-__global__ void filter_valid_values(const float *target, float *filtered, int *ipos)
+__global__ void filter_valid_values(const double *target, double *filtered, int *ipos)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -18,7 +18,7 @@ __global__ void filter_valid_values(const float *target, float *filtered, int *i
     }
 }
 
-__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surface_temperature_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh)
+__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, double *ndvi_d, double *surface_temperature_d, double *albedo_d, double *net_radiation_d, double *soil_heat_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -47,7 +47,7 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
     }
 }
 
-__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, float *ndvi_d, float *surface_temperature_d, float *albedo_d, float *net_radiation_d, float *soil_heat_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile)
+__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, double *ndvi_d, double *surface_temperature_d, double *albedo_d, double *net_radiation_d, double *soil_heat_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 

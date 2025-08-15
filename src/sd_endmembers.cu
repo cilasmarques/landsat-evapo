@@ -18,10 +18,10 @@ __host__ __device__ Endmember::Endmember(float ndvi, float temperature, int line
     this->col = col;
 }
 
-void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int width_band, float first_interval, float middle_interval, float last_interval, int blocks_n, int threads_n)
+void get_quartiles_cuda(double *d_target, float *v_quartile, int height_band, int width_band, float first_interval, float middle_interval, float last_interval, int blocks_n, int threads_n)
 {
-    float *d_filtered;
-    cudaMalloc(&d_filtered, sizeof(float) * height_band * width_band);
+    double *d_filtered;
+    cudaMalloc(&d_filtered, sizeof(double) * height_band * width_band);
 
     int indexes[1] = {0};
     int *indexes_d;
@@ -33,16 +33,20 @@ void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int
     cudaMemcpy(&indexes[0], indexes_d, sizeof(int), cudaMemcpyDeviceToHost);
 
     // Use Thrust to sort the valid elements on the GPU
-    thrust::device_ptr<float> d_filtered_ptr = thrust::device_pointer_cast(d_filtered);
+    thrust::device_ptr<double> d_filtered_ptr = thrust::device_pointer_cast(d_filtered);
     thrust::sort(thrust::device, d_filtered_ptr, d_filtered_ptr + indexes[0]);
 
     int first_index = static_cast<int>(floor(first_interval * indexes[0]));
     int middle_index = static_cast<int>(floor(middle_interval * indexes[0]));
     int last_index = static_cast<int>(floor(last_interval * indexes[0]));
 
-    cudaMemcpy(&v_quartile[0], d_filtered + first_index, sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(&v_quartile[1], d_filtered + middle_index, sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(&v_quartile[2], d_filtered + last_index, sizeof(float), cudaMemcpyDeviceToHost);
+    double temp_value;
+    cudaMemcpy(&temp_value, d_filtered + first_index, sizeof(double), cudaMemcpyDeviceToHost);
+    v_quartile[0] = (float)temp_value;
+    cudaMemcpy(&temp_value, d_filtered + middle_index, sizeof(double), cudaMemcpyDeviceToHost);
+    v_quartile[1] = (float)temp_value;
+    cudaMemcpy(&temp_value, d_filtered + last_index, sizeof(double), cudaMemcpyDeviceToHost);
+    v_quartile[2] = (float)temp_value;
 
     // Free GPU memory
     cudaFree(d_filtered);

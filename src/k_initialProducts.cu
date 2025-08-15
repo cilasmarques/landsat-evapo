@@ -3,7 +3,7 @@
 __device__ int width_d;
 __device__ int height_d;
 
-__global__ void rad_kernel(float *band_d, float *radiance_d, float *rad_add_d, float *rad_mult_d, int band_idx)
+__global__ void rad_kernel(float *band_d, double *radiance_d, double *rad_add_d, double *rad_mult_d, int band_idx)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -15,7 +15,7 @@ __global__ void rad_kernel(float *band_d, float *radiance_d, float *rad_add_d, f
     }
 }
 
-__global__ void ref_kernel(float *band_d, float *reflectance_d, float *ref_add_d, float *ref_mult_d, float sin_sun, int band_idx)
+__global__ void ref_kernel(float *band_d, double *reflectance_d, double *ref_add_d, double *ref_mult_d, double sin_sun, int band_idx)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -27,7 +27,7 @@ __global__ void ref_kernel(float *band_d, float *reflectance_d, float *ref_add_d
     }
 }
 
-__global__ void albedo_kernel(float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_swir2_d, float *tal_d, float *albedo_d, float *ref_w_coeff_d)
+__global__ void albedo_kernel(double *reflectance_blue_d, double *reflectance_green_d, double *reflectance_red_d, double *reflectance_nir_d, double *reflectance_swir1_d, double *reflectance_swir2_d, float *tal_d, double *albedo_d, double *ref_w_coeff_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -46,7 +46,7 @@ __global__ void albedo_kernel(float *reflectance_blue_d, float *reflectance_gree
     }
 }
 
-__global__ void ndvi_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *ndvi_d)
+__global__ void ndvi_kernel(double *reflectance_nir_d, double *reflectance_red_d, double *ndvi_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -58,7 +58,7 @@ __global__ void ndvi_kernel(float *reflectance_nir_d, float *reflectance_red_d, 
     }
 }
 
-__global__ void pai_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *pai_d)
+__global__ void pai_kernel(double *reflectance_nir_d, double *reflectance_red_d, double *pai_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -70,7 +70,7 @@ __global__ void pai_kernel(float *reflectance_nir_d, float *reflectance_red_d, f
     }
 }
 
-__global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *lai_d)
+__global__ void lai_kernel(double *reflectance_nir_d, double *reflectance_red_d, double *lai_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -89,7 +89,7 @@ __global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, f
     }
 }
 
-__global__ void enb_kernel(float *lai_d, float *ndvi_d, float *enb_d)
+__global__ void enb_kernel(double *lai_d, double *ndvi_d, double *enb_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -103,7 +103,7 @@ __global__ void enb_kernel(float *lai_d, float *ndvi_d, float *enb_d)
     }
 }
 
-__global__ void eo_kernel(float *lai_d, float *ndvi_d, float *eo_d)
+__global__ void eo_kernel(double *lai_d, double *ndvi_d, double *eo_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -117,7 +117,7 @@ __global__ void eo_kernel(float *lai_d, float *ndvi_d, float *eo_d)
     }
 }
 
-__global__ void ea_kernel(float *tal_d, float *ea_d)
+__global__ void ea_kernel(float *tal_d, double *ea_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -126,7 +126,7 @@ __global__ void ea_kernel(float *tal_d, float *ea_d)
     }
 }
 
-__global__ void surface_temperature_kernel(float *enb_d, float *radiance_termal_d, float *surface_temperature_d, float k1, float k2)
+__global__ void surface_temperature_kernel(double *enb_d, double *radiance_termal_d, double *surface_temperature_d, float k1, float k2)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -138,7 +138,7 @@ __global__ void surface_temperature_kernel(float *enb_d, float *radiance_termal_
     }
 }
 
-__global__ void short_wave_radiation_kernel(float *tal_d, float *short_wave_radiation_d, float sun_elevation, float distance_earth_sun, float pi)
+__global__ void short_wave_radiation_kernel(float *tal_d, double *short_wave_radiation_d, float sun_elevation, float distance_earth_sun, float pi)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -147,7 +147,7 @@ __global__ void short_wave_radiation_kernel(float *tal_d, float *short_wave_radi
     }
 }
 
-__global__ void large_waves_radiation_kernel(float *surface_temperature_d, float *eo_d, float *ea_d, float *large_wave_radiation_atmosphere_d, float *large_wave_radiation_surface_d, float temperature)
+__global__ void large_waves_radiation_kernel(double *surface_temperature_d, double *eo_d, double *ea_d, double *large_wave_radiation_atmosphere_d, double *large_wave_radiation_surface_d, float temperature)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -161,7 +161,7 @@ __global__ void large_waves_radiation_kernel(float *surface_temperature_d, float
     }
 }
 
-__global__ void net_radiation_kernel(float *short_wave_radiation_d, float *albedo_d, float *large_wave_radiation_atmosphere_d, float *large_wave_radiation_surface_d, float *eo_d, float *net_radiation_d)
+__global__ void net_radiation_kernel(double *short_wave_radiation_d, double *albedo_d, double *large_wave_radiation_atmosphere_d, double *large_wave_radiation_surface_d, double *eo_d, double *net_radiation_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -173,7 +173,7 @@ __global__ void net_radiation_kernel(float *short_wave_radiation_d, float *albed
     }
 }
 
-__global__ void soil_heat_kernel(float *ndvi_d, float *albedo_d, float *surface_temperature_d, float *net_radiation_d, float *soil_heat_d)
+__global__ void soil_heat_kernel(double *ndvi_d, double *albedo_d, double *surface_temperature_d, double *net_radiation_d, double *soil_heat_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 

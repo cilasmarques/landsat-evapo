@@ -51,6 +51,7 @@ struct Products {
 
     int band_size;
     int band_bytes;
+    int band_bytes_double;
 
     int *stop_condition, *stop_condition_d;
     Endmember *hotCandidates_d, *coldCandidates_d;
@@ -65,53 +66,53 @@ struct Products {
     float *band_swir2;
     float *tal;
 
-    float *radiance_blue;
-    float *radiance_green;
-    float *radiance_red;
-    float *radiance_nir;
-    float *radiance_swir1;
-    float *radiance_termal;
-    float *radiance_swir2;
+    double *radiance_blue;
+    double *radiance_green;
+    double *radiance_red;
+    double *radiance_nir;
+    double *radiance_swir1;
+    double *radiance_termal;
+    double *radiance_swir2;
 
-    float *reflectance_blue;
-    float *reflectance_green;
-    float *reflectance_red;
-    float *reflectance_nir;
-    float *reflectance_swir1;
-    float *reflectance_termal;
-    float *reflectance_swir2;
+    double *reflectance_blue;
+    double *reflectance_green;
+    double *reflectance_red;
+    double *reflectance_nir;
+    double *reflectance_swir1;
+    double *reflectance_termal;
+    double *reflectance_swir2;
 
-    float *albedo;
-    float *ndvi;
-    float *savi;
-    float *lai;
-    float *pai;
+    double *albedo;
+    double *ndvi;
+    double *savi;
+    double *lai;
+    double *pai;
 
-    float *soil_heat;
-    float *net_radiation;
-    float *surface_temperature;
+    double *soil_heat;
+    double *net_radiation;
+    double *surface_temperature;
 
-    float *enb_emissivity;
-    float *eo_emissivity;
-    float *ea_emissivity;
-    float *short_wave_radiation;
-    float *large_wave_radiation_surface;
-    float *large_wave_radiation_atmosphere;
+    double *enb_emissivity;
+    double *eo_emissivity;
+    double *ea_emissivity;
+    double *short_wave_radiation;
+    double *large_wave_radiation_surface;
+    double *large_wave_radiation_atmosphere;
 
-    float *d0;
-    float *zom;
-    float *ustar;
-    float *kb1;
-    float *aerodynamic_resistance;
-    float *sensible_heat_flux;
+    double *d0;
+    double *zom;
+    double *ustar;
+    double *kb1;
+    double *aerodynamic_resistance;
+    double *sensible_heat_flux;
 
-    float *latent_heat_flux;
-    float *net_radiation_24h;
-    float *evapotranspiration_fraction;
-    float *sensible_heat_flux_24h;
-    float *latent_heat_flux_24h;
-    float *evapotranspiration_24h;
-    float *evapotranspiration;
+    double *latent_heat_flux;
+    double *net_radiation_24h;
+    double *evapotranspiration_fraction;
+    double *sensible_heat_flux_24h;
+    double *latent_heat_flux_24h;
+    double *evapotranspiration_24h;
+    double *evapotranspiration;
 
     // Device pointers
     float *band_blue_d;
@@ -123,62 +124,53 @@ struct Products {
     float *band_swir2_d;
     float *tal_d;
 
-    float *radiance_blue_d;
-    float *radiance_green_d;
-    float *radiance_red_d;
-    float *radiance_nir_d;
-    float *radiance_swir1_d;
-    float *radiance_termal_d;
-    float *radiance_swir2_d;
+    double *radiance_blue_d;
+    double *radiance_green_d;
+    double *radiance_red_d;
+    double *radiance_nir_d;
+    double *radiance_swir1_d;
+    double *radiance_termal_d;
+    double *radiance_swir2_d;
 
-    float *reflectance_blue_d;
-    float *reflectance_green_d;
-    float *reflectance_red_d;
-    float *reflectance_nir_d;
-    float *reflectance_swir1_d;
-    float *reflectance_termal_d;
-    float *reflectance_swir2_d;
+    double *reflectance_blue_d;
+    double *reflectance_green_d;
+    double *reflectance_red_d;
+    double *reflectance_nir_d;
+    double *reflectance_swir1_d;
+    double *reflectance_termal_d;
+    double *reflectance_swir2_d;
 
-    float *albedo_d;
-    float *ndvi_d;
-    float *pai_d;
-    float *savi_d;
-    float *lai_d;
+    double *albedo_d;
+    double *ndvi_d;
+    double *pai_d;
+    double *savi_d;
+    double *lai_d;
 
-    float *soil_heat_d;
-    float *net_radiation_d;
-    float *surface_temperature_d;
+    double *soil_heat_d;
+    double *net_radiation_d;
+    double *surface_temperature_d;
 
-    float *enb_d;
-    float *eo_d;
-    float *ea_d;
-    float *short_wave_radiation_d;
-    float *large_wave_radiation_surface_d;
-    float *large_wave_radiation_atmosphere_d;
+    double *enb_d;
+    double *eo_d;
+    double *ea_d;
+    double *short_wave_radiation_d;
+    double *large_wave_radiation_surface_d;
+    double *large_wave_radiation_atmosphere_d;
 
-    float *d0_d;
-    float *kb1_d;
-    float *zom_d;
-    float *ustar_d;
-    float *rah_d;
+    double *d0_d;
+    double *kb1_d;
+    double *zom_d;
+    double *ustar_d;
+    double *rah_d;
 
-    float *sensible_heat_flux_d;
-    float *latent_heat_flux_d;
-    float *net_radiation_24h_d;
-    float *evapotranspiration_fraction_d;
-    float *sensible_heat_flux_24h_d;
-    float *latent_heat_flux_24h_d;
-    float *evapotranspiration_24h_d;
-    float *evapotranspiration_d;
-
-    cudaStream_t stream_1;
-    cudaStream_t stream_2;
-    cudaStream_t stream_3;
-    cudaStream_t stream_4;
-    cudaStream_t stream_5;
-    cudaStream_t stream_6; 
-    cudaStream_t stream_7;
-    cudaStream_t stream_8;
+    double *sensible_heat_flux_d;
+    double *latent_heat_flux_d;
+    double *net_radiation_24h_d;
+    double *evapotranspiration_fraction_d;
+    double *sensible_heat_flux_24h_d;
+    double *latent_heat_flux_24h_d;
+    double *evapotranspiration_24h_d;
+    double *evapotranspiration_d;
     
     /**
      * @brief  Constructor.

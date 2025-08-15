@@ -1,6 +1,6 @@
 #include "kernels.cuh"
 
-__global__ void latent_heat_flux_kernel(float *net_radiation_d, float *soil_heat_d, float *sensible_heat_flux_d, float *latent_heat_flux_d)
+__global__ void latent_heat_flux_kernel(double *net_radiation_d, double *soil_heat_d, double *sensible_heat_flux_d, double *latent_heat_flux_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -9,7 +9,7 @@ __global__ void latent_heat_flux_kernel(float *net_radiation_d, float *soil_heat
     }
 }
 
-__global__ void net_radiation_24h_kernel(float *albedo_d, float Rs24h, float Ra24h, float *net_radiation_24h_d)
+__global__ void net_radiation_24h_kernel(double *albedo_d, float Rs24h, float Ra24h, double *net_radiation_24h_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
     float FL = 110.0f;
@@ -18,7 +18,7 @@ __global__ void net_radiation_24h_kernel(float *albedo_d, float Rs24h, float Ra2
     }
 }
 
-__global__ void evapotranspiration_24h_kernel(float *surface_temperature_d, float *latent_heat_flux_d, float *net_radiation_d, float *soil_heat_d, float *net_radiation_24h_d, float *evapotranspiration_24h_d)
+__global__ void evapotranspiration_24h_kernel(double *surface_temperature_d, double *latent_heat_flux_d, double *net_radiation_d, double *soil_heat_d, double *net_radiation_24h_d, double *evapotranspiration_24h_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
