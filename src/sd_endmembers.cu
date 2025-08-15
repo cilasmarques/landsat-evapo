@@ -10,7 +10,7 @@ __host__ __device__ Endmember::Endmember()
     this->col = 0;
 }
 
-__host__ __device__ Endmember::Endmember(float ndvi, float temperature, int line, int col)
+__host__ __device__ Endmember::Endmember(double ndvi, double temperature, int line, int col)
 {
     this->ndvi = ndvi;
     this->temperature = temperature;
@@ -18,7 +18,7 @@ __host__ __device__ Endmember::Endmember(float ndvi, float temperature, int line
     this->col = col;
 }
 
-void get_quartiles_cuda(double *d_target, float *v_quartile, int height_band, int width_band, float first_interval, float middle_interval, float last_interval, int blocks_n, int threads_n)
+void get_quartiles_cuda(double *d_target, double *v_quartile, int height_band, int width_band, double first_interval, double middle_interval, double last_interval, int blocks_n, int threads_n)
 {
     double *d_filtered;
     cudaMalloc(&d_filtered, sizeof(double) * height_band * width_band);
@@ -42,11 +42,11 @@ void get_quartiles_cuda(double *d_target, float *v_quartile, int height_band, in
 
     double temp_value;
     cudaMemcpy(&temp_value, d_filtered + first_index, sizeof(double), cudaMemcpyDeviceToHost);
-    v_quartile[0] = (float)temp_value;
+    v_quartile[0] = (double)temp_value;
     cudaMemcpy(&temp_value, d_filtered + middle_index, sizeof(double), cudaMemcpyDeviceToHost);
-    v_quartile[1] = (float)temp_value;
+    v_quartile[1] = (double)temp_value;
     cudaMemcpy(&temp_value, d_filtered + last_index, sizeof(double), cudaMemcpyDeviceToHost);
-    v_quartile[2] = (float)temp_value;
+    v_quartile[2] = (double)temp_value;
 
     // Free GPU memory
     cudaFree(d_filtered);
@@ -61,9 +61,9 @@ string getEndmembersSTEEP(Products products, int *indexes_d)
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 
-    vector<float> tsQuartile(3);
-    vector<float> ndviQuartile(3);
-    vector<float> albedoQuartile(3);
+    vector<double> tsQuartile(3);
+    vector<double> ndviQuartile(3);
+    vector<double> albedoQuartile(3);
 
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
@@ -90,9 +90,9 @@ string getEndmembersASEBAL(Products products, int *indexes_d)
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 
-    vector<float> tsQuartile(3);
-    vector<float> ndviQuartile(3);
-    vector<float> albedoQuartile(3);
+    vector<double> tsQuartile(3);
+    vector<double> ndviQuartile(3);
+    vector<double> albedoQuartile(3);
 
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 

@@ -209,7 +209,7 @@ string ea_emissivity_function(Products products)
 
 string surface_temperature_function(Products products, MTL mtl)
 {
-    float k1, k2;
+    double k1, k2;
     switch (mtl.number_sensor) {
     case 5:
         k1 = 607.76;
@@ -271,7 +271,7 @@ string short_wave_radiation_function(Products products, MTL mtl)
     return "KERNELS,SHORT_WAVE_RADIATION," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string large_waves_radiation_function(Products products, float temperature)
+string large_waves_radiation_function(Products products, double temperature)
 {
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;

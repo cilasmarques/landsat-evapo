@@ -5,8 +5,8 @@
 
 string d0_fuction(Products products)
 {
-    float CD1 = 20.6;
-    float HGHT = 4;
+    double CD1 = 20.6;
+    double HGHT = 4;
 
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;
@@ -27,7 +27,7 @@ string d0_fuction(Products products)
     return "KERNELS,D0," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string kb_function(Products products, float ndvi_max, float ndvi_min)
+string kb_function(Products products, double ndvi_max, double ndvi_min)
 {
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;
@@ -48,7 +48,7 @@ string kb_function(Products products, float ndvi_max, float ndvi_min)
     return "KERNELS,KB1," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string zom_fuction(Products products, float A_ZOM, float B_ZOM)
+string zom_fuction(Products products, double A_ZOM, double B_ZOM)
 {
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;
@@ -120,7 +120,7 @@ string aerodynamic_resistance_fuction(Products products)
     return "KERNELS,RAH_INI," + std::to_string(cuda_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
 };
 
-string rah_correction_function_blocks_STEEP(Products products, float ndvi_min, float ndvi_max)
+string rah_correction_function_blocks_STEEP(Products products, double ndvi_min, double ndvi_max)
 {
     string result = "";
     cudaEvent_t start, stop;
@@ -219,9 +219,9 @@ string Products::converge_rah_cycle(Products products, Station station)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    float ustar_station = (VON_KARMAN * station.v6) / (log(station.WIND_SPEED / station.SURFACE_ROUGHNESS));
-    float u10 = (ustar_station / VON_KARMAN) * log(10 / station.SURFACE_ROUGHNESS);
-    float u200 = (ustar_station / VON_KARMAN) * log(200 / station.SURFACE_ROUGHNESS);
+    double ustar_station = (VON_KARMAN * station.v6) / (log(station.WIND_SPEED / station.SURFACE_ROUGHNESS));
+    double u10 = (ustar_station / VON_KARMAN) * log(10 / station.SURFACE_ROUGHNESS);
+    double u200 = (ustar_station / VON_KARMAN) * log(200 / station.SURFACE_ROUGHNESS);
 
     thrust::device_ptr<double> ndvi_ptr = thrust::device_pointer_cast(products.ndvi_d);
     

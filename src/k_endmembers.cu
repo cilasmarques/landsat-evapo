@@ -10,7 +10,7 @@ __global__ void filter_valid_values(const double *target, double *filtered, int 
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < height_d * width_d) {
-        float value = target[pos];
+        double value = target[pos];
         if (!isnan(value) && !isinf(value)) {
             int position = atomicAdd(ipos, 1);
             filtered[position] = value;
@@ -18,7 +18,7 @@ __global__ void filter_valid_values(const double *target, double *filtered, int 
     }
 }
 
-__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, double *ndvi_d, double *surface_temperature_d, double *albedo_d, double *net_radiation_d, double *soil_heat_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh)
+__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, double *ndvi_d, double *surface_temperature_d, double *albedo_d, double *net_radiation_d, double *soil_heat_d, double ndviQuartileLow, double ndviQuartileHigh, double tsQuartileLow, double tsQuartileMid, double tsQuartileHigh, double albedoQuartileLow, double albedoQuartileMid, double albedoQuartileHigh)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -47,7 +47,7 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
     }
 }
 
-__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, double *ndvi_d, double *surface_temperature_d, double *albedo_d, double *net_radiation_d, double *soil_heat_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile)
+__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, double *ndvi_d, double *surface_temperature_d, double *albedo_d, double *net_radiation_d, double *soil_heat_d, double ndviHOTQuartile, double ndviCOLDQuartile, double tsHOTQuartile, double tsCOLDQuartile, double albedoHOTQuartile, double albedoCOLDQuartile)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 

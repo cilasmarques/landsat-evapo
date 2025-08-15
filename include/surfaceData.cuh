@@ -7,7 +7,7 @@
  */
 struct Endmember {
     int line, col;
-    float ndvi, temperature;
+    double ndvi, temperature;
 
     /**
      * @brief  Empty constructor, all attributes are initialized with 0.
@@ -24,7 +24,7 @@ struct Endmember {
      * @param  line: Pixel's line on TIFF.
      * @param  col: Pixel's column on TIFF.
      */
-    __host__ __device__ Endmember(float ndvi, float temperature, int line, int col);
+    __host__ __device__ Endmember(double ndvi, double temperature, int line, int col);
 };
 
 /**

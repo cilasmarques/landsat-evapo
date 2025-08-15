@@ -44,28 +44,28 @@ extern int blocks_n;
 #define THREADS_INDEX 13
 
 // Epsilon
-const float EPS = 1e-7;
+const double EPS = 1e-7;
 
 // Not a number
-const float NaN = -sqrtf(-1.0);
+const double NaN = -sqrtf(-1.0);
 
 // Pi
-const float PI = acosf(-1.0);
+const double PI = acosf(-1.0);
 
 // Karman's constant
-const float VON_KARMAN = 0.41;
+const double VON_KARMAN = 0.41;
 
 // Earth's gravity
-const float GRAVITY = 9.81;
+const double GRAVITY = 9.81;
 
 // Atmospheric density
-const float RHO = 1.15;
+const double RHO = 1.15;
 
 // Specific heat of air
-const float SPECIFIC_HEAT_AIR = 1004.0;
+const double SPECIFIC_HEAT_AIR = 1004.0;
 
 // Solar constant
-const float GSC = 0.082;
+const double GSC = 0.082;
 
 // Agricultural field land cover value
 // Available at https://mapbiomas.org/downloads_codigos

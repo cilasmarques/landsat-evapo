@@ -32,7 +32,7 @@ __global__ void albedo_kernel(double *reflectance_blue_d, double *reflectance_gr
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        float alb_toa = reflectance_blue_d[pos] * ref_w_coeff_d[PARAM_BAND_BLUE_INDEX] +
+        double alb_toa = reflectance_blue_d[pos] * ref_w_coeff_d[PARAM_BAND_BLUE_INDEX] +
                         reflectance_green_d[pos] * ref_w_coeff_d[PARAM_BAND_GREEN_INDEX] +
                         reflectance_red_d[pos] * ref_w_coeff_d[PARAM_BAND_RED_INDEX] +
                         reflectance_nir_d[pos] * ref_w_coeff_d[PARAM_BAND_NIR_INDEX] +
@@ -75,7 +75,7 @@ __global__ void lai_kernel(double *reflectance_nir_d, double *reflectance_red_d,
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        float savi = ((1.5) * (reflectance_nir_d[pos] - reflectance_red_d[pos])) / (0.5 + (reflectance_nir_d[pos] + reflectance_red_d[pos]));
+        double savi = ((1.5) * (reflectance_nir_d[pos] - reflectance_red_d[pos])) / (0.5 + (reflectance_nir_d[pos] + reflectance_red_d[pos]));
 
         if (!isnan(savi) && savi > 0.687)
             lai_d[pos] = 6;
@@ -126,7 +126,7 @@ __global__ void ea_kernel(float *tal_d, double *ea_d)
     }
 }
 
-__global__ void surface_temperature_kernel(double *enb_d, double *radiance_termal_d, double *surface_temperature_d, float k1, float k2)
+__global__ void surface_temperature_kernel(double *enb_d, double *radiance_termal_d, double *surface_temperature_d, double k1, double k2)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -138,7 +138,7 @@ __global__ void surface_temperature_kernel(double *enb_d, double *radiance_terma
     }
 }
 
-__global__ void short_wave_radiation_kernel(float *tal_d, double *short_wave_radiation_d, float sun_elevation, float distance_earth_sun, float pi)
+__global__ void short_wave_radiation_kernel(float *tal_d, double *short_wave_radiation_d, double sun_elevation, double distance_earth_sun, double pi)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -147,16 +147,16 @@ __global__ void short_wave_radiation_kernel(float *tal_d, double *short_wave_rad
     }
 }
 
-__global__ void large_waves_radiation_kernel(double *surface_temperature_d, double *eo_d, double *ea_d, double *large_wave_radiation_atmosphere_d, double *large_wave_radiation_surface_d, float temperature)
+__global__ void large_waves_radiation_kernel(double *surface_temperature_d, double *eo_d, double *ea_d, double *large_wave_radiation_atmosphere_d, double *large_wave_radiation_surface_d, double temperature)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        float temperature_pixel = surface_temperature_d[pos];
-        float surface_temperature_pow_4 = temperature_pixel * temperature_pixel * temperature_pixel * temperature_pixel;
+        double temperature_pixel = surface_temperature_d[pos];
+        double surface_temperature_pow_4 = temperature_pixel * temperature_pixel * temperature_pixel * temperature_pixel;
         large_wave_radiation_surface_d[pos] = eo_d[pos] * 5.67 * 1e-8 * surface_temperature_pow_4;
         
-        float station_temperature_kelvin_pow_4 = temperature * temperature * temperature * temperature;
+        double station_temperature_kelvin_pow_4 = temperature * temperature * temperature * temperature;
         large_wave_radiation_atmosphere_d[pos] = ea_d[pos] * 5.67 * 1e-8 * station_temperature_kelvin_pow_4;
     }
 }
@@ -179,8 +179,8 @@ __global__ void soil_heat_kernel(double *ndvi_d, double *albedo_d, double *surfa
 
     if (pos < width_d * height_d) {
         if (ndvi_d[pos] >= 0) {
-            float temperature_celcius = surface_temperature_d[pos] - 273.15;
-            float ndvi_pixel_pow_4 = ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos];
+            double temperature_celcius = surface_temperature_d[pos] - 273.15;
+            double ndvi_pixel_pow_4 = ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos] * ndvi_d[pos];
             soil_heat_d[pos] = temperature_celcius * (0.0038 + 0.0074 * albedo_d[pos]) * (1.0 - 0.98 * ndvi_pixel_pow_4) * net_radiation_d[pos];
         } else            
             soil_heat_d[pos] = 0.5 * net_radiation_d[pos];

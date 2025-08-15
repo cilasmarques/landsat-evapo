@@ -6,14 +6,14 @@
 
 // Functors para Thrust que filtram valores NaN
 struct is_valid_ndvi {
-    __host__ __device__ bool operator()(float x) const {
+    __host__ __device__ bool operator()(double x) const {
         return !isnan(x) && !isinf(x);
     }
 };
 
 // Functor para encontrar mínimo válido
 struct min_valid {
-    __host__ __device__ float operator()(float a, float b) const {
+    __host__ __device__ double operator()(double a, double b) const {
         if (isnan(a) || isinf(a)) return b;
         if (isnan(b) || isinf(b)) return a;
         return min(a, b);
@@ -22,7 +22,7 @@ struct min_valid {
 
 // Functor para encontrar máximo válido
 struct max_valid {
-    __host__ __device__ float operator()(float a, float b) const {
+    __host__ __device__ double operator()(double a, double b) const {
         if (isnan(a) || isinf(a)) return b;
         if (isnan(b) || isinf(b)) return a;
         return max(a, b);
@@ -137,7 +137,7 @@ __global__ void ea_kernel(float *tal_d, double *ea_d);
  * @param k1  The K1 constant.
  * @param k2  The K2 constant.
  */
-__global__ void surface_temperature_kernel(double *enb_d, double *radiance_termal_d, double *surface_temperature_d, float k1, float k2);
+__global__ void surface_temperature_kernel(double *enb_d, double *radiance_termal_d, double *surface_temperature_d, double k1, double k2);
 
 /**
  * @brief  Compute the short wave radiation of the bands.
@@ -148,7 +148,7 @@ __global__ void surface_temperature_kernel(double *enb_d, double *radiance_terma
  * @param distance_earth_sun  The distance between the earth and the sun.
  * @param pi  The pi constant.
  */
-__global__ void short_wave_radiation_kernel(float *tal_d, double *short_wave_radiation_d, float sun_elevation, float distance_earth_sun, float pi);
+__global__ void short_wave_radiation_kernel(float *tal_d, double *short_wave_radiation_d, double sun_elevation, double distance_earth_sun, double pi);
 
 /**
  * @brief  Compute the large wave radiation of the bands.
@@ -160,7 +160,7 @@ __global__ void short_wave_radiation_kernel(float *tal_d, double *short_wave_rad
  * @param large_wave_radiation_surface_d  The large wave radiation surface.
  * @param temperature  The surface temperature.
  */
-__global__ void large_waves_radiation_kernel(double *surface_temperature_d, double *eo_d, double *ea_d, double *large_wave_radiation_atmosphere_d, double *large_wave_radiation_surface_d, float temperature);
+__global__ void large_waves_radiation_kernel(double *surface_temperature_d, double *eo_d, double *ea_d, double *large_wave_radiation_atmosphere_d, double *large_wave_radiation_surface_d, double temperature);
 
 /**
  * @brief  Compute the net radiation of the bands.
@@ -214,7 +214,7 @@ __global__ void filter_valid_values(const double *target, double *filtered, int 
  * @param albedoQuartileMid The albedo mid quartile.
  * @param albedoQuartileHigh The albedo high quartile.
  */
-__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, double *ndvi_d, double *surface_temperature_d, double *albedo_d, double *net_radiation_d, double *soil_heat_d, float ndviQuartileLow, float ndviQuartileHigh, float tsQuartileLow, float tsQuartileMid, float tsQuartileHigh, float albedoQuartileLow, float albedoQuartileMid, float albedoQuartileHigh);
+__global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, double *ndvi_d, double *surface_temperature_d, double *albedo_d, double *net_radiation_d, double *soil_heat_d, double ndviQuartileLow, double ndviQuartileHigh, double tsQuartileLow, double tsQuartileMid, double tsQuartileHigh, double albedoQuartileLow, double albedoQuartileMid, double albedoQuartileHigh);
 
 /**
  * @brief Process the pixels of the target arrays and store the candidates in the hot and cold arrays.
@@ -234,7 +234,7 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
  * @param albedoHOTQuartile The albedo hot quartile.
  * @param albedoCOLDQuartile The albedo cold quartile.
  */
-__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, double *ndvi_d, double *surface_temperature_d, double *albedo_d, double *net_radiation_d, double *soil_heat_d, float ndviHOTQuartile, float ndviCOLDQuartile, float tsHOTQuartile, float tsCOLDQuartile, float albedoHOTQuartile, float albedoCOLDQuartile);
+__global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *coldCandidates_d, int *indexes_d, double *ndvi_d, double *surface_temperature_d, double *albedo_d, double *net_radiation_d, double *soil_heat_d, double ndviHOTQuartile, double ndviCOLDQuartile, double tsHOTQuartile, double tsCOLDQuartile, double albedoHOTQuartile, double albedoCOLDQuartile);
 
 /**
  * @brief  Compute the zero plane displacement height_d of the bands.
@@ -244,7 +244,7 @@ __global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *col
  * @param CD1  The CD1 constant.
  * @param HGHT  The HGHT constant.
  */
-__global__ void d0_kernel(double *pai_d, double *d0_d, float CD1, float HGHT);
+__global__ void d0_kernel(double *pai_d, double *d0_d, double CD1, double HGHT);
 
 /**
  * @brief  Compute the roughness length for momentum of the bands.
@@ -255,7 +255,7 @@ __global__ void d0_kernel(double *pai_d, double *d0_d, float CD1, float HGHT);
  * @param A_ZOM  The A_ZOM constant.
  * @param B_ZOM  The B_ZOM constant.
  */
-__global__ void zom_kernel_STEEP(double *d0_d, double *pai_d, double *zom_d, float A_ZOM, float B_ZOM);
+__global__ void zom_kernel_STEEP(double *d0_d, double *pai_d, double *zom_d, double A_ZOM, double B_ZOM);
 
 /**
  * @brief  Compute the rah of the bands.
@@ -266,7 +266,7 @@ __global__ void zom_kernel_STEEP(double *d0_d, double *pai_d, double *zom_d, flo
  * @param A_ZOM  The A_ZOM constant.
  * @param B_ZOM  The B_ZOM constant.
  */
-__global__ void zom_kernel_ASEBAL(double *ndvi_d, double *albedo_d,  double *zom_d, float A_ZOM, float B_ZOM);
+__global__ void zom_kernel_ASEBAL(double *ndvi_d, double *albedo_d,  double *zom_d, double A_ZOM, double B_ZOM);
 
 /**
  * @brief  Compute the ustar of the bands.
@@ -276,7 +276,7 @@ __global__ void zom_kernel_ASEBAL(double *ndvi_d, double *albedo_d,  double *zom
  * @param ustar_d  The USTAR.
  * @param u10  The U10 constant.
  */
-__global__ void ustar_kernel_STEEP(double *zom_d, double *d0_d, double *ustar_d, float u10);
+__global__ void ustar_kernel_STEEP(double *zom_d, double *d0_d, double *ustar_d, double u10);
 
 /**
  * @brief  Compute the ustar of the bands.
@@ -285,7 +285,7 @@ __global__ void ustar_kernel_STEEP(double *zom_d, double *d0_d, double *ustar_d,
  * @param ustar_d  The USTAR.
  * @param u200  The U200 constant.
  */
-__global__ void ustar_kernel_ASEBAL(double *zom_d, double *ustar_d, float u200);
+__global__ void ustar_kernel_ASEBAL(double *zom_d, double *ustar_d, double u200);
 
 /**
  * @brief  Compute the KB-1 stability parameter of the bands.
@@ -298,7 +298,7 @@ __global__ void ustar_kernel_ASEBAL(double *zom_d, double *ustar_d, float u200);
  * @param ndvi_max  The NDVI max value.
  * @param ndvi_min  The NDVI min value.
  */
-__global__ void kb_kernel(double *zom_d, double *ustar_d, double *pai_d, double *kb1_d, double *ndvi_d, float ndvi_max, float ndvi_min);
+__global__ void kb_kernel(double *zom_d, double *ustar_d, double *pai_d, double *kb1_d, double *ndvi_d, double ndvi_max, double ndvi_min);
 
 /**
  * @brief  Compute the aerodynamic resistance of the bands.
@@ -335,7 +335,7 @@ __global__ void aerodynamic_resistance_kernel_ASEBAL(double *ustar_d, double *ra
  * @param ndvi_max  NDVI max value
  * @param ndvi_min  NDVI min value
  */
-__global__ void rah_correction_cycle_STEEP(double *net_radiation_d, double *soil_heat_flux_d, double *ndvi_d, double *surface_temperature_d, double *d0_d, double *kb1_d, double *zom_d, double *ustar_d, double *rah_d, double *H_d, float ndvi_max, float ndvi_min);
+__global__ void rah_correction_cycle_STEEP(double *net_radiation_d, double *soil_heat_flux_d, double *ndvi_d, double *surface_temperature_d, double *d0_d, double *kb1_d, double *zom_d, double *ustar_d, double *rah_d, double *H_d, double ndvi_max, double ndvi_min);
 
 /**
  * @brief  Compute the rah correction cycle. (STEEP algorithm)
@@ -352,7 +352,7 @@ __global__ void rah_correction_cycle_STEEP(double *net_radiation_d, double *soil
  * @param u200 U200
  * @param stop_condition Stop condition
  */
-__global__ void rah_correction_cycle_ASEBAL(double *net_radiation_d, double *soil_heat_flux_d, double *ndvi_d, double *surface_temperature_d, double *kb1_d, double *zom_d, double *ustar_d, double *rah_d, double *H_d, float u200, int *stop_condition);
+__global__ void rah_correction_cycle_ASEBAL(double *net_radiation_d, double *soil_heat_flux_d, double *ndvi_d, double *surface_temperature_d, double *kb1_d, double *zom_d, double *ustar_d, double *rah_d, double *H_d, double u200, int *stop_condition);
 
 /**
  * @brief  Compute the sensible heat flux of the bands.
@@ -383,7 +383,7 @@ __global__ void latent_heat_flux_kernel(double *net_radiation_d, double *soil_he
  * @param Ra24h  The Ra24h.
  * @param net_radiation_24h_d  The net radiation 24h.
  */
-__global__ void net_radiation_24h_kernel(double *albedo_d, float Rs24h, float Ra24h, double *net_radiation_24h_d);
+__global__ void net_radiation_24h_kernel(double *albedo_d, double Rs24h, double Ra24h, double *net_radiation_24h_d);
 
 /**
  * @brief  Compute the evapotranspiration 24h of the bands.
