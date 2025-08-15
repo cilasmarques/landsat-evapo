@@ -23,7 +23,7 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        bool hotNDVI = !isnan(ndvi_d[pos]) && ndvi_d[pos] > 0.10f && ndvi_d[pos] < ndviQuartileLow;
+        bool hotNDVI = !isnan(ndvi_d[pos]) && ndvi_d[pos] > 0.10 && ndvi_d[pos] < ndviQuartileLow;
         bool hotAlbedo = !isnan(albedo_d[pos]) && albedo_d[pos] > albedoQuartileMid && albedo_d[pos] < albedoQuartileHigh;
         bool hotTS = !isnan(surface_temperature_d[pos]) && surface_temperature_d[pos] > tsQuartileMid && surface_temperature_d[pos] < tsQuartileHigh;
 
@@ -52,7 +52,7 @@ __global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *col
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        bool hotNDVI = !isnan(ndvi_d[pos]) && ndvi_d[pos] > 0.10f && ndvi_d[pos] < ndviHOTQuartile;
+        bool hotNDVI = !isnan(ndvi_d[pos]) && ndvi_d[pos] > 0.10 && ndvi_d[pos] < ndviHOTQuartile;
         bool hotAlbedo = !isnan(albedo_d[pos]) && albedo_d[pos] > albedoHOTQuartile;
         bool hotTS = !isnan(surface_temperature_d[pos]) && surface_temperature_d[pos] > tsHOTQuartile;
 
