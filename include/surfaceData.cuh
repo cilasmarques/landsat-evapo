@@ -174,15 +174,6 @@ struct Products {
     float *latent_heat_flux_24h_d;
     float *evapotranspiration_24h_d;
     float *evapotranspiration_d;
-
-    cudaStream_t stream_1;
-    cudaStream_t stream_2;
-    cudaStream_t stream_3;
-    cudaStream_t stream_4;
-    cudaStream_t stream_5;
-    cudaStream_t stream_6; 
-    cudaStream_t stream_7;
-    cudaStream_t stream_8;
     
     /**
      * @brief  Constructor.
