@@ -161,11 +161,11 @@ string rah_correction_function_blocks_STEEP(Products products, float ndvi_min, f
         HANDLE_ERROR(cudaMemcpy(&rah_ini_hot, products.rah_d + hot_pos, sizeof(float), cudaMemcpyDeviceToHost));
         HANDLE_ERROR(cudaMemcpy(&rah_ini_cold, products.rah_d + cold_pos, sizeof(float), cudaMemcpyDeviceToHost));
 
-        float fc_hot = 1.0f - powf((ndvi_hot - ndvi_max) / (ndvi_min - ndvi_max), 0.4631f);
-        float fc_cold = 1.0f - powf((ndvi_cold - ndvi_max) / (ndvi_min - ndvi_max), 0.4631f);
+        float fc_hot = 1.0 - pow((ndvi_hot - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
+        float fc_cold = 1.0 - pow((ndvi_cold - ndvi_max) / (ndvi_min - ndvi_max), 0.4631);
 
-        float LE_hot = 0.55f * fc_hot * (net_radiation_hot - soil_heat_flux_hot) * 0.78f;
-        float LE_cold = 1.75f * fc_cold * (net_radiation_cold - soil_heat_flux_cold) * 0.78f;
+        float LE_hot = 0.55 * fc_hot * (net_radiation_hot - soil_heat_flux_hot) * 0.78;
+        float LE_cold = 1.75 * fc_cold * (net_radiation_cold - soil_heat_flux_cold) * 0.78;
 
         float H_cold = net_radiation_cold - soil_heat_flux_cold - LE_hot;
         float dt_cold = H_cold * rah_ini_cold / (RHO * SPECIFIC_HEAT_AIR);
@@ -244,7 +244,7 @@ string rah_correction_function_blocks_ASEBAL(Products products, float u200)
 
         HANDLE_ERROR(cudaMemcpy(&rah_hot_new, products.rah_d + hot_pos, sizeof(float), cudaMemcpyDeviceToHost));
 
-        if ((i > 0) && (fabsf(1.0f - (rah_ini_hot / rah_hot_new)) < 0.05f)) 
+        if ((i > 0) && (fabs(1.0 - (rah_ini_hot / rah_hot_new)) < 0.05)) 
             break;
         else
             i++;
@@ -290,20 +290,20 @@ string Products::converge_rah_cycle(Products products, Station station)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    float ustar_station = (VON_KARMAN * station.v6) / (logf(station.WIND_SPEED / station.SURFACE_ROUGHNESS));
-    float u10 = (ustar_station / VON_KARMAN) * logf(10.0f / station.SURFACE_ROUGHNESS);
-    float u200 = (ustar_station / VON_KARMAN) * logf(200.0f / station.SURFACE_ROUGHNESS);
+    float ustar_station = (VON_KARMAN * station.v6) / (log(station.WIND_SPEED / station.SURFACE_ROUGHNESS));
+    float u10 = (ustar_station / VON_KARMAN) * log(10.0 / station.SURFACE_ROUGHNESS);
+    float u200 = (ustar_station / VON_KARMAN) * log(200.0 / station.SURFACE_ROUGHNESS);
 
     thrust::device_ptr<float> ndvi_ptr = thrust::device_pointer_cast(products.ndvi_d);
     
     float ndvi_min = thrust::reduce(ndvi_ptr, 
                                    ndvi_ptr + products.height_band * products.width_band,
-                                   1.0f, // Initial value
+                                   1.0, // Initial value
                                    min_valid());
     
     float ndvi_max = thrust::reduce(ndvi_ptr, 
                                    ndvi_ptr + products.height_band * products.width_band,
-                                   -1.0f, // Initial value
+                                   -1.0, // Initial value
                                    max_valid());
 
     if (model_method == 0) { // STEEP

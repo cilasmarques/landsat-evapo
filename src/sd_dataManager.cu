@@ -165,7 +165,7 @@ string Products::read_data(TIFF **landsat_bands)
                 memcpy(band_ptr + offset, strip_data, bytes_read);
             } else {
                 for (unsigned int p = 0; p < pixels_in_strip; p++) {
-                    band_ptr[offset + p] = 0.75f + 2.0f * powf(10.0f, -5.0f) * strip_data[p];
+                    band_ptr[offset + p] = 0.75 + 2.0 * pow(10.0, -5.0) * strip_data[p];
                 }
             }
 
@@ -187,7 +187,7 @@ string Products::read_data(TIFF **landsat_bands)
 
     end = system_clock::now();
     final_time = duration_cast<nanoseconds>(end.time_since_epoch()).count();
-    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000.0f / 1000.0f;
+    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000.0 / 1000.0;
 
     return "SERIAL,P0_READ_INPUT," + to_string(general_time) + "," + to_string(initial_time) + "," + to_string(final_time) + "\n";
 }
