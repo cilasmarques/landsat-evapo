@@ -6,23 +6,8 @@
  * @brief  Struct representing a hot or cold pixel candidate.
  */
 struct Endmember {
-    int line, col;
+    uint16_t line, col;
     float albedo, ndvi, temperature;
-
-    /**
-     * @brief  Empty constructor, all attributes are initialized with 0.
-     */
-    __host__ __device__ Endmember();
-
-    /**
-     * @brief  Constructor with initialization values to attributes.
-     * @param  albedo: Pixel's albedo.
-     * @param  ndvi: Pixel's NDVI.
-     * @param  temperature: Pixel's surface temperature.
-     * @param  line: Pixel's line on TIFF.
-     * @param  col: Pixel's column on TIFF.
-     */
-    __host__ __device__ Endmember(float albedo, float ndvi, float temperature, int line, int col);
 };
 
 /**
