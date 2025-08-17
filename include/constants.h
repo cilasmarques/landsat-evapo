@@ -41,28 +41,28 @@ extern int model_method;
 #define METHOD_INDEX 12
 
 // Epsilon
-const float EPS = 1e-7f;
+const float EPS = 1e-7;
 
 // Not a number
-const float NaN = 0.0f/0.0f;
+const float NaN = 0.0/0.0;
 
 // Pi 
-const float PI = 3.14159265358979323846f;
+const float PI = 3.14159265358979323846;
 
 // Karman's constant
-const float VON_KARMAN = 0.41f;
+const float VON_KARMAN = 0.41;
 
 // Earth's gravity
-const float GRAVITY = 9.81f;
+const float GRAVITY = 9.81;
 
 // Atmospheric density
-const float RHO = 1.15f;
+const float RHO = 1.15;
 
 // Specific heat of air
-const float SPECIFIC_HEAT_AIR = 1004.0f;
+const float SPECIFIC_HEAT_AIR = 1004.0;
 
 // Solar constant
-const float GSC = 0.082f;
+const float GSC = 0.082;
 
 // Agricultural field land cover value
 // Available at https://mapbiomas.org/downloads_codigos

@@ -128,7 +128,7 @@ string Products::read_data(TIFF **landsat_bands)
                 // precisamos percorrer os floats do strip_buffer
                 float* strip_float = (float*) strip_buffer;
                 for (unsigned int p = 0; p < pixels_per_strip; p++) {
-                    band_ptr[offset/bytes_per_pixel + p] = 0.75f + 2.0f * powf(10.0f, -5.0f) * strip_float[p];
+                    band_ptr[offset/bytes_per_pixel + p] = 0.75 + 2.0 * pow(10.0, -5.0) * strip_float[p];
                 }
             }
 

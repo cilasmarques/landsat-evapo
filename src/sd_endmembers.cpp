@@ -72,7 +72,7 @@ string getEndmembersSTEEP(Products products, vector<Endmember>& hotCandidates, v
 
     for (int i = 0; i < products.height_band * products.width_band; i++)
     {
-        bool hotNDVI = !isnan(products.ndvi[i]) && products.ndvi[i] > 0.10f && products.ndvi[i] < ndviQuartile[0];
+        bool hotNDVI = !isnan(products.ndvi[i]) && products.ndvi[i] > 0.10 && products.ndvi[i] < ndviQuartile[0];
         bool hotAlbedo = !isnan(products.albedo[i]) && products.albedo[i] > albedoQuartile[1] && products.albedo[i] < albedoQuartile[2];
         bool hotTS = !isnan(products.surface_temperature[i]) && products.surface_temperature[i] > tsQuartile[1] && products.surface_temperature[i] < tsQuartile[2];
 
@@ -115,7 +115,7 @@ string getEndmembersASEBAL(Products products, vector<Endmember>& hotCandidates, 
 
     for (int i = 0; i < products.height_band * products.width_band; i++)
     {
-        bool hotNDVI = !isnan(products.ndvi[i]) && products.ndvi[i] > 0.10f && products.ndvi[i] < ndviQuartile[0];
+        bool hotNDVI = !isnan(products.ndvi[i]) && products.ndvi[i] > 0.10 && products.ndvi[i] < ndviQuartile[0];
         bool hotAlbedo = !isnan(products.albedo[i]) && products.albedo[i] > albedoQuartile[1];
         bool hotTS = !isnan(products.surface_temperature[i]) && products.surface_temperature[i] > tsQuartile[2];
 

@@ -37,7 +37,7 @@ string radiance_function(Products products, MTL mtl)
 
 string reflectance_function(Products products, MTL mtl)
 {
-    const float sin_sun = sinf(mtl.sun_elevation * PI / 180.0f);
+    const float sin_sun = sin(mtl.sun_elevation * PI / 180.0);
 
     int64_t initial_time, final_time;
     system_clock::time_point begin, end;
@@ -81,7 +81,7 @@ string albedo_function(Products products, MTL mtl)
                     products.reflectance_swir1[i] * mtl.ref_w_coeff[PARAM_BAND_SWIR1_INDEX] +
                     products.reflectance_swir2[i] * mtl.ref_w_coeff[PARAM_BAND_SWIR2_INDEX];
 
-        products.albedo[i] = (alb - 0.03f) / (products.tal[i] * products.tal[i]);
+        products.albedo[i] = (alb - 0.03) / (products.tal[i] * products.tal[i]);
 
         if (products.albedo[i] <= 0)
             products.albedo[i] = NAN;
@@ -125,7 +125,7 @@ string pai_function(Products products)
 
     begin = system_clock::now();
     for (int i = 0; i < products.height_band * products.width_band; i++) {
-        products.pai[i] = 10.1f * (products.reflectance_nir[i] - sqrtf(products.reflectance_red[i])) + 3.1f;
+        products.pai[i] = 10.1 * (products.reflectance_nir[i] - sqrt(products.reflectance_red[i])) + 3.1;
 
         if (products.pai[i] < 0)
             products.pai[i] = 0;
@@ -147,17 +147,17 @@ string lai_function(Products products)
 
     begin = system_clock::now();
     for (int i = 0; i < products.height_band * products.width_band; i++) {
-        float savi = ((1.5f) * (products.reflectance_nir[i] - products.reflectance_red[i])) / (0.5f + (products.reflectance_nir[i] + products.reflectance_red[i]));
+        float savi = ((1.5) * (products.reflectance_nir[i] - products.reflectance_red[i])) / (0.5 + (products.reflectance_nir[i] + products.reflectance_red[i]));
 
-        if (!isnan(savi) && savi > 0.687f)
-            products.lai[i] = 6.0f;
-        if (!isnan(savi) && savi <= 0.687f)
-            products.lai[i] = -logf((0.69f - savi) / 0.59f) / 0.91f;
-        if (!isnan(savi) && savi < 0.1f)
-            products.lai[i] = 0.0f;
+        if (!isnan(savi) && savi > 0.687)
+            products.lai[i] = 6.0;
+        if (!isnan(savi) && savi <= 0.687)
+            products.lai[i] = -log((0.69 - savi) / 0.59) / 0.91;
+        if (!isnan(savi) && savi < 0.1)
+            products.lai[i] = 0.0;
 
-        if (products.lai[i] < 0.0f)
-            products.lai[i] = 0.0f;
+        if (products.lai[i] < 0.0)
+            products.lai[i] = 0.0;
     }
     end = system_clock::now();
 
@@ -177,9 +177,9 @@ string enb_emissivity_function(Products products)
     begin = system_clock::now();
     for (int i = 0; i < products.height_band * products.width_band; i++) {
         if (products.ndvi[i] > 0)
-            products.enb_emissivity[i] = (products.lai[i] < 3.0f) ? 0.97f + 0.0033f * products.lai[i] : 0.98f;
+            products.enb_emissivity[i] = (products.lai[i] < 3.0) ? 0.97 + 0.0033 * products.lai[i] : 0.98;
         else if (products.ndvi[i] < 0)
-            products.enb_emissivity[i] = 0.99f;
+            products.enb_emissivity[i] = 0.99;
         else
             products.enb_emissivity[i] = NAN;
     }
@@ -201,9 +201,9 @@ string eo_emissivity_function(Products products)
     begin = system_clock::now();
     for (int i = 0; i < products.height_band * products.width_band; i++) {
         if (products.ndvi[i] > 0)
-            products.eo_emissivity[i] = (products.lai[i] < 3.0f) ? 0.95f + 0.01f * products.lai[i] : 0.98f;
+            products.eo_emissivity[i] = (products.lai[i] < 3.0) ? 0.95 + 0.01 * products.lai[i] : 0.98;
         else if (products.ndvi[i] < 0)
-            products.eo_emissivity[i] = 0.985f;
+            products.eo_emissivity[i] = 0.985;
         else
             products.eo_emissivity[i] = NAN;
     }
@@ -224,7 +224,7 @@ string ea_emissivity_function(Products products)
 
     begin = system_clock::now();
     for (int i = 0; i < products.height_band * products.width_band; i++)
-        products.ea_emissivity[i] = 0.85f * powf((-1.0f * logf(products.tal[i])), 0.09f);
+        products.ea_emissivity[i] = 0.85 * pow((-1.0 * log(products.tal[i])), 0.09);
     end = system_clock::now();
 
     general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
@@ -264,10 +264,10 @@ string surface_temperature_function(Products products, MTL mtl)
 
     begin = system_clock::now();
     for (int i = 0; i < products.height_band * products.width_band; i++) {
-        products.surface_temperature[i] = k2 / (logf((products.enb_emissivity[i] * k1 / products.radiance_termal[i]) + 1));
+        products.surface_temperature[i] = k2 / (log((products.enb_emissivity[i] * k1 / products.radiance_termal[i]) + 1));
 
-        if (products.surface_temperature[i] < 0.0f)
-            products.surface_temperature[i] = 0.0f;
+        if (products.surface_temperature[i] < 0.0)
+            products.surface_temperature[i] = 0.0;
     }
     end = system_clock::now();
 
@@ -286,7 +286,7 @@ string short_wave_radiation_function(Products products, MTL mtl)
 
     begin = system_clock::now();
     for (int i = 0; i < products.height_band * products.width_band; i++)
-        products.short_wave_radiation[i] = (1367.0f * sinf(mtl.sun_elevation * PI / 180.0f) * products.tal[i]) / (mtl.distance_earth_sun * mtl.distance_earth_sun);
+        products.short_wave_radiation[i] = (1367.0 * sin(mtl.sun_elevation * PI / 180.0) * products.tal[i]) / (mtl.distance_earth_sun * mtl.distance_earth_sun);
     end = system_clock::now();
 
     general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
@@ -306,10 +306,10 @@ string large_waves_radiations_function(Products products, float temperature)
     for (int i = 0; i < products.height_band * products.width_band; i++) {
         float temperature_pixel = products.surface_temperature[i];
         float surface_temperature_pow_4 = temperature_pixel * temperature_pixel * temperature_pixel * temperature_pixel;
-        products.large_wave_radiation_surface[i] = products.eo_emissivity[i] * 5.67f * 1e-8f * surface_temperature_pow_4;
+        products.large_wave_radiation_surface[i] = products.eo_emissivity[i] * 5.67 * 1e-8 * surface_temperature_pow_4;
 
         float station_temperature_kelvin_pow_4 = temperature * temperature * temperature * temperature;
-        products.large_wave_radiation_atmosphere[i] = products.ea_emissivity[i] * 5.67f * 1e-8f * station_temperature_kelvin_pow_4;
+        products.large_wave_radiation_atmosphere[i] = products.ea_emissivity[i] * 5.67 * 1e-8 * station_temperature_kelvin_pow_4;
     }
     end = system_clock::now();
 
@@ -328,10 +328,10 @@ string net_radiation_function(Products products)
 
     begin = system_clock::now();
     for (int i = 0; i < products.height_band * products.width_band; i++) {
-        products.net_radiation[i] = (1.0f - products.albedo[i]) * products.short_wave_radiation[i] + products.large_wave_radiation_atmosphere[i] - products.large_wave_radiation_surface[i] - (1.0f - products.eo_emissivity[i]) * products.large_wave_radiation_atmosphere[i];
+        products.net_radiation[i] = (1.0 - products.albedo[i]) * products.short_wave_radiation[i] + products.large_wave_radiation_atmosphere[i] - products.large_wave_radiation_surface[i] - (1.0 - products.eo_emissivity[i]) * products.large_wave_radiation_atmosphere[i];
 
-        if (products.net_radiation[i] < 0.0f)
-            products.net_radiation[i] = 0.0f;
+        if (products.net_radiation[i] < 0.0)
+            products.net_radiation[i] = 0.0;
     }
     end = system_clock::now();
 
@@ -351,14 +351,14 @@ string soil_heat_flux_function(Products products)
     begin = system_clock::now();
     for (int i = 0; i < products.height_band * products.width_band; i++) {
         if (products.ndvi[i] >= 0) {
-            float ndvi_pixel_pow_4 = powf(products.ndvi[i], 4.0f);
-            float temperature_celcius = products.surface_temperature[i] - 273.15f;
-            products.soil_heat[i] = temperature_celcius * (0.0038f + 0.0074f * products.albedo[i]) * (1.0f - 0.98f * ndvi_pixel_pow_4) * products.net_radiation[i];
+            float ndvi_pixel_pow_4 = pow(products.ndvi[i], 4.0);
+            float temperature_celcius = products.surface_temperature[i] - 273.15;
+            products.soil_heat[i] = temperature_celcius * (0.0038 + 0.0074 * products.albedo[i]) * (1.0 - 0.98 * ndvi_pixel_pow_4) * products.net_radiation[i];
         } else
-            products.soil_heat[i] = 0.5f * products.net_radiation[i];
+            products.soil_heat[i] = 0.5 * products.net_radiation[i];
 
-        if (products.soil_heat[i] < 0.0f)
-            products.soil_heat[i] = 0.0f;
+        if (products.soil_heat[i] < 0.0)
+            products.soil_heat[i] = 0.0;
     }
     end = system_clock::now();
 
