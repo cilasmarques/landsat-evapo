@@ -118,6 +118,7 @@ struct Products {
     float *evapotranspiration;
 
     // Device pointers
+    float **bands_d_gpu;
     float *band_blue_d;
     float *band_green_d;
     float *band_red_d;
@@ -135,6 +136,7 @@ struct Products {
     float *radiance_termal_d;
     float *radiance_swir2_d;
 
+    float **reflectances_d_gpu;
     float *reflectance_blue_d;
     float *reflectance_green_d;
     float *reflectance_red_d;
@@ -174,7 +176,7 @@ struct Products {
     float *latent_heat_flux_24h_d;
     float *evapotranspiration_24h_d;
     float *evapotranspiration_d;
-    
+        
     /**
      * @brief  Constructor.
      */

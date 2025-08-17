@@ -57,56 +57,47 @@ __global__ void rad_kernel(float *band_d, float *radiance_d, float *rad_add_d, f
 /**
  * @brief  Compute the reflectance of the bands.
  *
- * @param band_d  The band.
- * @param reflectance_d  The reflectance.
+ * @param bands_d  The bands.
+ * @param reflectances_d  The reflectances.
  * @param ref_add_d  The reflectance add value.
  * @param ref_mult_d  The reflectance mult value.
  * @param sin_sun  The sin of the sun.
- * @param band_idx  The band index.
  */
-__global__ void ref_kernel(float *band_d, float *reflectance_d, float *ref_add_d, float *ref_mult_d, float sin_sun, int band_idx);
+ __global__ void ref_kernel(float **bands_d, float **reflectances_d, float *ref_add_d, float *ref_mult_d, float sin_sun);
 
 /**
  * @brief  Compute the albedo of the bands.
  *
- * @param reflectance_blue_d  The blue reflectance.
- * @param reflectance_green_d  The green reflectance.
- * @param reflectance_red_d  The red reflectance.
- * @param reflectance_nir_d  The NIR reflectance.
- * @param reflectance_swir1_d  The SWIR1 reflectance.
- * @param reflectance_swir2_d  The SWIR2 reflectance.
+ * @param reflectances_d  The reflectances array.
  * @param tal_d  The total absorbed radiation.
  * @param albedo_d  The albedo.
  * @param ref_w_coeff_d  The reflectance water coefficient.
  */
-__global__ void albedo_kernel(float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_swir2_d, float *tal_d, float *albedo_d, float *ref_w_coeff_d);
+__global__ void albedo_kernel(float **reflectances_d, float *tal_d, float *albedo_d, float *ref_w_coeff_d);
 
 /**
  * @brief  Compute the NDVI of the bands.
  *
- * @param reflectance_nir_d  The NIR band.
- * @param reflectance_red_d  The red band.
+ * @param reflectances_d  The reflectances array.
  * @param ndvi_d  The NDVI.
  */
-__global__ void ndvi_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *ndvi_d);
+__global__ void ndvi_kernel(float **reflectances_d, float *ndvi_d);
 
 /**
- * @brief  Compute the TAL of the bands.
+ * @brief  Compute the PAI of the bands.
  *
- * @param reflectance_nir_d  The NIR reflectance.
- * @param reflectance_red_d  The red reflectance.
+ * @param reflectances_d  The reflectances array.
  * @param pai_d The PAI.
  */
-__global__ void pai_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *pai_d);
+__global__ void pai_kernel(float **reflectances_d, float *pai_d);
 
 /**
  * @brief  Compute the LAI of the bands.
  *
- * @param reflectance_nir_d  The NIR reflectance.
- * @param reflectance_red_d  The red reflectance.
+ * @param reflectances_d  The reflectances array.
  * @param lai_d  The LAI.
  */
-__global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *lai_d);
+__global__ void lai_kernel(float **reflectances_d, float *lai_d);
 
 /**
  * @brief  Compute the ENV of the bands.

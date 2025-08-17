@@ -43,13 +43,7 @@ string reflectance_function(Products products, MTL mtl)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    ref_kernel<<<blocks_n, threads_n>>>(products.band_blue_d, products.reflectance_blue_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_BLUE_INDEX);
-    ref_kernel<<<blocks_n, threads_n>>>(products.band_green_d, products.reflectance_green_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_GREEN_INDEX);
-    ref_kernel<<<blocks_n, threads_n>>>(products.band_red_d, products.reflectance_red_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_RED_INDEX);
-    ref_kernel<<<blocks_n, threads_n>>>(products.band_nir_d, products.reflectance_nir_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_NIR_INDEX);
-    ref_kernel<<<blocks_n, threads_n>>>(products.band_swir1_d, products.reflectance_swir1_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_SWIR1_INDEX);
-    ref_kernel<<<blocks_n, threads_n>>>(products.band_termal_d, products.reflectance_termal_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_TERMAL_INDEX);
-    ref_kernel<<<blocks_n, threads_n>>>(products.band_swir2_d, products.reflectance_swir2_d, mtl.ref_add_d, mtl.ref_mult_d, sin_sun, PARAM_BAND_SWIR2_INDEX);
+    ref_kernel<<<blocks_n, threads_n>>>(products.bands_d_gpu, products.reflectances_d_gpu, mtl.ref_add_d, mtl.ref_mult_d, sin_sun);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -70,7 +64,7 @@ string albedo_function(Products products, MTL mtl)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    albedo_kernel<<<blocks_n, threads_n>>>(products.reflectance_blue_d, products.reflectance_green_d, products.reflectance_red_d, products.reflectance_nir_d, products.reflectance_swir1_d, products.reflectance_swir2_d, products.tal_d, products.albedo_d, mtl.ref_w_coeff_d);
+    albedo_kernel<<<blocks_n, threads_n>>>(products.reflectances_d_gpu, products.tal_d, products.albedo_d, mtl.ref_w_coeff_d);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -91,7 +85,7 @@ string ndvi_function(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    ndvi_kernel<<<blocks_n, threads_n>>>(products.reflectance_nir_d, products.reflectance_red_d, products.ndvi_d);
+    ndvi_kernel<<<blocks_n, threads_n>>>(products.reflectances_d_gpu, products.ndvi_d);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -112,7 +106,7 @@ string pai_function(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    pai_kernel<<<blocks_n, threads_n>>>(products.reflectance_nir_d, products.reflectance_red_d, products.pai_d);
+    pai_kernel<<<blocks_n, threads_n>>>(products.reflectances_d_gpu, products.pai_d);
     cudaEventRecord(stop);
 
     float cuda_time = 0;
@@ -133,7 +127,7 @@ string lai_function(Products products)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    lai_kernel<<<blocks_n, threads_n>>>(products.reflectance_nir_d, products.reflectance_red_d, products.lai_d);
+    lai_kernel<<<blocks_n, threads_n>>>(products.reflectances_d_gpu, products.lai_d);
     cudaEventRecord(stop);
 
     float cuda_time = 0;

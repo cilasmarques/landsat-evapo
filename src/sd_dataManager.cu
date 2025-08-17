@@ -67,6 +67,7 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMalloc((void **)&this->hotCandidates_d, MAXC));
     HANDLE_ERROR(cudaMalloc((void **)&this->coldCandidates_d, MAXC));
 
+    HANDLE_ERROR(cudaMalloc((void **)&this->bands_d_gpu, 7 * sizeof(float*)));
     HANDLE_ERROR(cudaMalloc((void **)&this->band_blue_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->band_green_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->band_red_d, band_bytes));
@@ -83,7 +84,8 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMalloc((void **)&this->radiance_swir1_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->radiance_termal_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->radiance_swir2_d, band_bytes));
-
+    
+    HANDLE_ERROR(cudaMalloc((void **)&this->reflectances_d_gpu, 7 * sizeof(float*)));
     HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_blue_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_green_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->reflectance_red_d, band_bytes));
@@ -117,6 +119,12 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMalloc((void **)&this->latent_heat_flux_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->net_radiation_24h_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_24h_d, band_bytes));
+
+    float *bands_d[] = {this->band_blue_d, this->band_green_d, this->band_red_d, this->band_nir_d, this->band_swir1_d, this->band_termal_d, this->band_swir2_d};
+    HANDLE_ERROR(cudaMemcpy(this->bands_d_gpu, bands_d, 7 * sizeof(float*), cudaMemcpyHostToDevice));
+
+    float *reflectances_d[] = {this->reflectance_blue_d, this->reflectance_green_d, this->reflectance_red_d, this->reflectance_nir_d, this->reflectance_swir1_d, this->reflectance_termal_d, this->reflectance_swir2_d};
+    HANDLE_ERROR(cudaMemcpy(this->reflectances_d_gpu, reflectances_d, 7 * sizeof(float*), cudaMemcpyHostToDevice));
 };
 
 string Products::read_data(TIFF **landsat_bands)
@@ -468,4 +476,8 @@ void Products::close(TIFF **landsat_bands)
     HANDLE_ERROR(cudaFree(this->latent_heat_flux_d));
     HANDLE_ERROR(cudaFree(this->net_radiation_24h_d));
     HANDLE_ERROR(cudaFree(this->evapotranspiration_24h_d));
+    
+    // Liberar arrays de ponteiros da GPU
+    HANDLE_ERROR(cudaFree(this->bands_d_gpu));
+    HANDLE_ERROR(cudaFree(this->reflectances_d_gpu));
 };

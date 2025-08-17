@@ -15,29 +15,31 @@ __global__ void rad_kernel(float *band_d, float *radiance_d, float *rad_add_d, f
     }
 }
 
-__global__ void ref_kernel(float *band_d, float *reflectance_d, float *ref_add_d, float *ref_mult_d, float sin_sun, int band_idx)
+__global__ void ref_kernel(float **bands_d, float **reflectances_d, float *ref_add_d, float *ref_mult_d, float sin_sun)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        reflectance_d[pos] = (band_d[pos] * ref_mult_d[band_idx] + ref_add_d[band_idx]) / sin_sun;
+        for (int b = 0; b < 7; b++) { 
+            reflectances_d[b][pos] = (bands_d[b][pos] * ref_mult_d[b] + ref_add_d[b]) / sin_sun;
 
-        if (reflectance_d[pos] <= 0)
-            reflectance_d[pos] = NAN;
+            if (reflectances_d[b][pos] <= 0)
+                reflectances_d[b][pos] = NAN;
+        }
     }
 }
 
-__global__ void albedo_kernel(float *reflectance_blue_d, float *reflectance_green_d, float *reflectance_red_d, float *reflectance_nir_d, float *reflectance_swir1_d, float *reflectance_swir2_d, float *tal_d, float *albedo_d, float *ref_w_coeff_d)
+__global__ void albedo_kernel(float **reflectances_d, float *tal_d, float *albedo_d, float *ref_w_coeff_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        float alb_toa = reflectance_blue_d[pos] * ref_w_coeff_d[PARAM_BAND_BLUE_INDEX] +
-                        reflectance_green_d[pos] * ref_w_coeff_d[PARAM_BAND_GREEN_INDEX] +
-                        reflectance_red_d[pos] * ref_w_coeff_d[PARAM_BAND_RED_INDEX] +
-                        reflectance_nir_d[pos] * ref_w_coeff_d[PARAM_BAND_NIR_INDEX] +
-                        reflectance_swir1_d[pos] * ref_w_coeff_d[PARAM_BAND_SWIR1_INDEX] +
-                        reflectance_swir2_d[pos] * ref_w_coeff_d[PARAM_BAND_SWIR2_INDEX];
+        float alb_toa = reflectances_d[PARAM_BAND_BLUE_INDEX][pos] * ref_w_coeff_d[PARAM_BAND_BLUE_INDEX] +
+                        reflectances_d[PARAM_BAND_GREEN_INDEX][pos] * ref_w_coeff_d[PARAM_BAND_GREEN_INDEX] +
+                        reflectances_d[PARAM_BAND_RED_INDEX][pos] * ref_w_coeff_d[PARAM_BAND_RED_INDEX] +
+                        reflectances_d[PARAM_BAND_NIR_INDEX][pos] * ref_w_coeff_d[PARAM_BAND_NIR_INDEX] +
+                        reflectances_d[PARAM_BAND_SWIR1_INDEX][pos] * ref_w_coeff_d[PARAM_BAND_SWIR1_INDEX] +
+                        reflectances_d[PARAM_BAND_SWIR2_INDEX][pos] * ref_w_coeff_d[PARAM_BAND_SWIR2_INDEX];
 
         albedo_d[pos] = (alb_toa - 0.03) / (tal_d[pos] * tal_d[pos]);
 
@@ -46,36 +48,36 @@ __global__ void albedo_kernel(float *reflectance_blue_d, float *reflectance_gree
     }
 }
 
-__global__ void ndvi_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *ndvi_d)
+__global__ void ndvi_kernel(float **reflectances_d, float *ndvi_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        ndvi_d[pos] = (reflectance_nir_d[pos] - reflectance_red_d[pos]) / (reflectance_nir_d[pos] + reflectance_red_d[pos]);
+        ndvi_d[pos] = (reflectances_d[PARAM_BAND_NIR_INDEX][pos] - reflectances_d[PARAM_BAND_RED_INDEX][pos]) / (reflectances_d[PARAM_BAND_NIR_INDEX][pos] + reflectances_d[PARAM_BAND_RED_INDEX][pos]);
 
         if (ndvi_d[pos] <= -1 || ndvi_d[pos] >= 1)
             ndvi_d[pos] = NAN;
     }
 }
 
-__global__ void pai_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *pai_d)
+__global__ void pai_kernel(float **reflectances_d, float *pai_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        pai_d[pos] = 10.1 * (reflectance_nir_d[pos] - sqrt(reflectance_red_d[pos])) + 3.1;
+        pai_d[pos] = 10.1 * (reflectances_d[PARAM_BAND_NIR_INDEX][pos] - sqrt(reflectances_d[PARAM_BAND_RED_INDEX][pos])) + 3.1;
 
         if (pai_d[pos] < 0)
             pai_d[pos] = 0;
     }
 }
 
-__global__ void lai_kernel(float *reflectance_nir_d, float *reflectance_red_d, float *lai_d)
+__global__ void lai_kernel(float **reflectances_d, float *lai_d)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (pos < width_d * height_d) {
-        float savi = ((1.5) * (reflectance_nir_d[pos] - reflectance_red_d[pos])) / (0.5 + (reflectance_nir_d[pos] + reflectance_red_d[pos]));
+        float savi = ((1.5) * (reflectances_d[PARAM_BAND_NIR_INDEX][pos] - reflectances_d[PARAM_BAND_RED_INDEX][pos])) / (0.5 + (reflectances_d[PARAM_BAND_NIR_INDEX][pos] + reflectances_d[PARAM_BAND_RED_INDEX][pos]));
 
         if (!isnan(savi) && savi > 0.687)
             lai_d[pos] = 6;
