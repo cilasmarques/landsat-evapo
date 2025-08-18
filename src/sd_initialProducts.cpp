@@ -54,7 +54,7 @@ void reflectance_function_worker(Products products, MTL mtl, const float sin_sun
 
 string reflectance_function(Products products, MTL mtl)
 {
-    const float sin_sun = sinf(mtl.sun_elevation * PI / 180.0f);
+    const float sin_sun = sin(mtl.sun_elevation * PI / 180.0);
     int64_t initial_time, final_time;
     system_clock::time_point begin, end;
     float general_time;
@@ -84,7 +84,7 @@ void albedo_function_worker(Products products, MTL mtl, int start_row, int end_r
                         products.reflectance_swir1[i] * mtl.ref_w_coeff[PARAM_BAND_SWIR1_INDEX] +
                         products.reflectance_swir2[i] * mtl.ref_w_coeff[PARAM_BAND_SWIR2_INDEX];
 
-            products.albedo[i] = (alb - 0.03f) / (products.tal[i] * products.tal[i]);
+            products.albedo[i] = (alb - 0.03) / (products.tal[i] * products.tal[i]);
 
             if (products.albedo[i] <= 0)
                 products.albedo[i] = NAN;
@@ -148,7 +148,7 @@ void pai_function_worker(Products products, int start_row, int end_row) {
     for (int r = start_row; r < end_row; ++r) {
         for (int c = 0; c < products.width_band; ++c) {
             int i = r * products.width_band + c;
-            products.pai[i] = 10.1f * (products.reflectance_nir[i] - sqrtf(products.reflectance_red[i])) + 3.1f;
+            products.pai[i] = 10.1 * (products.reflectance_nir[i] - sqrt(products.reflectance_red[i])) + 3.1;
 
             if (products.pai[i] < 0)
                 products.pai[i] = 0;
@@ -180,17 +180,17 @@ void lai_function_worker(Products products, int start_row, int end_row) {
     for (int r = start_row; r < end_row; ++r) {
         for (int c = 0; c < products.width_band; ++c) {
             int i = r * products.width_band + c;
-            float savi = ((1.5f) * (products.reflectance_nir[i] - products.reflectance_red[i])) / (0.5f + (products.reflectance_nir[i] + products.reflectance_red[i]));
+            float savi = ((1.5) * (products.reflectance_nir[i] - products.reflectance_red[i])) / (0.5 + (products.reflectance_nir[i] + products.reflectance_red[i]));
 
-            if (!isnan(savi) && savi > 0.687f)
-                products.lai[i] = 6.0f;
-            if (!isnan(savi) && savi <= 0.687f)
-                products.lai[i] = -logf((0.69f - savi) / 0.59f) / 0.91f;
-            if (!isnan(savi) && savi < 0.1f)
-                products.lai[i] = 0.0f;
+            if (!isnan(savi) && savi > 0.687)
+                products.lai[i] = 6.0;
+            if (!isnan(savi) && savi <= 0.687)
+                products.lai[i] = -log((0.69 - savi) / 0.59) / 0.91;
+            if (!isnan(savi) && savi < 0.1)
+                products.lai[i] = 0.0;
 
-            if (products.lai[i] < 0.0f)
-                products.lai[i] = 0.0f;
+            if (products.lai[i] < 0.0)
+                products.lai[i] = 0.0;
         }
     }
 }
@@ -220,9 +220,9 @@ void enb_emissivity_function_worker(Products products, int start_row, int end_ro
         for (int c = 0; c < products.width_band; ++c) {
             int i = r * products.width_band + c;
             if (products.ndvi[i] > 0)
-                products.enb_emissivity[i] = (products.lai[i] < 3.0f) ? 0.97f + 0.0033f * products.lai[i] : 0.98f;
+                products.enb_emissivity[i] = (products.lai[i] < 3.0) ? 0.97 + 0.0033 * products.lai[i] : 0.98;
             else if (products.ndvi[i] < 0)
-                products.enb_emissivity[i] = 0.99f;
+                products.enb_emissivity[i] = 0.99;
             else
                 products.enb_emissivity[i] = NAN;
         }
@@ -254,9 +254,9 @@ void eo_emissivity_function_worker(Products products, int start_row, int end_row
         for (int c = 0; c < products.width_band; ++c) {
             int i = r * products.width_band + c;
             if (products.ndvi[i] > 0)
-                products.eo_emissivity[i] = (products.lai[i] < 3.0f) ? 0.95f + 0.01f * products.lai[i] : 0.98f;
+                products.eo_emissivity[i] = (products.lai[i] < 3.0) ? 0.95 + 0.01 * products.lai[i] : 0.98;
             else if (products.ndvi[i] < 0)
-                products.eo_emissivity[i] = 0.985f;
+                products.eo_emissivity[i] = 0.985;
             else
                 products.eo_emissivity[i] = NAN;
         }
@@ -287,7 +287,7 @@ void ea_emissivity_function_worker(Products products, int start_row, int end_row
     for (int r = start_row; r < end_row; ++r) {
         for (int c = 0; c < products.width_band; ++c) {
             int i = r * products.width_band + c;
-            products.ea_emissivity[i] = 0.85f * powf((-1.0f * logf(products.tal[i])), 0.09f);
+            products.ea_emissivity[i] = 0.85 * pow((-1.0 * log(products.tal[i])), 0.09);
         }
     }
 }
@@ -316,10 +316,10 @@ void surface_temperature_function_worker(Products products, MTL mtl, float k1, f
     for (int r = start_row; r < end_row; ++r) {
         for (int c = 0; c < products.width_band; ++c) {
             int i = r * products.width_band + c;
-            products.surface_temperature[i] = k2 / (logf((products.enb_emissivity[i] * k1 / products.radiance_termal[i]) + 1));
+            products.surface_temperature[i] = k2 / (log((products.enb_emissivity[i] * k1 / products.radiance_termal[i]) + 1));
 
-            if (products.surface_temperature[i] < 0.0f)
-                products.surface_temperature[i] = 0.0f;
+            if (products.surface_temperature[i] < 0.0)
+                products.surface_temperature[i] = 0.0;
         }
     }
 }
@@ -370,7 +370,7 @@ void short_wave_radiation_function_worker(Products products, MTL mtl, int start_
     for (int r = start_row; r < end_row; ++r) {
         for (int c = 0; c < products.width_band; ++c) {
             int i = r * products.width_band + c;
-            products.short_wave_radiation[i] = (1367.0f * sinf(mtl.sun_elevation * PI / 180.0f) * products.tal[i]) / (mtl.distance_earth_sun * mtl.distance_earth_sun);
+            products.short_wave_radiation[i] = (1367.0 * sin(mtl.sun_elevation * PI / 180.0) * products.tal[i]) / (mtl.distance_earth_sun * mtl.distance_earth_sun);
         }
     }
 }
@@ -401,10 +401,10 @@ void large_waves_radiations_function_worker(Products products, float temperature
             int i = r * products.width_band + c;
             float temperature_pixel = products.surface_temperature[i];
             float surface_temperature_pow_4 = temperature_pixel * temperature_pixel * temperature_pixel * temperature_pixel;
-            products.large_wave_radiation_surface[i] = products.eo_emissivity[i] * 5.67f * 1e-8f * surface_temperature_pow_4;
+            products.large_wave_radiation_surface[i] = products.eo_emissivity[i] * 5.67 * 1e-8 * surface_temperature_pow_4;
 
             float station_temperature_kelvin_pow_4 = temperature * temperature * temperature * temperature;
-            products.large_wave_radiation_atmosphere[i] = products.ea_emissivity[i] * 5.67f * 1e-8f * station_temperature_kelvin_pow_4;
+            products.large_wave_radiation_atmosphere[i] = products.ea_emissivity[i] * 5.67 * 1e-8 * station_temperature_kelvin_pow_4;
         }
     }
 }
@@ -433,10 +433,10 @@ void net_radiation_function_worker(Products products, int start_row, int end_row
     for (int r = start_row; r < end_row; ++r) {
         for (int c = 0; c < products.width_band; ++c) {
             int i = r * products.width_band + c;
-            products.net_radiation[i] = (1.0f - products.albedo[i]) * products.short_wave_radiation[i] + products.large_wave_radiation_atmosphere[i] - products.large_wave_radiation_surface[i] - (1.0f - products.eo_emissivity[i]) * products.large_wave_radiation_atmosphere[i];
+            products.net_radiation[i] = (1.0 - products.albedo[i]) * products.short_wave_radiation[i] + products.large_wave_radiation_atmosphere[i] - products.large_wave_radiation_surface[i] - (1.0 - products.eo_emissivity[i]) * products.large_wave_radiation_atmosphere[i];
 
-            if (products.net_radiation[i] < 0.0f)
-                products.net_radiation[i] = 0.0f;
+            if (products.net_radiation[i] < 0.0)
+                products.net_radiation[i] = 0.0;
         }
     }
 }
@@ -466,14 +466,14 @@ void soil_heat_flux_function_worker(Products products, int start_row, int end_ro
         for (int c = 0; c < products.width_band; ++c) {
             int i = r * products.width_band + c;
             if (products.ndvi[i] >= 0) {
-                float ndvi_pixel_pow_4 = powf(products.ndvi[i], 4.0f);
-                float temperature_celcius = products.surface_temperature[i] - 273.15f;
-                products.soil_heat[i] = temperature_celcius * (0.0038f + 0.0074f * products.albedo[i]) * (1.0f - 0.98f * ndvi_pixel_pow_4) * products.net_radiation[i];
+                float ndvi_pixel_pow_4 = pow(products.ndvi[i], 4.0);
+                float temperature_celcius = products.surface_temperature[i] - 273.15;
+                products.soil_heat[i] = temperature_celcius * (0.0038 + 0.0074 * products.albedo[i]) * (1.0 - 0.98 * ndvi_pixel_pow_4) * products.net_radiation[i];
             } else
-                products.soil_heat[i] = 0.5f * products.net_radiation[i];
+                products.soil_heat[i] = 0.5 * products.net_radiation[i];
 
-            if (products.soil_heat[i] < 0.0f)
-                products.soil_heat[i] = 0.0f;
+            if (products.soil_heat[i] < 0.0)
+                products.soil_heat[i] = 0.0;
         }
     }
 }
