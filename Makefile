@@ -15,6 +15,7 @@ IMAGE_DATE="2020-10-10"
 
 ## ==== Execution
 METHOD=0
+THREADS=12
 OUTPUT_DATA_PATH=./output
 INPUT_DATA_PATH=$(IMAGES_DIR)/$(IMAGE_LANDSAT)_$(IMAGE_PATHROW)_$(IMAGE_DATE)/final_results
 
@@ -58,7 +59,7 @@ exec-landsat8:
 		$(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF $(INPUT_DATA_PATH)/B.TIF \
 		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
 		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
-		-meth=$(METHOD) & 
+		-meth=$(METHOD) -threads=$(THREADS) & 
 
 exec-landsat5-7:
 	./bin/run-exp.sh \
@@ -66,7 +67,7 @@ exec-landsat5-7:
 		$(INPUT_DATA_PATH)/B4.TIF $(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF \
 		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
 		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
-		-meth=$(METHOD) &
+		-meth=$(METHOD) -threads=$(THREADS) &
 
 analisys-landsat8:
 	./bin/run-ana.sh \
@@ -74,7 +75,7 @@ analisys-landsat8:
 		$(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF $(INPUT_DATA_PATH)/B.TIF \
 		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
 		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
-		-meth=$(METHOD) &
+		-meth=$(METHOD) -threads=$(THREADS) &
 
 analisys-landsat5-7:
 	./bin/run-ana.sh \
@@ -82,7 +83,7 @@ analisys-landsat5-7:
 		$(INPUT_DATA_PATH)/B4.TIF $(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF \
 		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
 		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
-		-meth=$(METHOD) &
+		-meth=$(METHOD) -threads=$(THREADS) &
 
 docker-build:
 	docker build -t $(DOCKER_IMAGE_NAME) .
@@ -105,7 +106,7 @@ docker-run-landsat8:
 		$(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF $(INPUT_DATA_PATH)/B.TIF \
 		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
 		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
-		-meth=$(METHOD)
+		-meth=$(METHOD) -threads=$(THREADS)
 
 docker-run-landsat5-7:
 	docker run --rm -it \
@@ -118,7 +119,7 @@ docker-run-landsat5-7:
 		$(INPUT_DATA_PATH)/B4.TIF $(INPUT_DATA_PATH)/B5.TIF $(INPUT_DATA_PATH)/B6.TIF \
 		$(INPUT_DATA_PATH)/B7.TIF $(INPUT_DATA_PATH)/elevation.tif $(INPUT_DATA_PATH)/MTL.txt \
 		$(INPUT_DATA_PATH)/station.csv $(OUTPUT_DATA_PATH) \
-		-meth=$(METHOD)
+		-meth=$(METHOD) -threads=$(THREADS)
 
 docker-clean:
 	docker rmi $(DOCKER_IMAGE_NAME) 2>/dev/null || true
