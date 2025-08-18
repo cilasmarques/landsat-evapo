@@ -5,7 +5,7 @@
 #include <functional>
 
 // Define the number of threads to use
-const int NUM_THREADS = 4;
+const int NUM_THREADS = 12;
 
 /**
  * @brief Executes a given function in parallel across multiple threads.
