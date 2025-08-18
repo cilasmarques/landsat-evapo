@@ -44,10 +44,10 @@ extern int model_method;
 const float EPS = 1e-7;
 
 // Not a number
-const float NaN = -sqrtf(-1.0f);
+const float NaN = 0.0f/0.0f;
 
-// Pi
-const float PI = acosf(-1.0f);
+// Pi 
+const float PI = 3.14159265358979323846f;
 
 // Karman's constant
 const float VON_KARMAN = 0.41f;
