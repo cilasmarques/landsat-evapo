@@ -1,8 +1,10 @@
 #include "constants.h"
 #include "sensors.h"
 #include "surfaceData.h"
+#include "thread_utils.h"
 
 int model_method;
+int NUM_THREADS = 12; // Default value
 
 /**
  * @brief Main function
@@ -20,8 +22,9 @@ int model_method;
  *              - INPUT_BAND_ELEVATION_INDEX    = 8;
  *              - INPUT_MTL_DATA_INDEX          = 9;
  *              - INPUT_STATION_DATA_INDEX      = 10;
- *              - INPUT_LAND_COVER_INDEX        = 11;
- *              - OUTPUT_FOLDER                 = 12;
+ *              - OUTPUT_FOLDER                 = 11;
+ *              - METHOD_INDEX                  = 12;
+ *              - NUM_THREADS_INDEX             = 13;
  * @return int
  */
 int main(int argc, char *argv[])
@@ -41,6 +44,14 @@ int main(int argc, char *argv[])
         string flag = argv[METHOD_INDEX];
         if (flag.substr(0, 6) == "-meth=")
             model_method = flag[6] - '0';
+    }
+    // Parse command line arguments for threads
+    for (int i = 1; i < argc; i++) {
+        string arg = argv[i];
+        if (arg.substr(0, 9) == "-threads=") {
+            NUM_THREADS = stoi(arg.substr(9));
+            break;
+        }
     }
 
     // Save output paths

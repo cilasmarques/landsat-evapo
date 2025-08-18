@@ -4,8 +4,8 @@
 #include <thread>
 #include <functional>
 
-// Define the number of threads to use
-const int NUM_THREADS = 12;
+// Global variable for number of threads (will be set via command line)
+extern int NUM_THREADS;
 
 /**
  * @brief Executes a given function in parallel across multiple threads.
