@@ -321,6 +321,7 @@ string soil_heat_flux_function(Products products)
     cudaEventCreate(&stop);
 
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    HANDLE_ERROR(cudaDeviceSynchronize());
 
     cudaEventRecord(start);
     soil_heat_kernel<<<blocks_n, threads_n>>>(products.ndvi_d, products.albedo_d, products.surface_temperature_d, products.net_radiation_d, products.soil_heat_d);
