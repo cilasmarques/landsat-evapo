@@ -8,14 +8,14 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     this->height_band = height_band;
     this->band_bytes = height_band * width_band * sizeof(float);
 
-    this->band_blue = (float *)malloc(band_bytes);
-    this->band_green = (float *)malloc(band_bytes);
-    this->band_red = (float *)malloc(band_bytes);
-    this->band_nir = (float *)malloc(band_bytes);
-    this->band_swir1 = (float *)malloc(band_bytes);
-    this->band_termal = (float *)malloc(band_bytes);
-    this->band_swir2 = (float *)malloc(band_bytes);
-    this->tal = (float *)malloc(band_bytes);
+    HANDLE_ERROR(cudaHostAlloc((void **)&this->band_blue_d, band_bytes, cudaHostAllocDefault));
+    HANDLE_ERROR(cudaHostAlloc((void **)&this->band_green_d, band_bytes, cudaHostAllocDefault));
+    HANDLE_ERROR(cudaHostAlloc((void **)&this->band_red_d, band_bytes, cudaHostAllocDefault));
+    HANDLE_ERROR(cudaHostAlloc((void **)&this->band_nir_d, band_bytes, cudaHostAllocDefault));
+    HANDLE_ERROR(cudaHostAlloc((void **)&this->band_swir1_d, band_bytes, cudaHostAllocDefault));
+    HANDLE_ERROR(cudaHostAlloc((void **)&this->band_termal_d, band_bytes, cudaHostAllocDefault));
+    HANDLE_ERROR(cudaHostAlloc((void **)&this->band_swir2_d, band_bytes, cudaHostAllocDefault));
+    HANDLE_ERROR(cudaHostAlloc((void **)&this->tal_d, band_bytes, cudaHostAllocDefault));
 
     this->radiance_blue = (float *)malloc(band_bytes);
     this->radiance_green = (float *)malloc(band_bytes);
@@ -76,14 +76,14 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMalloc((void **)&this->hotCandidates_d, MAXC));
     HANDLE_ERROR(cudaMalloc((void **)&this->coldCandidates_d, MAXC));
 
-    HANDLE_ERROR(cudaMalloc((void **)&this->band_blue_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->band_green_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->band_red_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->band_nir_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->band_swir1_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->band_termal_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->band_swir2_d, band_bytes));
-    HANDLE_ERROR(cudaMalloc((void **)&this->tal_d, band_bytes));
+    // HANDLE_ERROR(cudaMalloc((void **)&this->band_blue_d, band_bytes));
+    // HANDLE_ERROR(cudaMalloc((void **)&this->band_green_d, band_bytes));
+    // HANDLE_ERROR(cudaMalloc((void **)&this->band_red_d, band_bytes));
+    // HANDLE_ERROR(cudaMalloc((void **)&this->band_nir_d, band_bytes));
+    // HANDLE_ERROR(cudaMalloc((void **)&this->band_swir1_d, band_bytes));
+    // HANDLE_ERROR(cudaMalloc((void **)&this->band_termal_d, band_bytes));
+    // HANDLE_ERROR(cudaMalloc((void **)&this->band_swir2_d, band_bytes));
+    // HANDLE_ERROR(cudaMalloc((void **)&this->tal_d, band_bytes));
 
     HANDLE_ERROR(cudaMalloc((void **)&this->radiance_blue_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->radiance_green_d, band_bytes));
@@ -135,8 +135,8 @@ string Products::read_data(TIFF **landsat_bands)
     float general_time;
     
     vector<thread> threads;
-    float* host_bands[]   = {band_blue, band_green, band_red, band_nir, band_swir1, band_termal, band_swir2, tal};
-    float* device_bands[] = {band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d, tal_d};
+    float* host_bands[]   = {band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d, tal_d};
+    // float* device_bands[] = {band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d, tal_d};
     cudaStream_t streams[] = {stream_1, stream_2, stream_3, stream_4, stream_5, stream_6, stream_7, stream_8};
 
     begin = system_clock::now();
@@ -186,8 +186,6 @@ string Products::read_data(TIFF **landsat_bands)
                 _TIFFfree(strip_buffer);
                 strip_buffer = nullptr;
             }
-        
-            HANDLE_ERROR(cudaMemcpyAsync(device_bands[i], host_bands[i], band_bytes, cudaMemcpyHostToDevice, streams[i]));
         });
     }
 
@@ -196,6 +194,11 @@ string Products::read_data(TIFF **landsat_bands)
             t.join();
         }
     }
+
+    // Cópia direta das 8 bandas para o device usando memória pinned
+    // for (int i = 0; i < INPUT_BAND_ELEV_INDEX; i++) {
+    //     HANDLE_ERROR(cudaMemcpyAsync(device_bands[i], host_bands[i], band_bytes, cudaMemcpyHostToDevice, streams[i]));
+    // }
     
     end = system_clock::now();
     final_time = duration_cast<nanoseconds>(end.time_since_epoch()).count();
@@ -377,14 +380,14 @@ void Products::close(TIFF **landsat_bands)
         TIFFClose(landsat_bands[i]);
     }
 
-    free(this->band_blue);
-    free(this->band_green);
-    free(this->band_red);
-    free(this->band_nir);
-    free(this->band_swir1);
-    free(this->band_termal);
-    free(this->band_swir2);
-    free(this->tal);
+    HANDLE_ERROR(cudaFreeHost(this->band_blue_d));
+    HANDLE_ERROR(cudaFreeHost(this->band_green_d));
+    HANDLE_ERROR(cudaFreeHost(this->band_red_d));
+    HANDLE_ERROR(cudaFreeHost(this->band_nir_d));
+    HANDLE_ERROR(cudaFreeHost(this->band_swir1_d));
+    HANDLE_ERROR(cudaFreeHost(this->band_termal_d));
+    HANDLE_ERROR(cudaFreeHost(this->band_swir2_d));
+    HANDLE_ERROR(cudaFreeHost(this->tal_d));
 
     free(this->radiance_blue);
     free(this->radiance_green);
@@ -429,14 +432,14 @@ void Products::close(TIFF **landsat_bands)
     free(this->net_radiation_24h);
     free(this->evapotranspiration_24h);
 
-    HANDLE_ERROR(cudaFree(this->band_blue_d));
-    HANDLE_ERROR(cudaFree(this->band_green_d));
-    HANDLE_ERROR(cudaFree(this->band_red_d));
-    HANDLE_ERROR(cudaFree(this->band_nir_d));
-    HANDLE_ERROR(cudaFree(this->band_swir1_d));
-    HANDLE_ERROR(cudaFree(this->band_termal_d));
-    HANDLE_ERROR(cudaFree(this->band_swir2_d));
-    HANDLE_ERROR(cudaFree(this->tal_d));
+    // HANDLE_ERROR(cudaFree(this->band_blue_d));
+    // HANDLE_ERROR(cudaFree(this->band_green_d));
+    // HANDLE_ERROR(cudaFree(this->band_red_d));
+    // HANDLE_ERROR(cudaFree(this->band_nir_d));
+    // HANDLE_ERROR(cudaFree(this->band_swir1_d));
+    // HANDLE_ERROR(cudaFree(this->band_termal_d));
+    // HANDLE_ERROR(cudaFree(this->band_swir2_d));
+    // HANDLE_ERROR(cudaFree(this->tal_d));
 
     HANDLE_ERROR(cudaFree(this->radiance_blue_d));
     HANDLE_ERROR(cudaFree(this->radiance_green_d));
