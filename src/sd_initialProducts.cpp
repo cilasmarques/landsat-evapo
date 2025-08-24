@@ -2,6 +2,25 @@
 #include "sensors.h"
 #include "surfaceData.h"
 
+string tal_function(Products products)
+{
+    int64_t initial_time, final_time;
+    system_clock::time_point begin, end;
+    float general_time;
+    
+    initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+
+    begin = system_clock::now();
+    for (int i = 0; i < products.height_band * products.width_band; i++) {
+        products.tal[i] = 0.75 + 2.0 * pow(10.0, -5.0) * products.band_elev[i];
+    }
+    end = system_clock::now();
+
+    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
+    final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+    return "SERIAL,TAL," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
+}
+
 string radiance_function(Products products, MTL mtl)
 {
     int64_t initial_time, final_time;
@@ -377,6 +396,7 @@ string Products::compute_Rn_G(Products products, Station station, MTL mtl)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     begin = system_clock::now();
+    result += tal_function(products);
     result += radiance_function(products, mtl);
     result += reflectance_function(products, mtl);
     result += albedo_function(products, mtl);
