@@ -3,6 +3,15 @@
 __device__ int width_d;
 __device__ int height_d;
 
+__global__ void tal_kernel(float *band_elev_d, float *tal_d)
+{
+    unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (pos < width_d * height_d) {
+        tal_d[pos] = 0.75 + 2.0 * pow(10.0, -5.0) * band_elev_d[pos];
+    }
+}
+
 __global__ void rad_kernel(float *band_d, float *radiance_d, float *rad_add_d, float *rad_mult_d, int band_idx)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;

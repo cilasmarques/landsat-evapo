@@ -44,6 +44,14 @@ extern Endmember hotCandidate;
 extern Endmember coldCandidate;
 
 /**
+ * @brief  Compute the TAL of the bands.
+ *
+ * @param band_elev_d  The band elevation.
+ * @param tal_d  The TAL.
+ */
+__global__ void tal_kernel(float *band_elev_d, float *tal_d);
+
+/**
  * @brief  Compute the radiance of the bands.
  *
  * @param band_d  The band.

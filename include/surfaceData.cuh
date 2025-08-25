@@ -67,8 +67,9 @@ struct Products {
     float *band_swir1;
     float *band_termal;
     float *band_swir2;
-    float *tal;
+    float *band_elev;
 
+    float *tal;
     float *radiance_blue;
     float *radiance_green;
     float *radiance_red;
@@ -125,8 +126,9 @@ struct Products {
     float *band_swir1_d;
     float *band_termal_d;
     float *band_swir2_d;
-    float *tal_d;
+    float *band_elev_d;
 
+    float *tal_d;
     float *radiance_blue_d;
     float *radiance_green_d;
     float *radiance_red_d;
