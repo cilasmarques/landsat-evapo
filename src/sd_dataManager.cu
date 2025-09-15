@@ -142,23 +142,30 @@ string Products::read_data(TIFF **landsat_bands)
     float *bands[] = {band_blue, band_green, band_red, band_nir, band_swir1, band_termal, band_swir2, band_elev};
     float *bands_d[] = {band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d, band_elev_d};
     cudaStream_t streams[] = {stream_1, stream_2, stream_3, stream_4, stream_5, stream_6, stream_7, stream_8};
-        
+
+    vector<thread> band_threads;
     for (int i = 0; i < INPUT_BAND_ELEV_INDEX; i++) {
-        TIFF *curr_band = landsat_bands[i];
-        tstrip_t strips_per_band = TIFFNumberOfStrips(curr_band);
-        
-        size_t offset = 0;
-        size_t strip_size = 0;
-        tdata_t strip_buffer = nullptr;
-        strip_size = TIFFStripSize(curr_band);
-        strip_buffer = (tdata_t) _TIFFmalloc(strip_size);
-        for (tstrip_t strip = 0; strip < strips_per_band; strip++) {
-            TIFFReadEncodedStrip(curr_band, strip, strip_buffer, strip_size);
-            memcpy((char*)bands[i] + offset, strip_buffer, strip_size);
-            HANDLE_ERROR(cudaMemcpyAsync((char*)bands_d[i] + offset, strip_buffer, strip_size, cudaMemcpyHostToDevice, streams[i]));
-            offset += strip_size;
-        }
-        _TIFFfree(strip_buffer);
+        band_threads.emplace_back([&, i]() {
+            TIFF *curr_band = landsat_bands[i];
+            tstrip_t strips_per_band = TIFFNumberOfStrips(curr_band);
+            
+            size_t offset = 0;
+            size_t strip_size = 0;
+            tdata_t strip_buffer = nullptr;
+            strip_size = TIFFStripSize(curr_band);
+            strip_buffer = (tdata_t) _TIFFmalloc(strip_size);
+            for (tstrip_t strip = 0; strip < strips_per_band; strip++) {
+                TIFFReadEncodedStrip(curr_band, strip, strip_buffer, strip_size);
+                memcpy((char*)bands[i] + offset, strip_buffer, strip_size);
+                HANDLE_ERROR(cudaMemcpyAsync((char*)bands_d[i] + offset, strip_buffer, strip_size, cudaMemcpyHostToDevice, streams[i]));
+                offset += strip_size;
+            }
+            _TIFFfree(strip_buffer);
+        });
+    }
+
+    for (auto &thread : band_threads) {
+        thread.join();
     }
 
     end = system_clock::now();
