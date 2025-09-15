@@ -119,6 +119,15 @@ Products::Products(uint32_t width_band, uint32_t height_band)
     HANDLE_ERROR(cudaMalloc((void **)&this->latent_heat_flux_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->net_radiation_24h_d, band_bytes));
     HANDLE_ERROR(cudaMalloc((void **)&this->evapotranspiration_24h_d, band_bytes));
+
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_1));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_2));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_3));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_4));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_5));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_6));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_7));
+    HANDLE_ERROR(cudaStreamCreate(&this->stream_8));
 };
 
 string Products::read_data(TIFF **landsat_bands)
@@ -130,22 +139,14 @@ string Products::read_data(TIFF **landsat_bands)
     begin = system_clock::now();
     initial_time = duration_cast<nanoseconds>(begin.time_since_epoch()).count();
 
+    float *bands[] = {band_blue, band_green, band_red, band_nir, band_swir1, band_termal, band_swir2, band_elev};
+    float *bands_d[] = {band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d, band_elev_d};
+    cudaStream_t streams[] = {stream_1, stream_2, stream_3, stream_4, stream_5, stream_6, stream_7, stream_8};
+        
     for (int i = 0; i < INPUT_BAND_ELEV_INDEX; i++) {
         TIFF *curr_band = landsat_bands[i];
-        tstrip_t strips_per_band = TIFFNumberOfStrips(curr_band);            
-
-        float* band_ptr = nullptr;
-        switch (i) {
-            case 0: band_ptr = this->band_blue;  break;
-            case 1: band_ptr = this->band_green; break;
-            case 2: band_ptr = this->band_red;   break;
-            case 3: band_ptr = this->band_nir;   break;
-            case 4: band_ptr = this->band_swir1; break;
-            case 5: band_ptr = this->band_termal;break;
-            case 6: band_ptr = this->band_swir2; break;
-            case 7: band_ptr = this->band_elev;  break;
-        }
-
+        tstrip_t strips_per_band = TIFFNumberOfStrips(curr_band);
+        
         size_t offset = 0;
         size_t strip_size = 0;
         tdata_t strip_buffer = nullptr;
@@ -153,21 +154,12 @@ string Products::read_data(TIFF **landsat_bands)
         strip_buffer = (tdata_t) _TIFFmalloc(strip_size);
         for (tstrip_t strip = 0; strip < strips_per_band; strip++) {
             TIFFReadEncodedStrip(curr_band, strip, strip_buffer, strip_size);
-            memcpy((char*)band_ptr + offset, strip_buffer, strip_size);
+            memcpy((char*)bands[i] + offset, strip_buffer, strip_size);
+            HANDLE_ERROR(cudaMemcpyAsync((char*)bands_d[i] + offset, strip_buffer, strip_size, cudaMemcpyHostToDevice, streams[i]));
             offset += strip_size;
         }
         _TIFFfree(strip_buffer);
     }
-
-    // Copia os dados para a GPU
-    HANDLE_ERROR(cudaMemcpy(band_blue_d,  band_blue,  band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(band_green_d, band_green, band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(band_red_d,   band_red,   band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(band_nir_d,   band_nir,   band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(band_swir1_d, band_swir1, band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(band_termal_d,band_termal,band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(band_swir2_d, band_swir2, band_bytes, cudaMemcpyHostToDevice));
-    HANDLE_ERROR(cudaMemcpy(band_elev_d,  band_elev,  band_bytes, cudaMemcpyHostToDevice));
 
     end = system_clock::now();
     final_time = duration_cast<nanoseconds>(end.time_since_epoch()).count();
