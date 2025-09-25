@@ -154,7 +154,6 @@ string Products::read_data(TIFF **landsat_bands)
         strip_buffer = (tdata_t) _TIFFmalloc(strip_size);
         for (tstrip_t strip = 0; strip < strips_per_band; strip++) {
             TIFFReadEncodedStrip(curr_band, strip, strip_buffer, strip_size);
-            memcpy((char*)bands[i] + offset, strip_buffer, strip_size);
             HANDLE_ERROR(cudaMemcpyAsync((char*)bands_d[i] + offset, strip_buffer, strip_size, cudaMemcpyHostToDevice, streams[i]));
             offset += strip_size;
         }
