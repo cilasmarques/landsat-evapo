@@ -2,26 +2,8 @@
 #include "kernels.cuh"
 #include "surfaceData.cuh"
 
-Endmember hotCandidate;
-Endmember coldCandidate;
-
-__host__ __device__ Endmember::Endmember()
-{
-    this->albedo = 0;
-    this->ndvi = 0;
-    this->temperature = 0;
-    this->line = 0;
-    this->col = 0;
-}
-
-__host__ __device__ Endmember::Endmember(float albedo, float ndvi, float temperature, int line, int col)
-{
-    this->albedo = albedo;
-    this->ndvi = ndvi;
-    this->temperature = temperature;
-    this->line = line;
-    this->col = col;
-}
+Endmember hotCandidate = {0, 0, 0.0, 0.0, 0.0};
+Endmember coldCandidate = {0, 0, 0.0, 0.0, 0.0};
 
 void get_quartiles_cuda(float *d_target, float *v_quartile, int height_band, int width_band, float first_interval, float middle_interval, float last_interval, int blocks_n, int threads_n)
 {
@@ -154,11 +136,6 @@ string Products::select_endmembers(Products products)
 
         cudaMemcpy(&hotCandidate, products.hotCandidates_d + hot_pos, sizeof(Endmember), cudaMemcpyDeviceToHost);
         cudaMemcpy(&coldCandidate, products.coldCandidates_d + cold_pos, sizeof(Endmember), cudaMemcpyDeviceToHost);
-
-        cudaMemcpyToSymbol(hotEndmemberLine_d, &hotCandidate.line, sizeof(int), 0, cudaMemcpyHostToDevice);
-        cudaMemcpyToSymbol(hotEndmemberCol_d, &hotCandidate.col, sizeof(int), 0, cudaMemcpyHostToDevice);
-        cudaMemcpyToSymbol(coldEndmemberLine_d, &coldCandidate.line, sizeof(int), 0, cudaMemcpyHostToDevice);
-        cudaMemcpyToSymbol(coldEndmemberCol_d, &coldCandidate.col, sizeof(int), 0, cudaMemcpyHostToDevice);
         cudaEventRecord(stop);
 
         float cuda_time = 0;

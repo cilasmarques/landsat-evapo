@@ -35,11 +35,6 @@ extern __device__ float b_d;
 extern __device__ int width_d;
 extern __device__ int height_d;
 
-extern __device__ int hotEndmemberLine_d;
-extern __device__ int hotEndmemberCol_d;
-extern __device__ int coldEndmemberLine_d;
-extern __device__ int coldEndmemberCol_d;
-
 extern Endmember hotCandidate;
 extern Endmember coldCandidate;
 

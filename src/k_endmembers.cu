@@ -1,10 +1,5 @@
 #include "kernels.cuh"
 
-__device__ int hotEndmemberLine_d;
-__device__ int hotEndmemberCol_d;
-__device__ int coldEndmemberLine_d;
-__device__ int coldEndmemberCol_d;
-
 __global__ void filter_valid_values(const float *target, float *filtered, int *ipos)
 {
     unsigned int pos = threadIdx.x + blockIdx.x * blockDim.x;
@@ -35,14 +30,14 @@ __global__ void process_pixels_STEEP(Endmember *hotCandidates_d, Endmember *cold
             unsigned int row = pos / width_d;
             unsigned int col = pos % width_d;
             int ih = atomicAdd(&indexes_d[0], 1);
-            hotCandidates_d[ih] = Endmember(albedo_d[pos], ndvi_d[pos], surface_temperature_d[pos], row, col);
+            hotCandidates_d[ih] = {static_cast<uint16_t>(row), static_cast<uint16_t>(col), albedo_d[pos], ndvi_d[pos], surface_temperature_d[pos]};
         }
 
         if (coldNDVI && coldAlbedo && coldTS) {
             unsigned int row = pos / width_d;
             unsigned int col = pos % width_d;
             int ic = atomicAdd(&indexes_d[1], 1);
-            coldCandidates_d[ic] = Endmember(albedo_d[pos], ndvi_d[pos], surface_temperature_d[pos], row, col);
+            coldCandidates_d[ic] = {static_cast<uint16_t>(row), static_cast<uint16_t>(col), albedo_d[pos], ndvi_d[pos], surface_temperature_d[pos]};
         }
     }
 }
@@ -64,14 +59,14 @@ __global__ void process_pixels_ASEBAL(Endmember *hotCandidates_d, Endmember *col
             unsigned int row = pos / width_d;
             unsigned int col = pos % width_d;
             int ih = atomicAdd(&indexes_d[0], 1);
-            hotCandidates_d[ih] = Endmember(albedo_d[pos], ndvi_d[pos], surface_temperature_d[pos], row, col);
+            hotCandidates_d[ih] = {static_cast<uint16_t>(row), static_cast<uint16_t>(col), albedo_d[pos], ndvi_d[pos], surface_temperature_d[pos]};
         }
 
         if (coldNDVI && coldAlbedo && coldTS) {
             unsigned int row = pos / width_d;
             unsigned int col = pos % width_d;
             int ic = atomicAdd(&indexes_d[1], 1);
-            coldCandidates_d[ic] = Endmember(albedo_d[pos], ndvi_d[pos], surface_temperature_d[pos], row, col);
+            coldCandidates_d[ic] = {static_cast<uint16_t>(row), static_cast<uint16_t>(col), albedo_d[pos], ndvi_d[pos], surface_temperature_d[pos]};
         }
     }
 }

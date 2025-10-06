@@ -8,6 +8,8 @@ input/*
 analysis/*
 __untrack__/*
 myenv/*
+compiled/*
+compiled-cpp/*
 
 # Prerequisites
 *.d
