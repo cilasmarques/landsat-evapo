@@ -139,7 +139,6 @@ string Products::read_data(TIFF **landsat_bands)
     begin = system_clock::now();
     initial_time = duration_cast<nanoseconds>(begin.time_since_epoch()).count();
 
-    float *bands[] = {band_blue, band_green, band_red, band_nir, band_swir1, band_termal, band_swir2, band_elev};
     float *bands_d[] = {band_blue_d, band_green_d, band_red_d, band_nir_d, band_swir1_d, band_termal_d, band_swir2_d, band_elev_d};
     cudaStream_t streams[] = {stream_1, stream_2, stream_3, stream_4, stream_5, stream_6, stream_7, stream_8};
         
