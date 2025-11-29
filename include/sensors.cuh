@@ -44,10 +44,10 @@ struct Station {
     float latitude, longitude;
 
     const int WIND_SPEED = 3;
-    const float SURFACE_ROUGHNESS = 0.024;
-    const float A_ZOM = -3;
-    const float B_ZOM = 6.47;
-    const float INTERNALIZATION_FACTOR = 0.16;
+    const float SURFACE_ROUGHNESS = 0.024f;
+    const float A_ZOM = -3.0f;
+    const float B_ZOM = 6.47f;
+    const float INTERNALIZATION_FACTOR = 0.16f;
 
     /**
      * @brief  Empty constructor. Set temperature_image to 0.

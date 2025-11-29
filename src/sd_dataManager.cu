@@ -168,7 +168,7 @@ string Products::read_data(TIFF **landsat_bands)
 
     end = system_clock::now();
     final_time = duration_cast<nanoseconds>(end.time_since_epoch()).count();
-    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000.0 / 1000.0;
+    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000.0f / 1000.0f;
 
     return "SERIAL,P0_READ_INPUT," + to_string(general_time) + "," + to_string(initial_time) + "," + to_string(final_time) + "\n";
 }
@@ -220,7 +220,7 @@ string Products::host_data()
     HANDLE_ERROR(cudaMemcpy(evapotranspiration_24h, evapotranspiration_24h_d, band_bytes, cudaMemcpyDeviceToHost));
 
     end = system_clock::now();
-    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
+    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0f;
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     return "SERIAL,P5_COPY_HOST," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
@@ -256,7 +256,7 @@ string Products::save_products(string output_path)
     saveTiff(output_path + "/evapotranspiration_24h.tif", evapotranspiration_24h, height_band, width_band);
 
     end = system_clock::now();
-    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
+    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0f;
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     return "SERIAL,P6_SAVE_PRODS," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";
@@ -334,7 +334,7 @@ string Products::print_products(string output_path)
     printLinearPointer(evapotranspiration_24h, height_band, width_band);
 
     end = system_clock::now();
-    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
+    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0f;
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     return "SERIAL,P7_STDOUT_PRODS," + std::to_string(general_time) + "," + std::to_string(initial_time) + "," + std::to_string(final_time) + "\n";

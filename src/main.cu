@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 
     end = system_clock::now();
     final_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0;
+    general_time = duration_cast<nanoseconds>(end - begin).count() / 1000000.0f;
     time_output << "KERNELS,P_TOTAL," << general_time << "," << initial_time << "," << final_time << std::endl;
 
     time_output.close();

@@ -54,7 +54,7 @@ string radiance_function(Products products, MTL mtl)
 
 string reflectance_function(Products products, MTL mtl)
 {
-    const float sin_sun = sin(mtl.sun_elevation * PI / 180.0);
+    const float sin_sun = sin(mtl.sun_elevation * PI / 180.0f);
 
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;
@@ -233,18 +233,18 @@ string surface_temperature_function(Products products, MTL mtl)
     float k1, k2;
     switch (mtl.number_sensor) {
     case 5:
-        k1 = 607.76;
-        k2 = 1260.56;
+        k1 = 607.76f;
+        k2 = 1260.56f;
         break;
 
     case 7:
-        k1 = 666.09;
-        k2 = 1282.71;
+        k1 = 666.09f;
+        k2 = 1282.71f;
         break;
 
     case 8:
-        k1 = 774.8853;
-        k2 = 1321.0789;
+        k1 = 774.8853f;
+        k2 = 1321.0789f;
         break;
 
     default:
