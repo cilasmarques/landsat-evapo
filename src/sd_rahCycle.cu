@@ -161,8 +161,8 @@ string rah_correction_function_blocks_STEEP(Products products, float ndvi_min, f
         HANDLE_ERROR(cudaMemcpy(&rah_ini_hot, products.rah_d + hot_pos, sizeof(float), cudaMemcpyDeviceToHost));
         HANDLE_ERROR(cudaMemcpy(&rah_ini_cold, products.rah_d + cold_pos, sizeof(float), cudaMemcpyDeviceToHost));
 
-        float fc_hot = 1.0f - pow((ndvi_hot - ndvi_max) / (ndvi_min - ndvi_max), 0.4631f);
-        float fc_cold = 1.0f - pow((ndvi_cold - ndvi_max) / (ndvi_min - ndvi_max), 0.4631f);
+        float fc_hot = 1.0f - powf((ndvi_hot - ndvi_max) / (ndvi_min - ndvi_max), 0.4631f);
+        float fc_cold = 1.0f - powf((ndvi_cold - ndvi_max) / (ndvi_min - ndvi_max), 0.4631f);
 
         float LE_hot = 0.55f * fc_hot * (net_radiation_hot - soil_heat_flux_hot) * 0.78f;
         float LE_cold = 1.75f * fc_cold * (net_radiation_cold - soil_heat_flux_cold) * 0.78f;
@@ -290,9 +290,9 @@ string Products::converge_rah_cycle(Products products, Station station)
     initial_time = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
 
     cudaEventRecord(start);
-    float ustar_station = (VON_KARMAN * station.v6) / (log(station.WIND_SPEED / station.SURFACE_ROUGHNESS));
-    float u10 = (ustar_station / VON_KARMAN) * log(10.0f / station.SURFACE_ROUGHNESS);
-    float u200 = (ustar_station / VON_KARMAN) * log(200.0f / station.SURFACE_ROUGHNESS);
+    float ustar_station = (VON_KARMAN * station.v6) / (logf(station.WIND_SPEED / station.SURFACE_ROUGHNESS));
+    float u10 = (ustar_station / VON_KARMAN) * logf(10.0f / station.SURFACE_ROUGHNESS);
+    float u200 = (ustar_station / VON_KARMAN) * logf(200.0f / station.SURFACE_ROUGHNESS);
 
     thrust::device_ptr<float> ndvi_ptr = thrust::device_pointer_cast(products.ndvi_d);
     

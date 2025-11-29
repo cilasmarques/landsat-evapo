@@ -54,7 +54,7 @@ string radiance_function(Products products, MTL mtl)
 
 string reflectance_function(Products products, MTL mtl)
 {
-    const float sin_sun = sin(mtl.sun_elevation * PI / 180.0f);
+    const float sin_sun = sinf(mtl.sun_elevation * PI / 180.0f);
 
     int64_t initial_time, final_time;
     cudaEvent_t start, stop;

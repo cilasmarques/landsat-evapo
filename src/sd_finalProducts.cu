@@ -35,11 +35,11 @@ string net_radiation_24h_function(Products products, Station station, MTL mtl)
 
     cudaEventRecord(start);
     float dr = (1.0f / mtl.distance_earth_sun) * (1.0f / mtl.distance_earth_sun);
-    float sigma = 0.409f * sin(((2.0f * PI / 365.0f) * mtl.julian_day) - 1.39f);
+    float sigma = 0.409f * sinf(((2.0f * PI / 365.0f) * mtl.julian_day) - 1.39f);
     float phi = (PI / 180.0f) * station.latitude;
-    float omegas = acos(-tan(phi) * tan(sigma));
-    float Ra24h = (((24.0f * 60.0f / PI) * GSC * dr) * (omegas * sin(phi) * sin(sigma) + cos(phi) * cos(sigma) * sin(omegas))) * (1000000.0f / 86400.0f);
-    float Rs24h = station.INTERNALIZATION_FACTOR * sqrt(station.v7_max - station.v7_min) * Ra24h;
+    float omegas = acosf(-tanf(phi) * tanf(sigma));
+    float Ra24h = (((24.0f * 60.0f / PI) * GSC * dr) * (omegas * sinf(phi) * sinf(sigma) + cosf(phi) * cosf(sigma) * sinf(omegas))) * (1000000.0f / 86400.0f);
+    float Rs24h = station.INTERNALIZATION_FACTOR * sqrtf(station.v7_max - station.v7_min) * Ra24h;
     net_radiation_24h_kernel<<<blocks_n, threads_n>>>(products.albedo_d, Rs24h, Ra24h, products.net_radiation_24h_d);
     cudaEventRecord(stop);
 

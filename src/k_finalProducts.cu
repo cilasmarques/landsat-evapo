@@ -24,7 +24,7 @@ __global__ void evapotranspiration_24h_kernel(float *surface_temperature_d, floa
 
     if (pos < width_d * height_d) {
         float temperature_celcius = surface_temperature_d[pos] - 273.15f;
-        evapotranspiration_24h_d[pos] = (86400.0f / ((2.501f - 0.0236f * temperature_celcius) * pow(10.0f, 6.0f))) * 
+        evapotranspiration_24h_d[pos] = (86400.0f / ((2.501f - 0.0236f * temperature_celcius) * __powf(10.0f, 6.0f))) * 
                                         (latent_heat_flux_d[pos] / (net_radiation_d[pos] - soil_heat_d[pos])) * 
                                         net_radiation_24h_d[pos];
     }
